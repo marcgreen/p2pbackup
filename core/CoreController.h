@@ -3,6 +3,7 @@
 #define CORE_CORE_CONTROLLER_H_
 
 #include <memory>
+#include <vector>
 
 namespace {
 
@@ -14,14 +15,13 @@ namespace core {
 
 class Dispatcher;
 class Job;
+class Controller;
 
 class CoreController {
  public:
-  CoreController();
-  void submitJob(const Job& job);
+  void registerController(const std::shared_ptr<Controller>& Controller);
  private:
-  std::shared_ptr<Dispatcher> dispatcher_;
-
+  std::vector<std::shared_ptr<Controller>> registeredControllers_;
 }; // class CoreController
 
 } // namespace core

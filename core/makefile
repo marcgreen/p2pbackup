@@ -4,8 +4,10 @@ LDFLAGS = -pthread
 CC = g++
 LD = $(CC)
 
-main: main.o CoreController.o Dispatcher.o Worker.o Job.o
-	$(LD) $(LDFLAGS) main.o CoreController.o Dispatcher.o Worker.o Job.o -o main
+main: main.o ConsoleController.o Controller.o CoreController.o Dispatcher.o \
+	Worker.o Job.o
+	$(LD) $(LDFLAGS) main.o ConsoleController.o Controller.o \
+	CoreController.o Dispatcher.o Worker.o Job.o -o main
 
 main.o: main.cpp
 	$(CC) $(CFLAGS) main.cpp
@@ -21,6 +23,12 @@ Job.o: Job.cpp Job.h
 
 CoreController.o: CoreController.cpp CoreController.h
 	$(CC) $(CFLAGS) CoreController.cpp -o CoreController.o
+
+Controller.o: Controller.cpp Controller.h
+	$(CC) $(CFLAGS) Controller.cpp -o Controller.o
+
+ConsoleController.o: ConsoleController.cpp ConsoleController.h Controller.h
+	$(CC) $(CFLAGS) ConsoleController.cpp -o ConsoleController.o
 
 clean:
 	rm -rf *~ *.o *.o *~ main

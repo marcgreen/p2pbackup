@@ -4,14 +4,9 @@
 
 namespace core {
 
-CoreController::CoreController() :
-  dispatcher_(std::shared_ptr<Dispatcher>(
-                new Dispatcher(DISPATCHER_POOL_SIZE))) {
-  
-}
-
-void CoreController::submitJob(const Job& job) {
-  dispatcher_->scheduleJob(job);
+void CoreController::registerController(const std::shared_ptr
+				      <Controller>& controller) {
+  registeredControllers_.push_back(controller);
 }
 
 } // namespace core
