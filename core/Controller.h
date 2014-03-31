@@ -1,6 +1,6 @@
 
-#ifndef CORE_SUB_CONTROLLER_H_
-#define CORE_SUB_CONTROLLER_H_
+#ifndef CORE_CONTROLLER_H_
+#define CORE_CONTROLLER_H_
 
 #include <memory>
 #include <thread>
@@ -23,8 +23,8 @@ class Controller {
  private:
   unsigned long id_;
   static unsigned long nextID;
-}; // class SubController
+}; // class Controller
 
 } // namespace core
 
-#endif // CORE_SUB_CONTROLLER_H_
+#endif // CORE_CONTROLLER_H_

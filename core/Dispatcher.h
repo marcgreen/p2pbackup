@@ -8,6 +8,11 @@
 #include <thread>
 #include <vector>
 
+namespace {
+
+const int DISPATCHER_POOL_SIZE = 10;
+
+} // namespace
 namespace core {
 
 class Job;

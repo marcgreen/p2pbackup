@@ -10,15 +10,20 @@
 
 namespace core {
 
-class CoreController;
+class Controller;
 
 class ConsoleController : public Controller {
  public:
+  ConsoleController();
   ConsoleController(std::shared_ptr<Dispatcher> dispatcher);
   void start();
  private:
   std::vector<std::shared_ptr<Controller>> asyncControllers_;
   std::vector<std::shared_ptr<std::thread>> asyncControllerThreads_;
+  
+  void createControllers();
+  void startAllAsync();
+  void stopAllAsync();
 }; // class ConsoleController
 
 } // namespace core
