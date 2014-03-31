@@ -17,6 +17,128 @@ BTSync::BTSync(std::string username, std::string password, std::string ip, std::
 
 }
 
+Json::Value BTSync::getFolders() {
+  return request_("get_folders");
+}
+
+Json::Value BTSync::getFolders(std::string secret) {
+  return request_("get_folders&secret=" + secret);
+}
+
+Json::Value BTSync::addFolder(std::string path, bool selective_sync) {
+  return request_("add_folder&dir=" + path + 
+		  "&selective_sync=" + std::string(selective_sync ? "1" : "0"));
+}
+
+Json::Value BTSync::addFolder(std::string path, std::string secret, bool selective_sync) {
+  return request_("add_folder&dir=" + path + 
+		  "&secret=" + std::string(secret) +
+		  "&selective_sync=" + std::string(selective_sync ? "1" : "0"));
+}
+
+Json::Value BTSync::addFolder(std::string path, const char *secret, bool selective_sync) {
+  return BTSync::addFolder(path, std::string(secret), selective_sync);
+}
+
+Json::Value BTSync::removeFolder(std::string secret) {
+  return request_("remove_folder&secret=" + secret);
+}
+
+Json::Value BTSync::getFiles(std::string secret) {
+  return request_("get_files&secret=" + secret);
+}
+
+Json::Value BTSync::getFiles(std::string secret, std::string path) {
+  return request_("get_files&secret=" + secret +
+		  "&path=" + path);
+}
+
+Json::Value BTSync::setFilePreferences(std::string secret, std::string path, bool download) {
+  return request_("set_file_prefs&secret=" + secret +
+		  "&path=" + path +
+		  "&download=" + std::string(download ? "1" : "0"));
+}
+
+Json::Value BTSync::getFolderPeers(std::string secret) {
+  return request_("get_folder_peers&secret=" + secret);
+}
+
+Json::Value BTSync::getSecrets(bool encrypted) {
+  return request_("get_secrets" + std::string(encrypted ? "&type=encryption" : ""));
+}
+
+  Json::Value BTSync::getSecrets(std::string secret, bool encrypted) {
+  return request_("get_secrets" + std::string(encrypted ? "&type=encryption" : "") +
+		  "&secret=" + std::string(secret));
+}
+
+Json::Value BTSync::getSecrets(const char *secret, bool encrypted) {
+  return BTSync::getSecrets(std::string(secret), encrypted); 
+}
+
+Json::Value BTSync::getFolderPreferences(std::string secret) {
+  return request_("get_folder_prefs&secret=" + secret);
+}
+
+Json::Value BTSync::setFolderPreferences(std::string secret, Json::Value params) {
+  std::string prefs;
+  std::vector<std::string> members = params.getMemberNames();
+  
+  // format JSON params as "&param1=value1&param2=value2...."
+  for (std::string it : members) {
+    prefs += "&" + it + "=" + jsonValueToString_(params[it]);
+  }
+  
+  return request_("set_folder_prefs&secret=" + secret + prefs);
+}
+
+Json::Value BTSync::getFolderHosts(std::string secret) {
+  return request_("get_folder_hosts&secret=" + secret);
+}
+
+Json::Value BTSync::setFolderHosts(std::string secret, Json::Value hosts) {
+  std::string csv;
+  for (unsigned int i = 0; i < hosts.size(); i++) {
+    if (i != 0) csv += ",";
+    csv += hosts[i].asString();
+  }
+
+  return request_("set_folder_hosts&secret=" + secret +
+		  "&hosts=" + csv);
+}
+
+Json::Value BTSync::getPreferences() {
+  return request_("get_prefs");
+}
+
+Json::Value BTSync::setPreferences(Json::Value params) {
+  std::string prefs;
+  std::vector<std::string> members = params.getMemberNames();
+  
+  // format JSON params as "&param1=value1&param2=value2...."
+  for (std::string it : members) {
+    prefs += "&" + it + "=" + jsonValueToString_(params[it]);
+  }
+  
+  return request_("set_prefs" + prefs);
+}
+
+Json::Value BTSync::getOSName() {
+  return request_("get_os");
+}
+
+Json::Value BTSync::getVersion() {
+  return request_("get_version");
+}
+
+Json::Value BTSync::getSpeed() {
+  return request_("get_speed");
+}
+
+Json::Value BTSync::shutdown() {
+  return request_("shutdown");
+}
+
 Json::Value BTSync::request_(std::string url_params) {
   std::stringstream json;
   std::string url = api_url_ + url_params;
@@ -52,105 +174,17 @@ Json::Value BTSync::request_(std::string url_params) {
   return root;
 }
 
-Json::Value BTSync::getFolders() {
-  return request_("get_folders");
+std::string BTSync::jsonValueToString_(Json::Value jsonValue) {
+  std::string stringValue;
+
+  // May need to check for more types in the future
+  if (jsonValue.type() == Json::ValueType::intValue)
+    stringValue = std::to_string(jsonValue.asInt());
+  else 
+    stringValue = jsonValue.asString();
+
+  return stringValue;
 }
-
-Json::Value BTSync::getFolders(std::string secret) {
-  return request_("get_folders&secret=" + secret);
-}
-
-Json::Value BTSync::addFolder(std::string path, bool selective_sync) {
-  std::cout << "2arg addfolder" << std::endl;
-  return request_("add_folder&dir=" + path + 
-		  "&selective_sync=" + std::string(selective_sync ? "1" : "0"));
-}
-
-Json::Value BTSync::addFolder(std::string path, std::string secret, bool selective_sync) {
-  std::cout << "3arg addfolder" << std::endl;
-  return request_("add_folder&dir=" + path + 
-		  "&secret=" + std::string(secret) +
-		  "&selective_sync=" + std::string(selective_sync ? "1" : "0"));
-}
-
-Json::Value BTSync::addFolder(std::string path, const char *secret, bool selective_sync) {
-  return BTSync::addFolder(path, std::string(secret), selective_sync);
-}
-
-Json::Value BTSync::removeFolder(std::string secret) {
-  return request_("remove_folder&secret=" + secret);
-}
-
-Json::Value BTSync::getFiles(std::string secret) {
-  return request_("get_files&secret=" + secret);
-}
-
-Json::Value BTSync::getFiles(std::string secret, std::string path) {
-  return request_("get_files&secret=" + secret +
-		  "&path=" + path);
-}
-
-Json::Value BTSync::setFilePreferences(std::string secret, std::string path, bool download) {
-  return request_("set_file_prefs&secret=" + secret +
-		  "&path=" + path +
-		  "&download=" + std::string(download ? "1" : "0"));
-}
-
-  // left off testing here in main
-
-Json::Value BTSync::getFolderPeers(std::string secret) {
-  return request_("get_folder_peers&secret=" + secret);
-}
-
-Json::Value BTSync::getSecrets(bool encrypted) {
-  return request_("get_secrets" + std::string(encrypted ? "&type=encryption" : ""));
-}
-
-  Json::Value BTSync::getSecrets(std::string secret, bool encrypted) {
-  return request_("get_secrets" + std::string(encrypted ? "&type=encryption" : "") +
-		  "&secret=" + std::string(secret));
-}
-
-Json::Value BTSync::getSecrets(const char *secret, bool encrypted) {
-  return BTSync::getSecrets(std::string(secret), encrypted); 
-}
-
-Json::Value BTSync::getFolderPreferences(std::string secret) {
-  return request_("get_folder_prefs&secret=" + secret);
-}
-
-Json::Value BTSync::setFolderPreferences(std::string secret, Json::Value params) {
-  std::string prefs;
-  std::vector<std::string> members = params.getMemberNames();
-
-  // format JSON params as "&param1=value1&param2=value2...."
-  for (auto &it : members) {
-    prefs += "&" + it + "=" + params[it].asString();
-  }
-
-  return request_("set_folder_prefs&secret=" + secret + prefs);
-}
-
-Json::Value BTSync::getFolderHosts(std::string secret) {
-  return request_("get_folder_hosts&secret=" + secret);
-}
-
-Json::Value BTSync::setFolderHosts(std::string secret, Json::Value hosts) {
-  std::string csv;
-  for (unsigned int i = 0; i < hosts.size(); i++) {
-    if (i != 0) csv += ",";
-    csv += hosts[i].asString();
-  }
-  return request_("set_folder_hosts&secret=" + secret +
-		  "&hosts=" + csv);
-}
-
-Json::Value BTSync::getPreferences() {}
-Json::Value BTSync::setPreferences(Json::Value params) {}
-Json::Value BTSync::getOSName() {}
-Json::Value BTSync::getVersion() {}
-Json::Value BTSync::getSpeed() {}
-Json::Value BTSync::shutdown() {}
 
 } // namespace btsync
 
@@ -181,26 +215,42 @@ int main(int argc, char *argv[]) {
 
   cout << bts.setFilePreferences(secret, "threadtest.cpp", true).toStyledString() << endl;
   cout << bts.setFilePreferences(secret, "threadtest.cpp", false).toStyledString() << endl;
-  */
-  
-  // left off see results of these tests
+
   cout << bts.getFolderPeers(secret).toStyledString() << endl;
 
   cout << bts.getSecrets().toStyledString() << endl;
+  cout << bts.getSecrets(true).toStyledString() << endl;
   cout << bts.getSecrets(secret).toStyledString() << endl;
   cout << bts.getSecrets(secret, true).toStyledString() << endl;
+  cout << bts.getSecrets(secret, false).toStyledString() << endl;
+  TODO test getSecrets more once we understand how it is supposed to work
 
-  cout << bts.getFolderPreferences(secret).toStyledString() << endl;
+  Json::Value folderPrefs = bts.getFolderPreferences(secret);
+  cout << folderPrefs.toStyledString() << endl;
 
-  Json::Value folderPrefs;
-  folderPrefs["use_hosts"] = 1;
-  folderPrefs["use_dht"] = 0;
-  cout << bts.setFolderPreferences(secret, folderPrefs).toStyledString() << endl;
+  Json::Value newPrefs;
+  newPrefs["use_hosts"] = 1 - folderPrefs["use_hosts"].asInt();
+  newPrefs["use_dht"] = 1 - folderPrefs["use_dht"].asInt();
+  cout << bts.setFolderPreferences(secret, newPrefs).toStyledString() << endl;
 
   cout << bts.getFolderHosts(secret).toStyledString() << endl;
 
   Json::Value folderHosts;
+  cout << bts.setFolderHosts(secret, folderHosts).toStyledString() << endl;
+
   folderHosts[(unsigned int) 0] = "192.168.1.1:4567";
   folderHosts[(unsigned int) 1] = "10.10.10.10:1010";
   cout << bts.setFolderHosts(secret, folderHosts).toStyledString() << endl;
+
+  Json::Value prefs = bts.getPreferences();
+  cout << prefs.toStyledString() << endl;
+
+  prefs["device_name"] = prefs["device_name"].asString() + "_";
+  cout << bts.setPreferences(prefs).toStyledString() << endl;
+
+  cout << bts.getOSName().toStyledString() << endl;
+  cout << bts.getVersion().toStyledString() << endl;
+  cout << bts.getSpeed().toStyledString() << endl;
+  cout << bts.shutdown().toStyledString() << endl;
+  */
 }

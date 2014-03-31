@@ -16,9 +16,6 @@ class BTSync {
   Json::Value getFolders(std::string secret);
   Json::Value addFolder(std::string path, bool selective_sync = false);
   Json::Value addFolder(std::string path, std::string secret, bool selective_sync = false);
-
-  // The 'secret' parameter is a char array instead of std::string to prevent CPP
-  //   from converting a user supplied char array to bool (instead of std::string).
   Json::Value addFolder(std::string path, const char *secret, bool selective_sync = false);
 
   Json::Value removeFolder(std::string secret);
@@ -31,8 +28,6 @@ class BTSync {
   // The BTSync API implements the 'encrypted' parameter as a string; it's a bool here
   Json::Value getSecrets(bool encrypted = false);
   Json::Value getSecrets(std::string secret, bool encrypted = false);
-  // The 'secret' parameter is a char array instead of std::string for same reason 
-  //   as in addFolder.
   Json::Value getSecrets(const char *secret, bool encrypted = false);
 
   Json::Value getFolderPreferences(std::string secret);
@@ -56,7 +51,13 @@ class BTSync {
   Json::Value shutdown();
  private:
   std::string api_url_;
+
+  // Return the JSON from the BTSync http request with the given parameters
   Json::Value request_(std::string url_params);
+
+  // This should be used when the Json::Value might not be a string
+  std::string jsonValueToString_(Json::Value jsonValue);
+
 }; // class BTSync
 
 } // namespace btsync
