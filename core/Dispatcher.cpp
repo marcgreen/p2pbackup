@@ -12,9 +12,9 @@ Dispatcher::Dispatcher(int numWorkerThreads) :
   workerThreads_.reserve(numWorkerThreads);
   
   for (int index = 0; index < numWorkerThreads; ++index) {
-    workers_.push_back(std::shared_ptr<Worker>(new Worker(this)));
-    workerThreads_.push_back(std::thread(Worker::ThreadMain,
-					 workers_[index]));
+    Worker *next = new Worker(this);
+    workers_.push_back(std::shared_ptr<Worker>(next));
+    workerThreads_.push_back(std::thread(&Worker::threadMain, next));
   }
 }
 

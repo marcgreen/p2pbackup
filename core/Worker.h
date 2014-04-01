@@ -21,22 +21,10 @@ class Dispatcher;
 // object would be passed to the thread before initialization is done.
 class Worker {
  public:
-  //Worker(const int id);
   Worker(Dispatcher *dispatcher);
-  void giveJob(const Job& job);
-  
-  static void ThreadMain(std::shared_ptr<Worker> worker);
+  void threadMain();
  private:
-  //const int id_;
   Dispatcher *dispatcher_;
-  std::queue<Job> jobQueue_;
-  std::mutex jobQueueMutex_;
-  
-  constexpr static const std::chrono::milliseconds timeout =
-    std::chrono::milliseconds(1);
-  
-  Job getNextJob();
-  bool tryForNextJob(Job& job);
 }; // class Worker
 
 } // namespace core
