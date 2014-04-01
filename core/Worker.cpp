@@ -5,9 +5,14 @@
 
 namespace core {
 
-Worker::Worker(const int id) :
+  /*Worker::Worker(const int id) :
   id_(id) {
   
+  }*/
+
+Worker::Worker(Dispatcher *dispatcher) :
+  dispatcher_(dispatcher) {
+
 }
 
 void Worker::giveJob(const Job& job) {
@@ -41,25 +46,7 @@ bool Worker::tryForNextJob(Job& job) {
 
 // static
 void Worker::ThreadMain(std::shared_ptr<Worker> worker) {
-  bool done = false;
-  Job currJob;
-  
-  while (!done) {
-    currJob = worker->getNextJob();
-    
-    switch (currJob.type) {
-    case EXECUTE:
-      currJob.func();
-      break;
-    case EXIT:
-      done = true;
-      break;
-    case NOP:
-      break;
-    default:
-      throw "Unknown job type";
-    }
-  }
+  while (worker->dispatcher_->doJob());
 }
 
 } // namespace core

@@ -7,12 +7,12 @@ namespace core {
 
 Dispatcher::Dispatcher(int numWorkerThreads) :
   numWorkerThreads_(numWorkerThreads),
-  nextWorker_(0) {
+  stopped_(false) {
   workers_.reserve(numWorkerThreads);
   workerThreads_.reserve(numWorkerThreads);
   
   for (int index = 0; index < numWorkerThreads; ++index) {
-    workers_.push_back(std::shared_ptr<Worker>(new Worker(index)));
+    workers_.push_back(std::shared_ptr<Worker>(new Worker(this)));
     workerThreads_.push_back(std::thread(Worker::ThreadMain,
 					 workers_[index]));
   }
@@ -23,17 +23,36 @@ Dispatcher::~Dispatcher() {
 }
 
 void Dispatcher::scheduleJob(const Job& job) {
-  workers_[nextWorker_]->giveJob(job);
-  nextWorker_ = (nextWorker_ + 1) % numWorkerThreads_;
+  jobQueueMutex_.lock();
+  pendingJobs_.push(job);
+  jobQueueMutex_.unlock();
+  jobNotifier_.notify_one();
+}
+
+bool Dispatcher::doJob() {
+  std::unique_lock<std::mutex> jobQueueLock(jobQueueMutex_);
+  jobNotifier_.wait(jobQueueLock, [this] {
+      return !pendingJobs_.empty() || stopped_;
+    });
+  
+  if (stopped_ && pendingJobs_.empty())
+    return false; // lock is automatically freed
+  
+  // Take the next job
+  Job takenJob = pendingJobs_.front();
+  pendingJobs_.pop();
+  jobQueueLock.unlock();
+  
+  // Run the job
+  takenJob.func();
+  return true; // Success!
 }
 
 void Dispatcher::stop() {
-  Job exitJob(JobType::EXIT);
-  
-  for (std::vector<std::shared_ptr<Worker>>::iterator it = workers_.begin();
-       it != workers_.end();
-       ++it)
-    (*it)->giveJob(exitJob);
+  jobQueueMutex_.lock();
+  stopped_ = true;
+  jobQueueMutex_.unlock();
+  jobNotifier_.notify_all();
   
   for (std::vector<std::thread>::iterator it = workerThreads_.begin();
        it != workerThreads_.end();

@@ -7,7 +7,7 @@ LD = $(CC)
 main: main.o BTSyncController.o ConsoleController.o Controller.o \
 	Dispatcher.o NetworkController.o Worker.o Job.o
 	$(LD) $(LDFLAGS) main.o BTSyncController.o ConsoleController.o \
-	Controller.o Dispatcher.o NetworkController.o Worker.o Job.o \
+	Controller.o Dispatcher.o Job.o NetworkController.o Worker.o \
 	-o main
 
 main.o: main.cpp

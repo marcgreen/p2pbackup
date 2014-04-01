@@ -15,6 +15,10 @@ class BTSyncController : public Controller {
   BTSyncController(std::shared_ptr<Dispatcher> dispatcher);
   ~BTSyncController();
   void start();
+  void startInBackground();
+  void stop();
+ private:
+  bool shouldStop_;
 }; // class BTSyncController
 
 } // namespace core

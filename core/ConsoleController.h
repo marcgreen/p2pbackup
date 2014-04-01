@@ -17,6 +17,7 @@ class ConsoleController : public Controller {
   ConsoleController();
   ConsoleController(std::shared_ptr<Dispatcher> dispatcher);
   void start();
+  void stop() { }
  private:
   std::vector<std::shared_ptr<Controller>> asyncControllers_;
   std::vector<std::shared_ptr<std::thread>> asyncControllerThreads_;

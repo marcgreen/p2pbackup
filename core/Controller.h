@@ -14,15 +14,10 @@ class Controller {
   Controller(std::shared_ptr<Dispatcher> dispatcher);
   virtual ~Controller();
   virtual void start() = 0;
-  void sendShutdownSignal();
   std::shared_ptr<std::thread> startInBackground();
-  unsigned long id() { return id_; }
+  virtual void stop() = 0;
  protected:
   std::shared_ptr<Dispatcher> dispatcher_;
-  bool shouldStop_;
- private:
-  unsigned long id_;
-  static unsigned long nextID;
 }; // class Controller
 
 } // namespace core

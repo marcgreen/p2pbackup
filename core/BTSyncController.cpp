@@ -7,7 +7,7 @@
 namespace core {
 
 BTSyncController::BTSyncController(std::shared_ptr<Dispatcher> dispatcher) :
-  Controller(dispatcher) {
+  Controller(dispatcher), shouldStop_(false) {
   
 }
 
@@ -16,8 +16,12 @@ BTSyncController::~BTSyncController() {
 }
 
 void BTSyncController::start() {
-  while (!shouldStop_)
+  while (!shouldStop_);
     std::cout << "BTSyncController" << std::endl;
+}
+
+void BTSyncController::stop() {
+  shouldStop_ = true;
 }
 
 } // namespace core

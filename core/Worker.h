@@ -11,8 +11,8 @@
 
 namespace core {
 
-class Dispatcher;
 class Job;
+class Dispatcher;
 
 // Contains information on a single worker thread.
 // The thread object itself is not stored in this object because a pointer to
@@ -21,12 +21,14 @@ class Job;
 // object would be passed to the thread before initialization is done.
 class Worker {
  public:
-  Worker(const int id);
+  //Worker(const int id);
+  Worker(Dispatcher *dispatcher);
   void giveJob(const Job& job);
   
   static void ThreadMain(std::shared_ptr<Worker> worker);
  private:
-  const int id_;
+  //const int id_;
+  Dispatcher *dispatcher_;
   std::queue<Job> jobQueue_;
   std::mutex jobQueueMutex_;
   

@@ -2,6 +2,7 @@
 #ifndef CORE_DISPATCHER_H_
 #define CORE_DISPATCHER_H_
 
+#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <queue>
@@ -23,12 +24,16 @@ class Dispatcher {
   Dispatcher(int numWorkerThreads);
   ~Dispatcher();
   void scheduleJob(const Job& job);
+  bool doJob();
   void stop();
  private:
   std::vector<std::shared_ptr<Worker>> workers_;
   std::vector<std::thread> workerThreads_;
+  std::queue<Job> pendingJobs_;
+  std::mutex jobQueueMutex_;
+  std::condition_variable jobNotifier_;
   const int numWorkerThreads_;
-  int nextWorker_;
+  bool stopped_;
 }; // class Dispatcher
 
 } // namespace core

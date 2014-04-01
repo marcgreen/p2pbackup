@@ -3,8 +3,8 @@
 
 namespace core {
 
-Job::Job(JobType type_, JobFunction func_) :
-  type(type_), func(func_) {
+Job::Job(JobFunction func_) :
+  func(func_) {
 
 }
 

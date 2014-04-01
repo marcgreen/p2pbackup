@@ -47,7 +47,7 @@ void ConsoleController::stopAllAsync() {
 	 asyncControllers_.begin();
 	 it != asyncControllers_.end();
 	 ++it) {
-    (*it)->sendShutdownSignal();
+    (*it)->stop();
   }
   
   // Use a second loop so that the shutdown signal can be given to all threads

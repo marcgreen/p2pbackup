@@ -7,12 +7,15 @@
 
 #include "Controller.h"
 
+namespace {
+
+int CONTROLLER_PORT = 57000;
+
+} // namespace
+
 namespace core {
 
-typedef boost::asio::io_service IOService;
-typedef boost::asio::ip::tcp::acceptor TCPAcceptor;
-typedef boost::asio::ip::tcp::socket TCPSocket;
-typedef boost::asio::ip::tcp::endpoint TCPEndPoint;
+using boost::asio::ip::tcp;
 
 class Dispatcher;
 
@@ -21,6 +24,9 @@ class NetworkController : public Controller {
   NetworkController(std::shared_ptr<Dispatcher> dispatcher);
   ~NetworkController();
   void start();
+  void stop();
+  void mainListenerLoop();
+  void handleSocketConnection(std::shared_ptr<tcp::socket> socket);
 }; // class NetworkController
 
 } // namespace core
