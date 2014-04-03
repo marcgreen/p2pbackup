@@ -23,7 +23,8 @@ ConsoleController::ConsoleController(std::shared_ptr<Dispatcher> dispatcher) :
 
 void ConsoleController::start() {
   startAllAsync();
-  std::this_thread::sleep_for(std::chrono::milliseconds(5000));
+  std::string input;
+  std::cin >> input;
   stopAllAsync();
 }
 

@@ -7,7 +7,7 @@
 #include "Dispatcher.h"
 #include "Job.h"
 
-//#include "ConsoleController.h"
+#include "ConsoleController.h"
 
 void fib(unsigned long n) {
   unsigned long total = 1;
@@ -18,7 +18,7 @@ void fib(unsigned long n) {
 
 int main(int argc, char **argv) {
   
-  core::Dispatcher d(10);
+  /*core::Dispatcher d(10);
   
   std::chrono::time_point<std::chrono::system_clock> start =
     std::chrono::system_clock::now();
@@ -29,7 +29,10 @@ int main(int argc, char **argv) {
     std::chrono::system_clock::now();
   int elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>
     (end - start).count();
-  std::cout << "elapsed_time = " << elapsed_time << std::endl;
+    std::cout << "elapsed_time = " << elapsed_time << std::endl;*/
+  
+  core::ConsoleController controller;
+  controller.start();
   
   return 0;
 }
