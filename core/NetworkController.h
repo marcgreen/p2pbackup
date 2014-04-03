@@ -25,8 +25,14 @@ class NetworkController : public Controller {
   ~NetworkController();
   void start();
   void stop();
-  void mainListenerLoop();
+  void connectionHandler(tcp::socket* socket,
+			 const boost::system::error_code& error);
   void handleSocketConnection(std::shared_ptr<tcp::socket> socket);
+ private:
+  boost::asio::io_service ioService_;
+  tcp::acceptor acceptor_;
+  tcp::endpoint endpoint_;
+  bool stopped_;
 }; // class NetworkController
 
 } // namespace core
