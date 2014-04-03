@@ -1,6 +1,6 @@
 
-#ifndef BTSYNC_H_
-#define BTSYNC_H_
+#ifndef BTSYNC_INTERFACE_H_
+#define BTSYNC_INTERFACE_H_
 
 #include <jsoncpp/json.h>
 
@@ -9,9 +9,9 @@ namespace btsync {
 // Interface to BTSync API
 // Most functions exactly map to the BTSync API documentation. Exceptions are documented inline.
 // Errors will cause fuctions to return Json::Value(false).
-class BTSync {
+class BTSyncInterface {
  public:
-  BTSync(std::string username, std::string password, std::string ip, std::string port);
+  BTSyncInterface(std::string username, std::string password, std::string ip, std::string port);
   Json::Value getFolders();
   Json::Value getFolders(std::string secret);
   Json::Value addFolder(std::string path, bool selective_sync = false);
@@ -58,8 +58,8 @@ class BTSync {
   // This should be used when the Json::Value might not be a string
   std::string jsonValueToString_(Json::Value jsonValue);
 
-}; // class BTSync
+}; // class BTSyncInterface
 
 } // namespace btsync
 
-#endif // BTSYNC_H_
+#endif // BTSYNC_INTERFACE_H_

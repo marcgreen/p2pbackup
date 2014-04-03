@@ -1,5 +1,5 @@
 *.o
 *~
 .SyncIgnore
-BTSync
+BTSyncInterface
 main

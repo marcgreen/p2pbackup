@@ -1,4 +1,4 @@
-#include "BTSync.h"
+#include "BTSyncInterface.h"
 
 #include <sstream>
 #include <cstdlib>
@@ -12,75 +12,84 @@
 
 namespace btsync {
 
-BTSync::BTSync(std::string username, std::string password, std::string ip, std::string port) :
-  api_url_("http://" + username + ":" + password + "@" + ip + ":" + port + "/api?method=") {
+BTSyncInterface::BTSyncInterface(std::string username, std::string password, 
+				 std::string ip, std::string port) :
+  api_url_("http://" + username + ":" + password + "@" + 
+	   ip + ":" + port + "/api?method=") {
 
 }
 
-Json::Value BTSync::getFolders() {
+Json::Value BTSyncInterface::getFolders() {
   return request_("get_folders");
 }
 
-Json::Value BTSync::getFolders(std::string secret) {
+Json::Value BTSyncInterface::getFolders(std::string secret) {
   return request_("get_folders&secret=" + secret);
 }
 
-Json::Value BTSync::addFolder(std::string path, bool selective_sync) {
+Json::Value BTSyncInterface::addFolder(std::string path, bool selective_sync) {
   return request_("add_folder&dir=" + path + 
 		  "&selective_sync=" + std::string(selective_sync ? "1" : "0"));
 }
 
-Json::Value BTSync::addFolder(std::string path, std::string secret, bool selective_sync) {
+Json::Value BTSyncInterface::addFolder(std::string path, std::string secret, 
+				       bool selective_sync) {
   return request_("add_folder&dir=" + path + 
 		  "&secret=" + std::string(secret) +
 		  "&selective_sync=" + std::string(selective_sync ? "1" : "0"));
 }
 
-Json::Value BTSync::addFolder(std::string path, const char *secret, bool selective_sync) {
-  return BTSync::addFolder(path, std::string(secret), selective_sync);
+Json::Value BTSyncInterface::addFolder(std::string path, const char *secret, 
+				       bool selective_sync) {
+  return BTSyncInterface::addFolder(path, std::string(secret), selective_sync);
 }
 
-Json::Value BTSync::removeFolder(std::string secret) {
+Json::Value BTSyncInterface::removeFolder(std::string secret) {
   return request_("remove_folder&secret=" + secret);
 }
 
-Json::Value BTSync::getFiles(std::string secret) {
+Json::Value BTSyncInterface::getFiles(std::string secret) {
   return request_("get_files&secret=" + secret);
 }
 
-Json::Value BTSync::getFiles(std::string secret, std::string path) {
+Json::Value BTSyncInterface::getFiles(std::string secret, std::string path) {
   return request_("get_files&secret=" + secret +
 		  "&path=" + path);
 }
 
-Json::Value BTSync::setFilePreferences(std::string secret, std::string path, bool download) {
+Json::Value BTSyncInterface::setFilePreferences(std::string secret,
+						std::string path,
+						bool download) {
   return request_("set_file_prefs&secret=" + secret +
 		  "&path=" + path +
 		  "&download=" + std::string(download ? "1" : "0"));
 }
 
-Json::Value BTSync::getFolderPeers(std::string secret) {
+Json::Value BTSyncInterface::getFolderPeers(std::string secret) {
   return request_("get_folder_peers&secret=" + secret);
 }
 
-Json::Value BTSync::getSecrets(bool encrypted) {
-  return request_("get_secrets" + std::string(encrypted ? "&type=encryption" : ""));
+Json::Value BTSyncInterface::getSecrets(bool encrypted) {
+  return request_("get_secrets" + 
+		  std::string(encrypted ? "&type=encryption" : ""));
 }
 
-  Json::Value BTSync::getSecrets(std::string secret, bool encrypted) {
-  return request_("get_secrets" + std::string(encrypted ? "&type=encryption" : "") +
+  Json::Value BTSyncInterface::getSecrets(std::string secret, bool encrypted) {
+  return request_("get_secrets" + 
+		  std::string(encrypted ? "&type=encryption" : "") +
 		  "&secret=" + std::string(secret));
 }
 
-Json::Value BTSync::getSecrets(const char *secret, bool encrypted) {
-  return BTSync::getSecrets(std::string(secret), encrypted); 
+Json::Value BTSyncInterface::getSecrets(const char *secret, bool encrypted) {
+  return BTSyncInterface::getSecrets(std::string(secret), encrypted); 
 }
 
-Json::Value BTSync::getFolderPreferences(std::string secret) {
+Json::Value BTSyncInterface::getFolderPreferences(std::string secret) {
   return request_("get_folder_prefs&secret=" + secret);
 }
 
-Json::Value BTSync::setFolderPreferences(std::string secret, Json::Value params) {
+Json::Value BTSyncInterface::setFolderPreferences(std::string secret, 
+						  Json::Value params) {
   std::string prefs;
   std::vector<std::string> members = params.getMemberNames();
   
@@ -92,11 +101,12 @@ Json::Value BTSync::setFolderPreferences(std::string secret, Json::Value params)
   return request_("set_folder_prefs&secret=" + secret + prefs);
 }
 
-Json::Value BTSync::getFolderHosts(std::string secret) {
+Json::Value BTSyncInterface::getFolderHosts(std::string secret) {
   return request_("get_folder_hosts&secret=" + secret);
 }
 
-Json::Value BTSync::setFolderHosts(std::string secret, Json::Value hosts) {
+Json::Value BTSyncInterface::setFolderHosts(std::string secret, 
+					    Json::Value hosts) {
   std::string csv;
   for (unsigned int i = 0; i < hosts.size(); i++) {
     if (i != 0) csv += ",";
@@ -107,11 +117,11 @@ Json::Value BTSync::setFolderHosts(std::string secret, Json::Value hosts) {
 		  "&hosts=" + csv);
 }
 
-Json::Value BTSync::getPreferences() {
+Json::Value BTSyncInterface::getPreferences() {
   return request_("get_prefs");
 }
 
-Json::Value BTSync::setPreferences(Json::Value params) {
+Json::Value BTSyncInterface::setPreferences(Json::Value params) {
   std::string prefs;
   std::vector<std::string> members = params.getMemberNames();
   
@@ -123,23 +133,23 @@ Json::Value BTSync::setPreferences(Json::Value params) {
   return request_("set_prefs" + prefs);
 }
 
-Json::Value BTSync::getOSName() {
+Json::Value BTSyncInterface::getOSName() {
   return request_("get_os");
 }
 
-Json::Value BTSync::getVersion() {
+Json::Value BTSyncInterface::getVersion() {
   return request_("get_version");
 }
 
-Json::Value BTSync::getSpeed() {
+Json::Value BTSyncInterface::getSpeed() {
   return request_("get_speed");
 }
 
-Json::Value BTSync::shutdown() {
+Json::Value BTSyncInterface::shutdown() {
   return request_("shutdown");
 }
 
-Json::Value BTSync::request_(std::string url_params) {
+Json::Value BTSyncInterface::request_(std::string url_params) {
   std::stringstream json;
   std::string url = api_url_ + url_params;
 
@@ -174,7 +184,7 @@ Json::Value BTSync::request_(std::string url_params) {
   return root;
 }
 
-std::string BTSync::jsonValueToString_(Json::Value jsonValue) {
+std::string BTSyncInterface::jsonValueToString_(Json::Value jsonValue) {
   std::string stringValue;
 
   // May need to check for more types in the future
@@ -191,15 +201,15 @@ std::string BTSync::jsonValueToString_(Json::Value jsonValue) {
 int main(int argc, char *argv[]) {
   using namespace std;
 
-  btsync::BTSync bts = btsync::BTSync("mqp", "btsync", "127.0.0.1", "8888");
+  btsync::BTSyncInterface bts = 
+    btsync::BTSyncInterface("mqp", "btsync", "127.0.0.1", "8888");
   string secret = "DJCEQ5N3SQVBI4THJNEN2HUDZPDJJZSNF";
 
-  /*
   Json::Value root = bts.getFolders();
   Json::Value folder = root[(unsigned int) 0];
 
-  string secret = folder["secret"].asString();
-  cout << "secret: " << secret << endl;
+  string sec = folder["secret"].asString();
+  cout << "secret: " << sec << endl;
 
   cout << "Json pretty print" << endl
        << root.toStyledString() << endl;
@@ -223,7 +233,7 @@ int main(int argc, char *argv[]) {
   cout << bts.getSecrets(secret).toStyledString() << endl;
   cout << bts.getSecrets(secret, true).toStyledString() << endl;
   cout << bts.getSecrets(secret, false).toStyledString() << endl;
-  TODO test getSecrets more once we understand how it is supposed to work
+  //TODO test getSecrets more once we understand how it is supposed to work
 
   Json::Value folderPrefs = bts.getFolderPreferences(secret);
   cout << folderPrefs.toStyledString() << endl;
@@ -252,5 +262,6 @@ int main(int argc, char *argv[]) {
   cout << bts.getVersion().toStyledString() << endl;
   cout << bts.getSpeed().toStyledString() << endl;
   cout << bts.shutdown().toStyledString() << endl;
-  */
+  
 }
+ 
