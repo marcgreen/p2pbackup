@@ -3,15 +3,13 @@ CFLAGS = -c -std=c++11
 LDFLAGS = -pthread -lboost_system
 CC = g++
 LD = $(CC)
+ARCHIVER = ar
+ARFLAGS = rcs
+OBJLIST = BTSyncController.o ConsoleController.o Controller.o Dispatcher.o \
+	NetworkController.o Worker.o Job.o
 
-main: main.o BTSyncController.o ConsoleController.o Controller.o \
-	Dispatcher.o NetworkController.o Worker.o Job.o
-	$(LD) $(LDFLAGS) main.o BTSyncController.o ConsoleController.o \
-	Controller.o Dispatcher.o Job.o NetworkController.o Worker.o \
-	-o main
-
-main.o: main.cpp
-	$(CC) $(CFLAGS) main.cpp
+btcore: $(OBJLIST)
+	$(ARCHIVER) $(ARFLAGS) libbtcore.a $(OBJLIST)
 
 Dispatcher.o: Dispatcher.cpp Dispatcher.h Job.h Worker.h
 	$(CC) $(CFLAGS) Dispatcher.cpp -o Dispatcher.o
@@ -22,20 +20,14 @@ Worker.o: Worker.cpp Dispatcher.h Job.h Worker.h
 Job.o: Job.cpp Job.h
 	$(CC) $(CFLAGS) Job.cpp -o Job.o
 
-#CoreController.o: CoreController.cpp CoreController.h
-#	$(CC) $(CFLAGS) CoreController.cpp -o CoreController.o
-
 Controller.o: Controller.cpp Controller.h
 	$(CC) $(CFLAGS) Controller.cpp -o Controller.o
 
 ConsoleController.o: ConsoleController.cpp ConsoleController.h Controller.h
 	$(CC) $(CFLAGS) ConsoleController.cpp -o ConsoleController.o
 
-NetworkController.o: NetworkController.cpp NetworkController.h Controller.h
+NetworkController.o: NetworkController.cpp NetworkController.h Controller.h Job.h
 	$(CC) $(CFLAGS) NetworkController.cpp -o NetworkController.o
 
 BTSyncController.o: BTSyncController.cpp BTSyncController.h Controller.h
 	$(CC) $(CFLAGS) BTSyncController.cpp -o BTSyncController.o
-
-clean:
-	rm -rf *~ *.o *.o *~ main

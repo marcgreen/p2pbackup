@@ -29,8 +29,10 @@ void ConsoleController::start() {
 }
 
 void ConsoleController::createControllers() {
-  asyncControllers_.push_back(std::shared_ptr<Controller>
-			      (new NetworkController(dispatcher_)));
+  asyncControllers_.push_back
+    (std::shared_ptr<Controller>
+     (new NetworkController
+      (dispatcher_, NetworkHandlerFunction(handlePeerSocketConnection))));
   asyncControllers_.push_back(std::shared_ptr<Controller>
 			      (new BTSyncController(dispatcher_)));
 }

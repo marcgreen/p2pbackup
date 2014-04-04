@@ -10,11 +10,13 @@
 
 namespace core {
 
-NetworkController::NetworkController(std::shared_ptr<Dispatcher> dispatcher) :
+NetworkController::NetworkController(std::shared_ptr<Dispatcher> dispatcher,
+				     NetworkHandlerFunction socketHandler) :
   Controller(dispatcher),
   acceptor_(ioService_),
   endpoint_(tcp::v4(), CONTROLLER_PORT),
-  stopped_(false) {
+  stopped_(false),
+  socketHandler_(socketHandler) {
   acceptor_.open(endpoint_.protocol());
   acceptor_.set_option(tcp::acceptor::reuse_address(true));
   acceptor_.bind(endpoint_);
@@ -66,15 +68,17 @@ void NetworkController::connectionHandler(
   const boost::system::error_code& error) {
   std::shared_ptr<tcp::socket> socket_ptr(socket);
   if (!error) {
-    Job networkJob(std::bind(&NetworkController::handleSocketConnection,
-			     this, socket_ptr));
+    Job networkJob(std::bind(socketHandler_, socket_ptr));
     dispatcher_->scheduleJob(networkJob);
   }
 }
 
-void NetworkController::handleSocketConnection(
-  std::shared_ptr<tcp::socket> socket) {
+void handlePeerSocketConnection(std::shared_ptr<tcp::socket> socket) {
   std::cout << "Hey" << std::endl;
+}
+
+void handleTrackerSocketConnection(std::shared_ptr<tcp::socket> socket) {
+  std::cout << "Hello" << std::endl;
 }
 
 } // namespace core
