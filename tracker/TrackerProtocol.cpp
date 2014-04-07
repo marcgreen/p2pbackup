@@ -6,8 +6,6 @@
 #include <jsoncpp/writer.h>
 #include <memory>
 
-#include <iostream>
-
 namespace tracker {
 
 bool recv(Json::Value& dataToReceive, tcp::socket& socket) {

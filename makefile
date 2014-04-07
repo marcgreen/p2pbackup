@@ -1,7 +1,7 @@
 
 CFLAGS = -c -std=c++11 -I.
 CLIENT_LDFLAGS = -pthread -lboost_system -Lcore -lbtcore
-TRACKER_LDFLAGS = -pthread -lboost_system -Ltracker -ltracker -Lcore -lbtcore
+TRACKER_LDFLAGS = -pthread -lboost_system -Ltracker -ltracker -Lcore -lbtcore -L/usr/local/lib -ljsoncpp
 CC = g++
 LD = $(CC)
 CLEANLIST = *.o *.a *~ btbackup bttracker

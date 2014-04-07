@@ -4,6 +4,7 @@
 #include "Controller.h"
 #include "Dispatcher.h"
 #include "NetworkController.h"
+#include "PeerSocketConnection.h"
 
 #include <chrono>
 #include <iostream>

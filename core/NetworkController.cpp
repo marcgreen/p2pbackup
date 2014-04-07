@@ -29,20 +29,6 @@ NetworkController::~NetworkController() {
 }
 
 void NetworkController::start() {
-  // TODO:
-  // 1. Create the io_service object in the constructor of the
-  // NetworkController.
-  // 2. Create the acceptor object in the constructor of the
-  // NetworkController (?).
-  // 3. In this method, have an infinite loop that (1) creates a new socket
-  // object, (2) uses the acceptor to call async_accept, and (3) call run so
-  // that the handler is run on this thread.
-  // 4. In the handler, pass the socket off to a worker thread in the
-  // dispatcher.
-  // 5. After the handler returns, execution should return to this thread so
-  // that another connection can be handled.
-  // 6. In the stop() method of this class, cancel() will be called, which will
-  // stop the asynchronous wait for new connections.
   boost::system::error_code ec;
   
   while (!stopped_) {
@@ -71,14 +57,6 @@ void NetworkController::connectionHandler(
     Job networkJob(std::bind(socketHandler_, socket_ptr));
     dispatcher_->scheduleJob(networkJob);
   }
-}
-
-void handlePeerSocketConnection(std::shared_ptr<tcp::socket> socket) {
-  std::cout << "Hey" << std::endl;
-}
-
-void handleTrackerSocketConnection(std::shared_ptr<tcp::socket> socket) {
-  std::cout << "Hello" << std::endl;
 }
 
 } // namespace core
