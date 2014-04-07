@@ -2,6 +2,7 @@
 #include "core/Dispatcher.h"
 #include "core/NetworkController.h"
 #include "Tracker.h"
+#include "TrackerSocketConnection.h"
 
 namespace tracker {
 
@@ -12,7 +13,7 @@ Tracker::Tracker() :
     (std::shared_ptr<core::Dispatcher>
      (new core::Dispatcher
       (TRACKER_POOL_SIZE)),
-     core::NetworkHandlerFunction(core::handleTrackerSocketConnection)))) {
+     core::NetworkHandlerFunction(tracker::handleTrackerSocketConnection)))) {
 
 }
 

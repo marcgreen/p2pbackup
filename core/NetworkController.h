@@ -39,9 +39,6 @@ class NetworkController : public Controller {
   std::function<void(std::shared_ptr<tcp::socket>)> socketHandler_;
 }; // class NetworkController
 
-void handlePeerSocketConnection(std::shared_ptr<tcp::socket> socket);
-void handleTrackerSocketConnection(std::shared_ptr<tcp::socket> socket);
-
 } // namespace core
 
 #endif // CORE_NETWORK_CONTROLLER_H_

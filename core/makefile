@@ -6,7 +6,7 @@ LD = $(CC)
 ARCHIVER = ar
 ARFLAGS = rcs
 OBJLIST = BTSyncController.o ConsoleController.o Controller.o Dispatcher.o \
-	NetworkController.o Worker.o Job.o
+	NetworkController.o PeerSocketConnection.o Worker.o Job.o
 
 btcore: $(OBJLIST)
 	$(ARCHIVER) $(ARFLAGS) libbtcore.a $(OBJLIST)
@@ -23,7 +23,7 @@ Job.o: Job.cpp Job.h
 Controller.o: Controller.cpp Controller.h
 	$(CC) $(CFLAGS) Controller.cpp -o Controller.o
 
-ConsoleController.o: ConsoleController.cpp ConsoleController.h Controller.h
+ConsoleController.o: ConsoleController.cpp ConsoleController.h Controller.h PeerSocketConnection.h
 	$(CC) $(CFLAGS) ConsoleController.cpp -o ConsoleController.o
 
 NetworkController.o: NetworkController.cpp NetworkController.h Controller.h Job.h
@@ -31,3 +31,6 @@ NetworkController.o: NetworkController.cpp NetworkController.h Controller.h Job.
 
 BTSyncController.o: BTSyncController.cpp BTSyncController.h Controller.h
 	$(CC) $(CFLAGS) BTSyncController.cpp -o BTSyncController.o
+
+PeerSocketConnection.o: PeerSocketConnection.cpp PeerSocketConnection.h
+	$(CC) $(CFLAGS) PeerSocketConnection.cpp -o PeerSocketConnection.o
