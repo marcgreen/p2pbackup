@@ -1,5 +1,8 @@
 *.o
 *~
 .SyncIgnore
+
+# Executables
 BTSyncInterface
+TrackerInterface
 main

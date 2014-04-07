@@ -1,11 +1,19 @@
-all: trackerInterface metadataRecord
-	g++ TrackerInterface.o MetadataRecord.o -o TrackerInterface
+CFLAGS = -c -std=c++11 -I..
+CC = g++
+LD = $(CC)
+LDFLAGS = -L/usr/local/lib -ljsoncpp -lboost_system -pthread
+
+all: trackerInterface metadataRecord trackerProtocol
+	$(CC) $(LDFLAGS) TrackerInterface.o MetadataRecord.o TrackerProtocol.o -o TrackerInterface
 
 trackerInterface: TrackerInterface.cpp TrackerInterface.h MetadataInterface.h
-	g++ -std=c++11 -c TrackerInterface.cpp
+	$(CC) $(CFLAGS) TrackerInterface.cpp
 
 metadataRecord: MetadataRecord.cpp MetadataRecord.h
-	g++ -std=c++11 -c MetadataRecord.cpp
+	$(CC) $(CFLAGS) MetadataRecord.cpp
+
+trackerProtocol: ../tracker/TrackerProtocol.cpp ../tracker/TrackerProtocol.h
+	$(CC) $(CFLAGS) ../tracker/TrackerProtocol.cpp -o TrackerProtocol.o
 
 clean:
 	rm TrackerInterface TrackerInterface.o
