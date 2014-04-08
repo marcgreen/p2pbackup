@@ -1,6 +1,6 @@
 
-#ifndef TRACKER_TRACKER_DATABASE_H_
-#define TRACKER_TRACKER_DATABASE_H_
+#ifndef TRACKER_SERVER_TRACKER_DATABASE_H_
+#define TRACKER_SERVER_TRACKER_DATABASE_H_
 
 #include <unordered_map>
 #include <string>
@@ -12,7 +12,7 @@ class MetadataRecord;
 
 } // namespace MetadataRecord
 
-namespace tracker {
+namespace tracker { namespace server {
 
 class TrackerDatabase {
  public:
@@ -23,6 +23,6 @@ class TrackerDatabase {
   std::vector<std::string> sortedIDs_;
 }; // class TrackerDatabase
 
-} // namespace tracker
+} } // namespace tracker::server
 
-#endif // TRACKER_TRACKER_DATABASE_H_
+#endif // TRACKER_SERVER_TRACKER_DATABASE_H_

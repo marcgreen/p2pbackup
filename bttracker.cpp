@@ -1,8 +1,8 @@
 
-#include "tracker/Tracker.h"
+#include "tracker/server/Tracker.h"
 
 int main(int argc, char **argv) {
-  tracker::Tracker t;
+  tracker::server::Tracker t;
   t.start();
   return 0;
 }

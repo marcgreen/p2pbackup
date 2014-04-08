@@ -1,6 +1,6 @@
 
-#ifndef TRACKER_TRACKER_H_
-#define TRACKER_TRACKER_H_
+#ifndef TRACKER_SERVER_TRACKER_H_
+#define TRACKER_SERVER_TRACKER_H_
 
 #include <memory>
 
@@ -16,7 +16,7 @@ class NetworkController;
 
 } // namespace core
 
-namespace tracker {
+namespace tracker { namespace server {
 
 class Tracker {
  public:
@@ -26,6 +26,6 @@ class Tracker {
   std::shared_ptr<core::NetworkController> networkController_;
 }; // class Tracker
 
-} // namespace tracker
+} } // namespace tracker::server
 
-#endif // TRACKER_TRACKER_H
+#endif // TRACKER_SERVER_TRACKER_H

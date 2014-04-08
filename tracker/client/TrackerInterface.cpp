@@ -1,5 +1,5 @@
 #include "metadata/MetadataRecord.h"
-#include "metadata/TrackerInterface.h"
+#include "tracker/client/TrackerInterface.h"
 #include "tracker/TrackerProtocol.h"
 
 #include <string>
@@ -9,7 +9,7 @@
 #include <boost/asio.hpp>
 #include <jsoncpp/json.h>
 
-namespace metadata {
+namespace tracker { namespace client {
 
 TrackerInterface::TrackerInterface(std::string ip, std::string port) :
   serverIP_(ip), serverPort_(port) {
@@ -44,7 +44,7 @@ std::string TrackerInterface::findClosestNode(std::string fileID) {
   return reply["nodeID"].asString();
 }
 
-void TrackerInterface::get(std::string nodeID, MetadataRecord &metadataRecord) {
+void TrackerInterface::get(std::string nodeID, metadata::MetadataRecord &metadataRecord) {
   std::cout << "Getting metadata of '" << nodeID << "'" << std::endl;
 
   Json::Value msg, reply;
@@ -126,14 +126,14 @@ std::string TrackerInterface::executeCommand(const Json::Value &msg, Json::Value
   return "";
 }
 
-} // Namespace metadata
+} } // Namespace tracker::client
 
 int main(int argc, char *argv[]) {
   using namespace std;
 
   string example_key = "39dk3KNJDF9832N";
   metadata::MetadataRecord example_record = metadata::MetadataRecord("2.20.2.20");
-  metadata::TrackerInterface tr = metadata::TrackerInterface("127.0.0.1", "6262");
+  tracker::client::TrackerInterface tr = tracker::client::TrackerInterface("127.0.0.1", "6262");
 
   metadata::MetadataRecord reply;
   tr.joinNetwork("jjjjj");
