@@ -9,4 +9,6 @@
 # Executables
 BTSyncInterface
 TrackerInterface
+btbackup
+bttracker
 main
