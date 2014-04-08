@@ -1,10 +1,12 @@
-#include "TrackerInterface.h"
+#include "metadata/MetadataRecord.h"
+#include "metadata/TrackerInterface.h"
+#include "tracker/TrackerProtocol.h"
 
 #include <string>
 #include <cstring>
 #include <iostream>
 #include <stdexcept>
-#include <boost/asio.cpp>
+#include <boost/asio.hpp>
 #include <jsoncpp/json.h>
 
 namespace metadata {
@@ -14,81 +16,115 @@ TrackerInterface::TrackerInterface(std::string ip, std::string port) :
     
 }
 
-  void TrackerInterface::joinNetwork(std::string nodeID) {
-    std::cout << "Joining network as '" << nodeID << "'" << std::endl;
+void TrackerInterface::joinNetwork(std::string nodeID) {
+  std::cout << "Joining network as '" << nodeID << "'" << std::endl;
 
-    Json::Value msg;
-    root["command"] = JOIN_NETWORK_CMD;
-    root["nodeID"] = nodeID;
+  Json::Value msg, reply;
+  msg["command"] = tracker::JOIN_NETWORK_CMD;
+  msg["nodeID"] = nodeID;
 
-    Json::Value reply = sendCommand(msg);
+  std::string error = executeCommand(msg, reply);
+  if (!error.empty()) throw std::runtime_error(error);
 
-    if (reply["error"] != 0) {
-      throw std::runtime_error("Error joining network");
-    }
-  }
+  if (reply["error"] == 0) throw std::runtime_error("Error joining network");
+}
 
-  std::string TrackerInterface::findClosestNode(std::string fileID) {
-    std::cout << "Finding closest nodeId to '" << key << "'" << std::endl;
+std::string TrackerInterface::findClosestNode(std::string fileID) {
+  std::cout << "Finding closest nodeId to '" << fileID << "'" << std::endl;
 
-    return "TBD";
-  }
+  Json::Value msg, reply;
+  msg["command"] = tracker::FIND_CLOSEST_NODE_CMD;
+  msg["fileID"] = fileID;
 
-  void TrackerInterface::get(std::string nodeID, MetadataRecord &metadataRecord) {
-    std::cout << "Getting metadata of '" << nodeID << "'" << std::endl;
-    
-    metadataRecord = MetadataRecord("10.10.10.10");
-    // Connect to server, retrieve, and return
-    // Populate metadataRecord with the JSON
+  std::string error = executeCommand(msg, reply);
+  if (!error.empty()) throw std::runtime_error(error);
 
-    return value;
-  }
+  if (reply["error"] == 0) throw std::runtime_error("Error finding closest node");
+
+  return reply["nodeID"].asString();
+}
+
+void TrackerInterface::get(std::string nodeID, MetadataRecord &metadataRecord) {
+  std::cout << "Getting metadata of '" << nodeID << "'" << std::endl;
+
+  Json::Value msg, reply;
+  msg["command"] = tracker::GET_CMD;
+  msg["nodeID"] = nodeID;
+
+  std::string error = executeCommand(msg, reply);
+  if (!error.empty()) throw std::runtime_error(error);
+
+  if (reply["error"] == 0) throw std::runtime_error("Error getting node metadata");
+
+  metadataRecord.setNodeIP(reply["nodeID"].asString());
+  // TODO finish setting metadataRecord
+}
 
 
-  void TrackerInterface::blacklistNode(std::string nodeID) {
-    std::cout << "Blacklisting '" << nodeID << "'" << std::endl;
+void TrackerInterface::blacklistNode(std::string nodeID) {
+  std::cout << "Blacklisting '" << nodeID << "'" << std::endl;
 
-    // server call
-  }
+  Json::Value msg, reply;
+  msg["command"] = tracker::BLACKLIST_NODE_CMD;
+  msg["nodeID"] = nodeID;
 
-  void TrackerInterface::backupFile(std::string nodeID, std::string fileID, uint64_t size) {
-    std::cout << "Inform server we're backing up " << size << " bytes of data "
-	      << "identified by '" << fileID << "' to '" << nodeID << "'"
-	      << std::endl;
+  std::string error = executeCommand(msg, reply);
+  if (!error.empty()) throw std::runtime_error(error);
 
-    // server call
-  }
+  if (reply["error"] == 0) throw std::runtime_error("Error blacklisting node");
+}
 
-  void TrackerInterface::updateFileSize(std::string nodeID, std::string fileID, uint64_t size) {
-    std::cout << "Inform server that the data identified by '" << fileID << "', "
-	      << "stored on '" << nodeID << "', is now " << size << " bytes"
-	      << std::endl;
+void TrackerInterface::backupFile(std::string nodeID, std::string fileID, uint64_t size) {
+  std::cout << "Inform server we're backing up " << size << " bytes of data "
+	    << "identified by '" << fileID << "' to '" << nodeID << "'"
+	    << std::endl;
 
-    // server call
-  }
+  Json::Value msg, reply;
+  msg["command"] = tracker::BACKUP_FILE_CMD;
+  msg["nodeID"] = nodeID;
+  msg["fileID"] = fileID;
+  msg["size"] = std::to_string(size);
 
-  Json::Value sendCommand(Json::Value root) {
-    using boost::asi::ip::tcp;
+  std::string error = executeCommand(msg, reply);
+  if (!error.empty()) throw std::runtime_error(error);
 
-    Json::FastWriter writer;
-    std::string serializedMsg = writer.write(root);
-    size_t msgSize = serializedMsg.size() + 1;
-    // left off sending serializedMsg as buffer -- may need to convert to cstr
-    // may not need the enums defined in TrackerInterface.h anymore
-    
-    boost::asio::io_service io_service;
-    
-    tcp::resolver resolver(io_service);
-    tcp::resolver::query query(tcp::v4(), serverIP_, serverPort_);
-    tcp::resolver::iterator iterator = resolver.resolver(query);
+  if (reply["error"] == 0) throw std::runtime_error("Error backing up file");
+}
 
-    tcp::socket s(io_server);
-    boost::asio::connect(s, iterator);
+void TrackerInterface::updateFileSize(std::string nodeID, std::string fileID, uint64_t size) {
+  std::cout << "Inform server that the data identified by '" << fileID << "', "
+	    << "stored on '" << nodeID << "', is now " << size << " bytes"
+	    << std::endl;
 
-    boost::asio::write(s, boost::asio::buffer(data, dataSize));
+  Json::Value msg, reply;
+  msg["command"] = tracker::UPDATE_FILE_SIZE_CMD;
+  msg["nodeID"] = nodeID;
+  msg["fileID"] = fileID;
+  msg["size"] = std::to_string(size);
 
-    boost::asio::read(s, boost::asio::buffer(replyData, replySize));
-  }
+  std::string error = executeCommand(msg, reply);
+  if (!error.empty()) throw std::runtime_error(error);
+
+  if (reply["error"] == 0) throw std::runtime_error("Error updating file size");
+
+}
+
+std::string TrackerInterface::executeCommand(const Json::Value &msg, Json::Value &reply) {
+  using boost::asio::ip::tcp;
+
+  boost::asio::io_service io_service;
+
+  tcp::resolver resolver(io_service);
+  tcp::resolver::query query(tcp::v4(), serverIP_, serverPort_);
+  tcp::resolver::iterator iterator = resolver.resolve(query);
+
+  tcp::socket s(io_service);
+
+  if (tracker::send(msg, s)) return "Error sending to server";
+  if (tracker::recv(reply, s)) return "Error recving from server";
+
+  return "";
+}
 
 } // Namespace metadata
 
@@ -99,9 +135,11 @@ int main(int argc, char *argv[]) {
   metadata::MetadataRecord example_record = metadata::MetadataRecord("2.20.2.20");
   metadata::TrackerInterface tr = metadata::TrackerInterface("127.0.0.1", "6262");
 
+  metadata::MetadataRecord reply;
   tr.joinNetwork("jjjjj");
   std::string id = tr.findClosestNode("ccccc");
-  cout << "Metadata for " << id << ": " << tr.get(id).toString() << endl;
+  tr.get(id, reply);
+  cout << "Metadata for " << id << ": " << reply.toString() << endl;
   tr.blacklistNode("bbbbb");
   tr.backupFile("iiiii", "fffff", 32);
   tr.updateFileSize("iiiii", "fffff", 33);
