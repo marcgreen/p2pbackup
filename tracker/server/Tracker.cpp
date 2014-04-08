@@ -15,7 +15,7 @@ Tracker::Tracker() :
       (TRACKER_POOL_SIZE)),
      core::NetworkHandlerFunction
      (tracker::server::handleTrackerSocketConnection)))) {
-
+  
 }
 
 void Tracker::start() {
