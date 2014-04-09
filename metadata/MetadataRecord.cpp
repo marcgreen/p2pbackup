@@ -12,8 +12,8 @@ MetadataRecord::MetadataRecord() {}
 MetadataRecord::MetadataRecord(std::string ip) :
   nodeIP_(ip) { }
 
-bool MetadataRecord::addBlacklister(std::string peerIP, time_t timestamp) {
-  auto v = blacklisters_.insert(std::make_pair(IPStringToInt(peerIP), timestamp));
+bool MetadataRecord::addBlacklister(std::string peerID, time_t timestamp) {
+  auto v = blacklisters_.insert(std::make_pair(peerID, timestamp));
   return v.second;
 }
 
@@ -136,18 +136,6 @@ bool MetadataRecord::unserialize(std::string reply) {
   }
 
     return true;
-}
-
-uint32_t MetadataRecord::IPStringToInt(std::string ipString) {
-  std::vector<std::string> substrings;
-  boost::algorithm::split(substrings, ipString, boost::algorithm::is_any_of("."));
-
-  uint32_t ipInt = std::stoi(substrings[0]);
-  for (int i = 1; i < substrings.size(); i++) {
-    ipInt = (ipInt << 8) + std::stoi(substrings[i]); 
-  }
-
-  return ipInt;
 }
 
 } // namespace metadata

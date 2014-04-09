@@ -16,7 +16,7 @@ class TrackerInterface: public metadata::MetadataInterface {
   void joinNetwork(std::string nodeID);
   std::string findClosestNode(std::string fileID);
   void get(std::string nodeID, metadata::MetadataRecord &metadataRecord);
-  void blacklistNode(std::string nodeID);
+  void blacklistNode(std::string peerID, std::string nodeID);
   void backupFile(std::string nodeID, std::string fileID, uint64_t size);
   void updateFileSize(std::string nodeID, std::string fileID, uint64_t size);
 

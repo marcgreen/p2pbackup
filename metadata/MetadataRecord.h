@@ -45,10 +45,9 @@ class MetadataRecord {
     return blacklisters_.size();
   }
 
-  // Adds a blacklister to the list. Duplicate IPs are ignored.
+  // Adds a blacklister to the list. Duplicate IDs are ignored.
   // Returns whether or not the blacklister was added
-  // Undefined behavior if peerIP isn't in dotted decimal
-  bool addBlacklister(std::string peerIP, time_t timestamp);
+  bool addBlacklister(std::string peerID, time_t timestamp);
 
   // Return the sum of all filesizes this peer is backing up
   uint64_t getTotalBackupSize();
@@ -84,15 +83,12 @@ class MetadataRecord {
   }
 
  private:
-  // Convert dotted decimal IP address to its integer value
-  uint32_t IPStringToInt(std::string ipString);
-
   // IP address of the node this record describes
   std::string nodeIP_;
 
-  // Map of <nodeIP, timestamp> pairs to keep track of peers who blacklist this node.
-  // Map is used to quickly check for duplicate IPs. Duplicate entries are ignored.
-  std::unordered_map<uint32_t, time_t> blacklisters_;
+  // Map of <nodeID, timestamp> pairs to keep track of peers who blacklist this node.
+  // Map is used to quickly check for duplicate IDs. Duplicate entries are ignored.
+  std::unordered_map<std::string, time_t> blacklisters_;
 
   // Keep track of filesizes this peer is backing up to nodes. Key is fileID
   std::map<std::string, FileMetadata> backedUpFiles_;

@@ -63,11 +63,12 @@ void TrackerInterface::get(std::string nodeID, metadata::MetadataRecord &metadat
 }
 
 
-void TrackerInterface::blacklistNode(std::string nodeID) {
+void TrackerInterface::blacklistNode(std::string peerID, std::string nodeID) {
   std::cout << "Blacklisting '" << nodeID << "'" << std::endl;
 
   Json::Value msg, reply;
   msg["command"] = tracker::BLACKLIST_NODE_CMD;
+  msg["peerID"] = peerID;
   msg["nodeID"] = nodeID;
 
   std::string error = executeCommand(msg, reply);
@@ -142,7 +143,7 @@ int main(int argc, char *argv[]) {
   std::string id = tr.findClosestNode("ccccc");
   tr.get(id, reply);
   cout << "Metadata for " << id << ": " << reply.toString() << endl;
-  tr.blacklistNode("bbbbb");
+  tr.blacklistNode("jjjjj", "bbbbb");
   tr.backupFile("iiiii", "fffff", 32);
   tr.updateFileSize("iiiii", "fffff", 33);
 }

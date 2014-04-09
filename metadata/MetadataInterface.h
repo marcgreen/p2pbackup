@@ -24,10 +24,10 @@ class MetadataInterface {
   // Fill 'metadataRecord' with the metadata of the node with the given nodeID
   virtual void get(std::string nodeID, MetadataRecord &metadataRecord) = 0;
 
-  // Blacklist the node with the given nodeID b/c they're not being a team player (e.g., low uptime).
+  // As peerID, blacklist the node with the given nodeID (b/c low uptime, etc)
   // Peers will take into account the number of other peers who've blacklisted a node
   //   during the node selection process.
-  virtual void blacklistNode(std::string nodeID) = 0;
+  virtual void blacklistNode(std::string peerID, std::string nodeID) = 0;
 
   // Inform the metadata layer that you're backing up 'size' bytes of data identified by
   //   'fileID' to 'nodeID'.
