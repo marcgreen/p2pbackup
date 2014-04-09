@@ -56,8 +56,10 @@ void TrackerInterface::get(std::string nodeID, metadata::MetadataRecord &metadat
 
   if (reply["error"] == 0) throw std::runtime_error("Error getting node metadata");
 
-  metadataRecord.setNodeIP(reply["nodeID"].asString());
-  // TODO finish setting metadataRecord
+  if (!metadataRecord.unserialize(reply.asString())) {
+    throw std::runtime_error("Error unserializing JSON from get reply");
+  }
+
 }
 
 
