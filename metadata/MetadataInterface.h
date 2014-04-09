@@ -16,10 +16,10 @@ class MetadataInterface {
   // Join the network as a node with the given nodeID
   virtual void joinNetwork(std::string nodeID) = 0;
 
-  // Return the nodeID in the network that most closely matches the given fileID.
-  // This is used to find the node to backup data to. fileID could be a hash of the data
-  //   being backed up + a salt (to ensure random distribution of replicas)
-  virtual std::string findClosestNode(std::string fileID) = 0;
+  // Return the nodeID in the network that most closely matches the given (quasi-file) id.
+  // This is used to find the node to backup data to. id could be a hash of (a hash of the data
+  //   being backed up + a salt) to ensure random distribution of replicas
+  virtual std::string findClosestNode(std::string id) = 0;
   
   // Fill 'metadataRecord' with the metadata of the node with the given nodeID
   virtual void get(std::string nodeID, MetadataRecord &metadataRecord) = 0;

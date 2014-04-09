@@ -29,12 +29,12 @@ void TrackerInterface::joinNetwork(std::string nodeID) {
   if (reply["error"] == 0) throw std::runtime_error("Error joining network");
 }
 
-std::string TrackerInterface::findClosestNode(std::string fileID) {
-  std::cout << "Finding closest nodeId to '" << fileID << "'" << std::endl;
+std::string TrackerInterface::findClosestNode(std::string id) {
+  std::cout << "Finding closest nodeId to '" << id << "'" << std::endl;
 
   Json::Value msg, reply;
   msg["command"] = tracker::FIND_CLOSEST_NODE_CMD;
-  msg["fileID"] = fileID;
+  msg["id"] = id;
 
   std::string error = executeCommand(msg, reply);
   if (!error.empty()) throw std::runtime_error(error);

@@ -10,11 +10,12 @@
 namespace tracker { namespace client {
 
 // Implement the metadata layer as a centralized tracker for simplicity
+// All public functions will throw runtime_error if unsuccessful
 class TrackerInterface: public metadata::MetadataInterface {
  public:
   TrackerInterface(std::string ip, std::string port);
   void joinNetwork(std::string nodeID);
-  std::string findClosestNode(std::string fileID);
+  std::string findClosestNode(std::string id);
   void get(std::string nodeID, metadata::MetadataRecord &metadataRecord);
   void blacklistNode(std::string peerID, std::string nodeID);
   void backupFile(std::string nodeID, std::string fileID, uint64_t size);
