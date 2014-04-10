@@ -1,34 +1,69 @@
-\documentclass[a4paper]{article}
+\documentclass[12pt]{report}
 
-\usepackage[english]{babel}
-\usepackage[utf8]{inputenc}
+%%\usepackage{setspace}
+\usepackage{amsfonts}
 \usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{enumerate}
+\usepackage{mathrsfs}
+\usepackage{alltt}
+\usepackage{color}
+\usepackage{fancyvrb} 
 \usepackage{graphicx}
-%\usepackage[dvipdfm]{graphicx}
-%\usepackage{bmpsize}
-%\usepackage[colorinlistoftodos]{todonotes}
-\usepackage[margin=1.15in]{geometry}
+\usepackage{epstopdf}
+\usepackage{url}
+\usepackage[autostyle]{csquotes} 
+\usepackage[toc,page]{appendix}
+
+%\usepackage[top=1in, bottom=1.5in, left=1.5in,right=1.5in]{geometry} % setting the page alignment with this package
 
 \DeclareGraphicsExtensions{.png}
 
-\author{
-  Bouffard, Daniel\\
-  \texttt{bouffard.daniel@wpi.edu}
-  \and
-  Green, Marc\\
-  \texttt{marcgreen@wpi.edu}
-}
-
-\title{An Analysis of the Feasibility and Performance of BitTorrent as a Data Transfer Protocol in Peer to Peer Backup Systems}
-
-
-\date{\today}
-
 \begin{document}
-\maketitle
+\newpage
+\begin{center}
+\thispagestyle{empty}
+\Large{\textbf{A Major Qualifying Project Report\\ \large{ON}}}\\[0.7cm]
+\LARGE{\textsc {\textbf{An Analysis of the Feasibility and Performance of BitTorrent as a Data Transfer Protocol in Peer to Peer Backup Systems}}}\\[0.5cm]
+\vspace{0.2cm}
+\Large{\textbf{\\Submitted to the Faculty of }}
+\LARGE{\textbf{\\WORCESTER POLYTECHNIC INSTITUTE\\}}
+\vspace{0.5cm}
+\Large{\textbf{\\In Partial Fulfillment of the Requirement for the}}
+\Large{\textbf{\\Degree of Bachelor of Science}}
+\vspace{0.5cm}
+\Large{\textbf{\\by}}\\[0.5cm]
+\large{\textbf{Dan Bouffard}}\\
+\large{\textbf{Marc Green}}\\
+\vspace{0.5cm}
+\large{\textbf{UNDER THE GUIDANCE OF}}\\
+\large{\textbf{Professor G\'abor N. S\'ark\"ozy}}\\
+\vspace{1cm}
+\large{\textbf{\\May 1, 2014}}\\
+\newpage
+\end{center}
 
-\section{Background Information}
-\subsection{Centralized Backup Systems}
+
+\begin{abstract}
+Abstract
+\end{abstract}
+
+\renewcommand{\abstractname}{Acknowledgements}
+\begin{abstract}
+Acknowledgements
+\end{abstract}
+
+\tableofcontents
+\listoffigures
+
+\chapter{Introduction}
+
+Introduction
+
+
+\chapter{Background Information}
+\section{Centralized Backup Systems}
 % TODO: get reliable sources for number of users of OneDrive and Google Drive
 Several popular backup systems currently in use have a centralized system design. In these systems, there are many clients that all back up their data to a central location controlled by a single entity. Common elements of these systems include a fixed amount of data storage per person, with the option to obtain more for a fee. Two of the more popular systems are Dropbox, which has over 200 million users \cite{dropboxusers}, OneDrive, with over 250 million users, and Google Drive, with over 120 million users.
 
@@ -49,7 +84,7 @@ A peer to peer (P2P) network is a type of distributed network model in which par
 In the client-server model, servers are expected to be always available and accessible. Peer to peer networks do not have this luxury. Instead, they experience the constant fluctuation of peers joining and leaving the network. This is called \textit{churn}. Churn complicates data storage and retrieval because there is no guarantee that a peer that has some desired data will always be available. The strategies for dealing with churn, and many other P2P-specific complications, depend on the type of overlay network a P2P application uses. We discuss churn in more detail in the \textit{Peer to Peer Backup Systems} section.
 % TODO link to Peer to Peer backup systems section instead of just mentioning it
 
-\subsubsection{Overlay Networks}
+\subsection{Overlay Networks}
 
 % TODO: source this?
 At their foundation, peer to peer networks are implemented through overlay networks on top of existing infrastructure, such as the Internet. The responsibilities of a P2P overlay network includes providing peers the ability to join and leave the network and find other peers. 
@@ -94,15 +129,15 @@ Unstructured overlay networks excel at finding content that is popular. This is 
 \textit{Hierarchical Overlay Networks}
 \hfill \\
 
-\subsection{Peer to Peer Backup Systems}
+\section{Peer to Peer Backup Systems}
 Peer to Peer Backup Systems are networks that allow users to backup data without the use of a central entity. Instead, each user offers some of his or her storage space in order to use the space of others as backup locations. There are several common components of existing P2P backup systems which are described in the following sections.
 
-\subsubsection{File Chunking}
+\subsection{File Chunking}
 The format in which files are stored can have an effect on the efficiency of the system. pStore and PeerStore split files up into chunks, rather than distributing files to peers in their entirety. They also use special files, called File Block Lists in pStore and Descriptors in PeerStore, that list which blocks belong to the file and where to find them in the network. This has the benefit of having data units be a fixed size that will be easy to store for any node. For example, if a peer needs to store a 10GB file, it does not need to find a peer capable of storing 10GB (which might be rare); rather, it needs to find $file\_size/chunk\_size*number\_of\_replicas$ peers. Although lowering the chunk size will increase the chances of finding a peer to store on, it is important to choose a reasonable chunk size, as using more nodes for storage will add more overhead in finding those nodes.
 
 File chunking also gives the benefit of easy versioning and updating of files. When a newer version of a file is backed up, the only chunks that need to be reinserted into the network are the ones that differ from the previous version. Old versions of file chunks stay in the network, so that any full version of the file can be reconstructed by requesting the appropriate file chunks. Backup systems can also reduce the amount of storage space used by sharing identical file chunks between peers.
 
-\subsubsection{Fairness}
+\subsection{Fairness}
 Another aspect of P2P backup systems is fairness between peers. Peers need to be storing an amount of data proportional to the amount that they are backing up to other peers. This can be challenging, because untrustworthy peers can attempt to game the system to obtain free backup storage. For example, consider a simple system where each peer must offer store the same amount of data that they back up on other peers. A peer could claim that all of the storage space that it should be offering is being used by other peers, while in reality the peer has not taken in any peer's data. It is clear that a mechanism needs to be built into the system that ensures that peers store the data of each other. PeerStore handles this via a combined trading and challenge system. When a peer wants to create a backup of its data, it finds a peer to trade data with. In its request to backup data, the peer will also advertise that it is willing to store a certain amount of data. The peer that receives the request will then need to accept or reject it, and if the request is accepted the receiver will also need to request a certain amount of storage. If the original requestor accepts the offer, then the two become trading partners and will send each other data \cite{PeerStore}.
 
 \begin{figure}
@@ -113,12 +148,12 @@ Another aspect of P2P backup systems is fairness between peers. Peers need to be
 
 While this ensures that peers will agree to take data in proportion to the amount that they want to backup, it still does not guarantee that peers hold onto that data. For example, a peer could form a trading agreement with another peer, exchange data, and promptly discard the received data. To combat this, peers can periodically challenge peers to prove that they are actually storing data. This is the approach that PeerStore takes. A challenge in PeerStore consists of a randomly-generated number followed by a specified range of bytes in the file being backed up. The node holding the peer's data must take the bytes in the specified range, concatenate the random number with that data, take the hash of it, and return the result to the peer. If the correct answer is returned, then the node has passed the challenge. If the node does not respond or gives the wrong answer, the challenge has been failed. By choosing a random subset of bytes and creating a random number to include in the hash, the node cannot calculate the hash ahead of time and only store that; the whole file must be stored in order to be able to successfully complete all possible challenges.
 
-\subsubsection{Churn and Data Migration}
+\subsection{Churn and Data Migration}
 With each storage node being regular users, it is often the case that nodes can be offline. \textit{Node churn} refers to fact that peers will continuously enter and leave the P2P network \cite{StorageSearchP2PNetworks}. The designer of a P2P backup system must take this into consideration if the system is to provide reliable access to backed up data. This has been accomplished via data migration \cite{pStore,PeerStore}, where the availability of files is periodically checked and replicas are made when the nodes being used for backup are not reliably available. Other data migration algorithms have been designed specifically to work in high churn networks \cite{StorageSearchP2PNetworks}. In this case, data replicas are periodically passed to different groups of nodes, which means that newer nodes have a chance to store data. This is beneficial because data gets evenly distributed throughout the overlay network, so any given node is not more important to the network than any others with regard to the amount of data it is storing.
 
 The number of replicas to maintain will have an impact on the performance of the system. If the replica count is too low, the probability of recovery the entire file is lowered. If the replica count is too high, then more storage space and bandwidth will be wasted. If the system requires a peer to offer a proportional amount of storage space to the amount that it is using on other nodes, the peer will also have to offer a lot more space than what it is using locally for its own data.
 
-\subsubsection{Cryptography}
+\subsection{Cryptography}
 % TODO: the figure for convergent encryption might be nice here
 Since data is being stored on several untrusted peers, each user's data need to be encrypted before backup. A technique used in pStore and PeerStore is convergent encryption \cite{pStore, PeerStore}. To use this encryption mechanism, the hash of the data to encrypt is calculated, and then the hash is used as the symmetric key to encrypt the data. The main benefit of using convergent encryption is that the same data will be encrypted the same way each time, so identical blocks in the network can be shared between peers in their encrypted form.
 
@@ -129,22 +164,22 @@ Since data is being stored on several untrusted peers, each user's data need to 
 \end{figure}
 
 While this is a convenient optimization, it allows for users who have access to the unencrypted version of a file to confirm whether or not that file is being stored, since no more information is needed to encrypt or decrypt a given file.
-%\subsubsection{Case Study: pStore}
-%\subsubsection{Case Study: PeerStore}
-\subsection{Distributed Hash Tables}
+%\subsection{Case Study: pStore}
+%\subsection{Case Study: PeerStore}
+\section{Distributed Hash Tables}
 
 A Distributed Hash Table (DHT) is a data structure used to store (key, value) pairs in a decentralized manner \textit{DHTs share the $put$ and $get$ interface offered by hash tables, ...} DHTs are composed of multiple nodes, each responsible for a portion of the data being stored. 
 
 % finds peers that are a part of the overlay network
 
 
-\subsection{The BitTorrent Protocol}
+\section{The BitTorrent Protocol}
 
 BitTorrent is a peer to peer protocol designed for fast file sharing. A peer who wishes to share a file creates a .torrent file containing metadata about the file to be shared. This peer is known as the file's initial \textit{seeder}, and through the use of a BitTorrent client, starts \textit{seeding} the file. Peers who wish to download the file must acquire its .torrent file through an out-of-band channel, often a torrent indexer. Peers use the .torrent file to locate the initial seeder through either a centralized tracker or a DHT. These peers then connect to the initial seeder and start downloading the file. These peers are known as \textit{leechers} until they possess a full copy of the file, which is when they, themselves, become seeders.
 
 BitTorrent can transfer files quickly due to multiple seeders each uploading different \textit{chunks} of the file to each leecher. This parallelized download is enhanced by the fact that leechers, too, upload the chunks of the file they possess to other leechers who don't have those chunks. \footnote {This is a simplified version of the BitTorrent protocol. For more information, see \cite{bittorrentProtocol}}
 
-\subsection{BitTorrent Sync}
+\section{BitTorrent Sync}
 BitTorrent Sync is a new application developed by BitTorrent, Inc. It is a P2P synchronization tool that allows users to share files between trusted devices. This is accomplished by generating a set of 20-byte "secrets" for each folder to share and distributing the secret to each trusted device. All data is encrypted using AES-128 in counter mode \cite{btsynctech}, the key of which is derived from the secret. There are three different secrets, each of which provide different permissions for the peer that is given the secret: the read/write secret, the read only secret, and the encryption secret, which allows the node to store an encrypted version of the data, so that it cannot read the contents. A variation of the read/write and read only secrets also exists called the one-time secret, which allows a peer to send out a valid key that is only usable by one node \cite{btsyncuserguide}.
 
 Users of BitTorrent Sync have several options for having their synced devices locate each other. The following list is taken from the BitTorrent Sync technology page \cite{btsynctech} and describes each method of peer discovery:
@@ -164,12 +199,12 @@ To allow other developers to use BitTorrent Sync as a part of their applications
 BitTorrent Sync leverages the BitTorrent protocol to provide quick downloads between synced peers. We also leverage this through the use of BitTorrent Sync to provide fast recovery of backed up files. The implementation of our system is described in the next section.
 
 
-\section{Implementation}
-\subsection{Languages and Tools}
-\subsection{System Design}
-\subsubsection{Overview}
-\subsubsection{}
-\subsubsection{DHT}
+\chapter{Implementation}
+\section{Languages and Tools}
+\section{System Design}
+\subsection{Overview}
+\subsection{}
+\subsection{DHT}
 
 \begin{thebibliography}{1}
 
