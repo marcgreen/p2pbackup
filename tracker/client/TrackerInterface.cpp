@@ -131,7 +131,7 @@ std::string TrackerInterface::executeCommand(const Json::Value &msg, Json::Value
 
 } } // Namespace tracker::client
 
-int main(int argc, char *argv[]) {
+/*int main(int argc, char *argv[]) {
   using namespace std;
 
   string example_key = "39dk3KNJDF9832N";
@@ -146,4 +146,4 @@ int main(int argc, char *argv[]) {
   tr.blacklistNode("jjjjj", "bbbbb");
   tr.backupFile("iiiii", "fffff", 32);
   tr.updateFileSize("iiiii", "fffff", 33);
-}
+	}*/

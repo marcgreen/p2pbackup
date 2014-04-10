@@ -198,7 +198,7 @@ std::string BTSyncInterface::jsonValueToString_(Json::Value jsonValue) {
 
 } // namespace btsync
 
-int main(int argc, char *argv[]) {
+/*int main(int argc, char *argv[]) {
   using namespace std;
 
   btsync::BTSyncInterface bts = 
@@ -263,5 +263,5 @@ int main(int argc, char *argv[]) {
   cout << bts.getSpeed().toStyledString() << endl;
   cout << bts.shutdown().toStyledString() << endl;
   
-}
+	}*/
  

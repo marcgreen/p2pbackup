@@ -1,5 +1,5 @@
 
-CFLAGS = -c -std=c++11
+CFLAGS = -c -std=c++11 -I..
 LDFLAGS = -pthread -lboost_system
 CC = g++
 LD = $(CC)

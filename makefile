@@ -1,6 +1,6 @@
 
 CFLAGS = -c -std=c++11 -I.
-CLIENT_LDFLAGS = -pthread -lboost_system -Lcore -lbtcore -Ltracker -ltrackerclient
+CLIENT_LDFLAGS = -pthread -lboost_system -Lcore -lbtcore -Ltracker -ltrackerclient -L/usr/local/lib -ljsoncpp metadata/MetadataRecord.o peer/peer.o btsync/BTSyncInterface.o -lcrypto -L/usr/lib/x86_64-linux-gnu -lcurlpp -lcurl -Wl,-Bsymbolic-functions -Wl,-z,relro
 TRACKER_LDFLAGS = -pthread -lboost_system -Ltracker -ltrackerserver -Lcore -lbtcore -L/usr/local/lib -ljsoncpp metadata/MetadataRecord.o
 CC = g++
 LD = $(CC)
@@ -10,7 +10,7 @@ CLEANLIST = *.o *.a *~ $(CLIENT_TARGET) $(TRACKER_TARGET)
 
 all: $(CLIENT_TARGET) $(TRACKER_TARGET)
 
-$(CLIENT_TARGET): $(CLIENT_TARGET).o corelib trackerclientlib
+$(CLIENT_TARGET): $(CLIENT_TARGET).o corelib trackerclientlib peerlib metadatalib btsynclib
 	$(LD) $(CLIENT_TARGET).o $(CLIENT_LDFLAGS) -o $(CLIENT_TARGET)
 
 $(CLIENT_TARGET).o: $(CLIENT_TARGET).cpp
@@ -33,6 +33,12 @@ trackerserverlib:
 
 metadatalib:
 	$(MAKE) -C metadata
+
+peerlib:
+	$(MAKE) -C peer
+
+btsynclib:
+	$(MAKE) -C btsync
 
 clean:
 	 rm -f `find . -name '$(shell echo '$(CLEANLIST)' | sed "s/ /' -or -name '/g")'`

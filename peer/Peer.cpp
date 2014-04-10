@@ -142,11 +142,3 @@ namespace peer {
   }
 
 } // namespace peer
-
-main() {
-  // TODO find better spot for this?
-  srand(0); // srand(time(NULL));
-
-  std::cout << peer::Peer::sha256String("test") << std::endl;
-  std::cout << peer::Peer::sha256File("testSHA256") << std::endl;
-}
