@@ -34,6 +34,9 @@ class Peer {
   // - Update tracker
   bool backupFile(std::string path);
 
+  // Store the file with the given encryption secret for a node
+  bool storeFile(std::string secret);
+
   // Stop backing up the file at path
   // - Remove file from BTSync
   // - Update tracker
@@ -42,6 +45,10 @@ class Peer {
   // Update the metadata layer with a file's new size
   bool updateFileSize(std::string path, uint64_t size);
   
+  // Give potential replicant node the secret to store.
+  // Return whether or not they ACK
+  bool askNodeToBackup(std::string secret);
+
   // Return the SHA256 digest for input
   static std::string sha256String(std::string input);
 
@@ -49,6 +56,13 @@ class Peer {
   // Reads 8kb of file at a time
   // Throws runtime error if things go wrong
   static std::string sha256File(std::string path);
+
+  // Return a salt to be concat'd to contents of pre-hash data
+  static std::string salt();
+
+  const int TOTAL_REPLICA_COUNT = 5;
+  const std::string BACKUP_DIR = "backup";
+  const std::string STORE_DIR = "store";
 
  private:
   Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
@@ -61,9 +75,12 @@ class Peer {
   std::string peerID_;
 
   // Keep track of salts used to find replication nodes.
-  // pathToHardLink => (originalPath, fileID, salt, nodeID)
+  // pathToHardLink => (originalPath, fileID, salt, nodeID, size)
   // TODO how to deal with moved files? may need new command for client, or maybe we can auto detect
   // std::map<std::string, >;
+  // TODO create dumpToDisk for this 
+  // use JSON for data structure
+  // make public getter with const reference so metadata controller can access
 
   // The folder we will place hardlinks of backed up files
   std::string backupDir_;
