@@ -14,7 +14,7 @@ NetworkController::NetworkController(std::shared_ptr<Dispatcher> dispatcher,
 				     NetworkHandlerFunction socketHandler) :
   Controller(dispatcher),
   acceptor_(ioService_),
-  endpoint_(tcp::v4(), CONTROLLER_PORT),
+  endpoint_(tcp::v4(), CLIENT_PORT),
   stopped_(false),
   socketHandler_(socketHandler) {
   acceptor_.open(endpoint_.protocol());

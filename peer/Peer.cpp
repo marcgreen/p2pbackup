@@ -1,4 +1,5 @@
 
+#include "core/NetworkController.h"
 #include "peer/Peer.h"
 
 #include <unistd.h>
@@ -9,6 +10,7 @@
 #include <cstdlib>
 #include <memory>
 #include <openssl/sha.h> // TODO update f/ heartbleed
+#include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
 #include <jsoncpp/json.h>
 
@@ -126,8 +128,29 @@ namespace peer {
 
   }
   
-  bool Peer::askNodeToBackup(std::string secret) {
-    
+  bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
+		using boost::asio::ip::tcp;
+		
+		// All secrets must be 20 characters long
+		if (secret.length() != 20)
+			throw std::runtime_error("Invalid secret; secrets must be "
+															 "20 characters long");
+		
+		bool result = false;
+		boost::asio::io_service ioService;
+		tcp::resolver resolver(ioService);
+		tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT);
+		tcp::resolver::iterator iterator = resolver.resolve(query);
+		
+		tcp::socket socket(ioService);
+		
+		try {
+			boost::asio::write(socket, boost::asio::buffer(secret.data(), 20));
+		} catch(boost::system::system_error& error) {
+			std::cerr << "In Peer::askNodeToBackup: " << error.what() << std::endl;
+		}
+		
+		return result;
   }
 
   std::string Peer::sha256String(std::string input) {

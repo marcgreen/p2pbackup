@@ -47,7 +47,7 @@ class Peer {
   
   // Give potential replicant node the secret to store.
   // Return whether or not they ACK
-  bool askNodeToBackup(std::string secret);
+  bool askNodeToBackup(std::string nodeIP, std::string secret);
 
   // Return the SHA256 digest for input
   static std::string sha256String(std::string input);

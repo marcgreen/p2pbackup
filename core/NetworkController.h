@@ -7,13 +7,9 @@
 
 #include "Controller.h"
 
-namespace {
-
-int CONTROLLER_PORT = 57000;
-
-} // namespace
-
 namespace core {
+
+const int CLIENT_PORT = 57000;
 
 using boost::asio::ip::tcp;
 
