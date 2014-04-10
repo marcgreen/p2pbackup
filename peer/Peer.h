@@ -32,10 +32,21 @@ class Peer {
   // - Update tracker
   bool backupFile(std::string path);
 
+  // Stop backing up the file at path
+  // - Remove file from BTSync
+  // - Update tracker
+  bool removeBackup(std::string path);
+
   // Update the metadata layer with a file's new size
   bool updateFileSize(std::string path, uint64_t size);
   
-  static std::string sha256(std::string input);
+  // Return the SHA256 digest for input
+  static std::string sha256String(std::string input);
+
+  // Return the SHA256 digest for the file at path
+  // Reads 8kb of file at a time
+  // Throws runtime error if things go wrong
+  static std::string sha256File(std::string path);
 
  private:
   Peer(std::shared_ptr<metadata::MetadataInterface> metadataI, std::shared_ptr<btsync::BTSyncInterface> btSyncI);

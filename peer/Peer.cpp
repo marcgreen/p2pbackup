@@ -1,7 +1,9 @@
 
 #include "peer/Peer.h"
 
+#include <stdio.h>
 #include <exception>
+#include <stdexcept>
 #include <sstream>
 #include <cstdlib>
 #include <memory>
@@ -29,7 +31,7 @@ namespace peer {
 
   bool Peer::joinNetwork() {
     // Calculate our nodeID
-    std::string nodeID = Peer::sha256(std::to_string(rand()));
+    std::string nodeID = Peer::sha256String(std::to_string(rand()));
     peerID_ = nodeID;
 
     // Send JOIN command to metadata layer
@@ -47,6 +49,12 @@ namespace peer {
   bool Peer::backupFile(std::string path) {
     // Calculate sha256 of file contents
     std::string fileID;
+    try {
+      fileID = sha256File(path);
+    } catch (std::exception& e) {
+      std::cout << e.what() << std::endl;
+      return false;
+    }
 
     // Find node(s) to back up to
     // left off here
@@ -65,14 +73,57 @@ namespace peer {
     // Add file to metadata layer
   }
 
+  bool Peer::removeBackup(std::string path) {
+
+  }
+
   bool Peer::updateFileSize(std::string path, uint64_t) {
 
   }
   
-  std::string Peer::sha256(std::string input) {
+  std::string Peer::sha256String(std::string input) {
     unsigned char digest[SHA256_DIGEST_LENGTH];
     SHA256((unsigned char *)input.c_str(), input.size(), digest);
     
+    std::stringstream output;
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+      output << std::hex << (int)digest[i];
+    }
+
+    return output.str();
+  }
+
+  std::string Peer::sha256File(std::string path) {
+    FILE *f;
+    unsigned char buf[8192]; // read 8kb at a time
+    unsigned char digest[SHA256_DIGEST_LENGTH];
+    SHA256_CTX sc;
+    int err;
+
+    f = fopen(path.c_str(), "rb");
+    if (f == NULL)
+      throw std::runtime_error("Couldn't open file at: " + path);
+
+    if (!SHA256_Init(&sc))
+      throw std::runtime_error("Error SHA256 Init");
+
+    for (;;) {
+      size_t len = fread(buf, 1, sizeof buf, f);
+      if (len == 0)
+	break;
+
+      if(!SHA256_Update(&sc, buf, len))
+	throw std::runtime_error("Error SHA256 Update");
+    }
+
+    err = ferror(f);
+    fclose(f);
+    if (err)
+      throw std::runtime_error("Couldn't close file. Error code: " + err);
+    
+    if (!SHA256_Final(digest, &sc))
+      throw std::runtime_error("Error SHA256 Final");
+
     std::stringstream output;
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
       output << std::hex << (int)digest[i];
@@ -87,5 +138,6 @@ main() {
   // TODO find better spot for this?
   srand(0); // srand(time(NULL));
 
-  std::cout << peer::Peer::sha256("test");
+  std::cout << peer::Peer::sha256String("test") << std::endl;
+  std::cout << peer::Peer::sha256File("testSHA256") << std::endl;
 }
