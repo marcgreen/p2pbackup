@@ -1,0 +1,12 @@
+
+{
+
+	"TrackerIP"         : "192.168.1.137",
+	"TrackerPort"       : "57000",
+	"BTSyncUsername"    : "mqp",
+	"BTSyncPassword"    : "btsync",
+	"BTSyncIP"          : "127.0.0.1",
+	"BTSyncPort"        : "8888",
+	"BackupDirectory"   : "~/.btbackup"
+
+}

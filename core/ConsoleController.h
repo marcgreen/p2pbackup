@@ -2,6 +2,7 @@
 #ifndef CORE_CONSOLE_CONTROLLER_H_
 #define CORE_CONSOLE_CONTROLLER_H_
 
+#include <jsoncpp/json.h>
 #include <memory>
 #include <vector>
 #include <thread>
@@ -25,6 +26,7 @@ class ConsoleController : public Controller {
   void createControllers();
   void startAllAsync();
   void stopAllAsync();
+	bool getTrackerInfo(Json::Value& configInfo);
 }; // class ConsoleController
 
 } // namespace core
