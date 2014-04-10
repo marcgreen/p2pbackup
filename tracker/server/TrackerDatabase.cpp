@@ -4,12 +4,12 @@
 
 #include <cstdint>
 #include <ctime>
+#include <stdexcept>
 #include <utility>
 
 namespace tracker { namespace server {
 
-const metadata::MetadataRecord&
-TrackerDatabase::findClosest(const std::string& nodeID) {
+std::string TrackerDatabase::findClosest(const std::string& id) {
   // Start in the middle for binary search
   int min = 0, max = sortedIDs_.size() - 1;
   int currentPos;
@@ -17,16 +17,16 @@ TrackerDatabase::findClosest(const std::string& nodeID) {
   
   while (max >= min && !found) {
     currentPos = (min + max) / 2;
-    if (nodeID.compare(sortedIDs_[currentPos]) < 0)
+    if (id.compare(sortedIDs_[currentPos]) < 0)
       max = currentPos - 1;
-    else if (nodeID.compare(sortedIDs_[currentPos]) > 0)
+    else if (id.compare(sortedIDs_[currentPos]) > 0)
       min = currentPos + 1;
     else
       found = true;
   }
   
   if (!found) {
-    if (nodeID.compare(sortedIDs_[currentPos]) < 0) {
+    if (id.compare(sortedIDs_[currentPos]) < 0) {
       if (currentPos == 0)
 	currentPos = sortedIDs_.size() - 1;
       else
@@ -36,11 +36,13 @@ TrackerDatabase::findClosest(const std::string& nodeID) {
     }
   }
   
-  return records_[sortedIDs_[currentPos]]; // Placeholder for right now
+  return sortedIDs_[currentPos];
 }
 
-const metadata::MetadataRecord&
+metadata::MetadataRecord&
 TrackerDatabase::getRecord(const std::string& nodeID) {
+  if (records_.count(nodeID) == 0)
+    throw std::out_of_range("No record with ID " + nodeID);
   return records_[nodeID];
 }
 
@@ -55,11 +57,11 @@ bool TrackerDatabase::join(const std::string& nodeID,
   return result;
 }
 
-bool TrackerDatabase::blackListNode(const std::string& nodeID,
-				    uint32_t blacklisterIP) {
+bool TrackerDatabase::blacklistNode(const std::string& nodeID,
+				    const std::string& blacklisterID) {
   bool result = false;
   if (records_.count(nodeID) == 1)
-    ;//result = records_[nodeID].addBlacklister(blacklisterIP, time(0));
+    result = records_[nodeID].addBlacklister(blacklisterID, time(0));
   return result;
 }
 
@@ -83,6 +85,10 @@ bool TrackerDatabase::updateFileSize(const std::string& nodeID,
     result = records_[peerID].updateBackupFileSize(fileID, size) &&
       records_[nodeID].updateStoreFileSize(fileID, size);
   return result;
+}
+
+TrackerDatabase::TrackerDatabase() {
+
 }
 
 } } // namespace tracker::server
