@@ -14,8 +14,10 @@ namespace peer {
 // Implemented as a Singleton.
 class Peer {
  public:
+  // We need the two interfaces and the directory where we'll create hardlinks to the backup files
   Peer& constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
-			  std::shared_ptr<btsync::BTSyncInterface> btSyncI);
+			  std::shared_ptr<btsync::BTSyncInterface> btSyncI,
+			  std::string backupDir);
   Peer& getInstance();
   
   // Contact metadata layer to join the P2P network
@@ -49,12 +51,22 @@ class Peer {
   static std::string sha256File(std::string path);
 
  private:
-  Peer(std::shared_ptr<metadata::MetadataInterface> metadataI, std::shared_ptr<btsync::BTSyncInterface> btSyncI);
+  Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
+       std::shared_ptr<btsync::BTSyncInterface> btSyncI,
+       std::string backupDir);
 
   static std::shared_ptr<Peer> instance_;
 
   // Keep track of our own ID
   std::string peerID_;
+
+  // Keep track of salts used to find replication nodes.
+  // pathToHardLink => (originalPath, fileID, salt, nodeID)
+  // TODO how to deal with moved files? may need new command for client, or maybe we can auto detect
+  // std::map<std::string, >;
+
+  // The folder we will place hardlinks of backed up files
+  std::string backupDir_;
 
   std::shared_ptr<btsync::BTSyncInterface> btSyncInterface_;
   std::shared_ptr<metadata::MetadataInterface> metadataInterface_;

@@ -1,6 +1,7 @@
 
 #include "peer/Peer.h"
 
+#include <unistd.h>
 #include <stdio.h>
 #include <exception>
 #include <stdexcept>
@@ -14,9 +15,10 @@ namespace peer {
   std::shared_ptr<Peer> Peer::instance_ = std::shared_ptr<Peer>(0);
   
   Peer& Peer::constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
-				std::shared_ptr<btsync::BTSyncInterface> btSyncI) {
+				std::shared_ptr<btsync::BTSyncInterface> btSyncI,
+				std::string backupDir) {
     if (!instance_)
-      instance_ = std::shared_ptr<Peer>(new Peer(metadataI, btSyncI));
+      instance_ = std::shared_ptr<Peer>(new Peer(metadataI, btSyncI, backupDir));
     return *instance_;
   }
 
@@ -25,8 +27,10 @@ namespace peer {
   }
 
   // private
-  Peer::Peer(std::shared_ptr<metadata::MetadataInterface> metadataI, std::shared_ptr<btsync::BTSyncInterface> btSyncI) :
-    metadataInterface_(metadataI), btSyncInterface_(btSyncI) { 
+  Peer::Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
+	     std::shared_ptr<btsync::BTSyncInterface> btSyncI,
+	     std::string backupDir) :
+    metadataInterface_(metadataI), btSyncInterface_(btSyncI), backupDir_(backupDir) { 
 }
 
   bool Peer::joinNetwork() {
@@ -56,10 +60,15 @@ namespace peer {
       return false;
     }
 
+    // Make directory in our backup directory to house hard link
+
+    // Create hardlink to file in our backup directory
+    // int err = link(path, backupDir + "/" + fileID
+
     // Find node(s) to back up to
     // left off here
     // loop N times with N random salts, N = # replicas constant
-    // keep track of salts (and nodeIDs and fileID) in private data structure
+    // keep track of salts (and nodeIDs and path and fileID) in private data structure
     // create method to serialize ^ to a file
     std::string nodeID = metadataInterface_->findClosestNode(fileID);
 
