@@ -15,10 +15,10 @@ namespace peer {
 class Peer {
  public:
   // We need the two interfaces and the directory where we'll create hardlinks to the backup files
-  Peer& constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
-			  std::shared_ptr<btsync::BTSyncInterface> btSyncI,
-			  std::string backupDir);
-  Peer& getInstance();
+  static Peer& constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
+																 std::shared_ptr<btsync::BTSyncInterface> btSyncI,
+																 std::string backupDir);
+  static Peer& getInstance();
   
   // Contact metadata layer to join the P2P network
   bool joinNetwork();

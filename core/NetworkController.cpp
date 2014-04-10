@@ -24,7 +24,6 @@ NetworkController::NetworkController(std::shared_ptr<Dispatcher> dispatcher,
 }
 
 NetworkController::~NetworkController() {
-  std::cout << "NetworkController shutting down" << std::endl;
   stop();
 }
 
