@@ -16,8 +16,8 @@ class Peer {
  public:
   // We need the two interfaces and the directory where we'll create hardlinks to the backup files
   static Peer& constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
-																 std::shared_ptr<btsync::BTSyncInterface> btSyncI,
-																 std::string backupDir);
+				 std::shared_ptr<btsync::BTSyncInterface> btSyncI,
+				 std::string backupDir);
   static Peer& getInstance();
   
   // Contact metadata layer to join the P2P network
@@ -45,9 +45,9 @@ class Peer {
   // Update the metadata layer with a file's new size
   bool updateFileSize(std::string path, uint64_t size);
   
-  // Give potential replicant node the secret to store.
+  // Give potential replicant node at nodeIP the secret to store.
   // Return whether or not they ACK
-  bool askNodeToBackup(std::string secret);
+  bool askNodeToBackup(std::string nodeIP, std::string secret);
 
   // Return the SHA256 digest for input
   static std::string sha256String(std::string input);
@@ -60,6 +60,7 @@ class Peer {
   // Return a salt to be concat'd to contents of pre-hash data
   static std::string salt();
 
+  const float MAX_BLACKLIST_STORE_RATIO = .25;
   const int TOTAL_REPLICA_COUNT = 5;
   const std::string BACKUP_DIR = "backup";
   const std::string STORE_DIR = "store";

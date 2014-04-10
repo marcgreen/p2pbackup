@@ -102,14 +102,26 @@ namespace peer {
       if (filesize + nodeMetadata.getTotalStoreSize() >=
 	  TOTAL_REPLICA_COUNT * nodeMetadata.getTotalBackupSize())
 	continue;
+
+      // Ensure the node doesn't have too many blacklisters
+      float blacklistToStoreRatio = nodeMetadata.getNumberBlacklisters() / nodeMetadata.getNumberStoredFiles(); 
+      if (blacklistToStoreRatio > MAX_BLACKLIST_STORE_RATIO)
+	continue;
 	
       // Ask (tell) node to backup. Wait for ACK, or find other replicant node if they never ACK
-      if (!askNodeToBackup(encryptionSecret))
+      if (!askNodeToBackup(nodeMetadata.getNodeIP(), encryptionSecret))
 	continue;
           
       // Add file to metadata layer
+      try {
+	trackerInterface_->backupFile(nodeID, fileID, filesize);
+      } catch (std::exception& e) {
+	std::cout << e.what() << std::endl;
+      }
 
       // Store relevant data in JSON data structure and write to file 
+
+      numberReplicas++;
     }
 
   }
