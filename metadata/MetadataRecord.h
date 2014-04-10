@@ -52,6 +52,12 @@ class MetadataRecord {
   // Return the sum of all filesizes this peer is backing up
   uint64_t getTotalBackupSize();
 
+  // Return the number of files this node is storing.
+  // Used to calculate blacklister:store ratio, which is used to determine if this node is "good"
+  int getNumberStoredFiles() {
+    return blacklisters_.size();
+  }
+
   // Take note of a file being backed up to nodeID with the given size
   bool addBackupFile(std::string fileID, std::string nodeID, uint64_t size);
 
