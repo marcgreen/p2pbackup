@@ -49,6 +49,9 @@ class Peer {
   // Return whether or not they ACK
   bool askNodeToBackup(std::string nodeIP, std::string secret);
 
+  // Create the given directory if it's not already created
+  void createDirIfNeeded(std::string path);
+
   // Return the SHA256 digest for input
   static std::string sha256String(std::string input);
 
@@ -66,6 +69,7 @@ class Peer {
   const std::string STORE_DIR = "store";
 
  private:
+  // Create necessary directories for backing up and storing data
   Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
        std::shared_ptr<btsync::BTSyncInterface> btSyncI,
        std::string backupDir);
