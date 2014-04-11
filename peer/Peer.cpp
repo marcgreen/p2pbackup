@@ -148,7 +148,7 @@ namespace peer {
 		
 		for (int nodeIndex = 0; nodeIndex < backupNodeList.size(); ++nodeIndex)
 			metadataInterface_->updateFileSize(
-				backupNodeList[nodeIndex], fileID, size);
+				backupNodeList[nodeIndex].asString(), fileID, size);
 		
 		// There isn't anything to indiciate that something went wrong, so just
 		// return true

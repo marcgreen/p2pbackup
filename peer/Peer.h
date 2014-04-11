@@ -90,7 +90,7 @@ class Peer {
 
   std::shared_ptr<btsync::BTSyncInterface> btSyncInterface_;
   std::shared_ptr<metadata::MetadataInterface> metadataInterface_;
-	metadata::LocalBackupInfo localbackupInfo_;
+	metadata::LocalBackupInfo localBackupInfo_;
 }; // class Peer
 
 } // namespace peer
