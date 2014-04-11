@@ -1,6 +1,7 @@
 
 #include "peer/Peer.h"
 
+#include <boost/filesystem.hpp>
 #include <unistd.h>
 #include <stdio.h>
 #include <exception>
@@ -9,7 +10,6 @@
 #include <cstdlib>
 #include <memory>
 #include <openssl/sha.h> // TODO update f/ heartbleed
-#include <boost/filesystem.hpp>
 #include <jsoncpp/json.h>
 
 namespace peer {
@@ -36,13 +36,14 @@ namespace peer {
 }
 
   bool Peer::joinNetwork() {
-    // Calculate our nodeID
-    std::string nodeID = Peer::sha256String(std::to_string(rand()));
-    peerID_ = nodeID;
+    // Calculate our peerID
+    // Address space is 160bits, defined by length of BTSync's encryption secret (used as fileID)
+    std::string peerID = btSyncInterface_->getSecrets(true)["encryption"].asString();
+    peerID_ = peerID;
 
     // Send JOIN command to metadata layer
     try {
-      metadataInterface_->joinNetwork(nodeID);
+      metadataInterface_->joinNetwork(peerID);
     } catch (std::exception& e) {
       std::cout << e.what() << std::endl;
     }
@@ -55,8 +56,8 @@ namespace peer {
   bool Peer::backupFile(std::string path) {
     // Generate new BTSync secrets for the file
     Json::Value root = btSyncInterface_->getSecrets(true); // true -> encryption secret
-    std::string rwSecret = root["read_write"];
-    std::string encryptionSecret = root["encryption"];
+    std::string rwSecret = root["read_write"].asString();
+    std::string encryptionSecret = root["encryption"].asString();
 
     // Generate the fileID
     std::string fileID = encryptionSecret;
@@ -86,18 +87,18 @@ namespace peer {
 
     // Add file to BTSync
     btSyncInterface_->addFolder(fileIDDir.string(), rwSecret);
-    
+
     // Replicate file on the network several times
     int numberReplicas = 0;
     while (numberReplicas < TOTAL_REPLICA_COUNT) {
-      std::string salt = salt();
+      std::string salt = Peer::salt();
       std::string id = sha256String(fileID + salt);
       
       // Find potential replicant node
       std::string nodeID = metadataInterface_->findClosestNode(id);
 
       // Determine if node is obligated to store file, given the amount they currently backup and store
-      MetadataRecord nodeMetadata;
+      metadata::MetadataRecord nodeMetadata;
       metadataInterface_->get(nodeID, nodeMetadata);
       if (filesize + nodeMetadata.getTotalStoreSize() >=
 	  TOTAL_REPLICA_COUNT * nodeMetadata.getTotalBackupSize())
@@ -114,7 +115,7 @@ namespace peer {
           
       // Add file to metadata layer
       try {
-	trackerInterface_->backupFile(nodeID, fileID, filesize);
+	metadataInterface_->backupFile(nodeID, fileID, filesize);
       } catch (std::exception& e) {
 	std::cout << e.what() << std::endl;
       }
@@ -134,11 +135,11 @@ namespace peer {
 
   }
 
-  bool Peer::updateFileSize(std::string path, uint64_t) {
+  bool Peer::updateFileSize(std::string path, uint64_t size) {
 
   }
   
-  bool Peer::askNodeToBackup(std::string secret) {
+  bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
     
   }
 

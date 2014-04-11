@@ -83,8 +83,10 @@ class Peer {
   // use JSON for data structure
   // make public getter with const reference so metadata controller can access
 
-  // The folder we will place hardlinks of backed up files
-  std::string backupDir_;
+  // The folder we will place hardlinks of backed up files and store other peers' files
+  // Should have two subdirectories: BACKUP_DIR and STORE_DIR
+  // TODO create those dirs if not present
+  std::string btBackupDir_;
 
   std::shared_ptr<btsync::BTSyncInterface> btSyncInterface_;
   std::shared_ptr<metadata::MetadataInterface> metadataInterface_;
