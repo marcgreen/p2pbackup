@@ -7,6 +7,7 @@
 #include <exception>
 #include <stdexcept>
 #include <sstream>
+#include <cassert>
 #include <cstdlib>
 #include <memory>
 #include <openssl/sha.h> // TODO update f/ heartbleed
@@ -32,10 +33,10 @@ namespace peer {
 
   // private
   Peer::Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
-	     std::shared_ptr<btsync::BTSyncInterface> btSyncI,
-	     std::string btBackupDir) :
+						 std::shared_ptr<btsync::BTSyncInterface> btSyncI,
+						 std::string btBackupDir) :
     metadataInterface_(metadataI), btSyncInterface_(btSyncI), btBackupDir_(btBackupDir) { 
-}
+	}
 
   bool Peer::joinNetwork() {
     // Calculate our nodeID
@@ -55,7 +56,7 @@ namespace peer {
   }
 
   bool Peer::backupFile(std::string path) {
-    // Generate new BTSync secrets for the file
+    /*// Generate new BTSync secrets for the file
     Json::Value root = btSyncInterface_->getSecrets(true); // true -> encryption secret
     std::string rwSecret = root["read_write"];
     std::string encryptionSecret = root["encryption"];
@@ -124,8 +125,8 @@ namespace peer {
       // Store relevant data in JSON data structure and write to file 
 
       numberReplicas++;
-    }
-
+			}*/
+		return true;
   }
 
   bool Peer::storeFile(std::string secret) {
@@ -136,8 +137,20 @@ namespace peer {
 
   }
 
-  bool Peer::updateFileSize(std::string path, uint64_t) {
-
+  bool Peer::updateFileSize(std::string fileID, uint64_t size) {
+		Json::Value& backupNodeList = localBackupInfo_["backupTo"][fileID];
+		
+		if (!backupNodeList.isArray())
+			throw std::runtime_error("In Peer::updateFile: Malformed SimpleMetaInfo "
+															 "(expected an array)");
+		
+		for (int nodeIndex = 0; nodeIndex < backupNodeList.size(); ++nodeIndex)
+			metadataInterface_->updateFileSize(
+				backupNodeList[nodeIndex], fileID, size);
+		
+		// There isn't anything to indiciate that something went wrong, so just
+		// return true
+		return true;
   }
   
   bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
@@ -151,15 +164,24 @@ namespace peer {
 		bool result = false;
 		boost::asio::io_service ioService;
 		tcp::resolver resolver(ioService);
-		tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT);
+		tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT_STR);
 		tcp::resolver::iterator iterator = resolver.resolve(query);
 		
 		tcp::socket socket(ioService);
 		
 		try {
 			boost::asio::write(socket, boost::asio::buffer(secret.data(), 20));
+			uint8_t nodeAck = 0;
+			boost::asio::read(socket, boost::asio::buffer(&nodeAck, sizeof(nodeAck)));
+			if (nodeAck != 1)
+				throw std::runtime_error("Malformed ACK received from node");
+			result = true;
 		} catch(boost::system::system_error& error) {
-			std::cerr << "In Peer::askNodeToBackup: " << error.what() << std::endl;
+			std::cerr << "boost::system:system_error in Peer::askNodeToBackup: "
+								<< error.what() << std::endl;
+		} catch(std::runtime_error& error) {
+			std::cerr << "std::runtime_error in Peer::askNodeToBackup: "
+								<< error.what() << std::endl;
 		}
 		
 		return result;

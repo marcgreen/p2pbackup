@@ -1,12 +1,18 @@
+
 CFLAGS = -c -std=c++11 -I..
 CC = g++
-LD = $(CC)
-LDFLAGS = -L/usr/local/lib -ljsoncpp -lboost_system -pthread
+ARCHIVER = ar
+ARFLAGS = rcs
+OBJLIST = MetadataRecord.o LocalBackupInfo.o
 
-all: metadataRecord
+metadatalib: $(OBJLIST)
+	$(ARCHIVER) $(ARFLAGS) libmeta.a $(OBJLIST)
 
-metadataRecord: MetadataRecord.cpp MetadataRecord.h
-	$(CC) $(CFLAGS) MetadataRecord.cpp
+MetadataRecord.o: MetadataRecord.cpp MetadataRecord.h
+	$(CC) $(CFLAGS) MetadataRecord.cpp -o MetadataRecord.o
+
+LocalBackupInfo.o: LocalBackupInfo.cpp LocalBackupInfo.h
+	$(CC) $(CFLAGS) LocalBackupInfo.cpp -o LocalBackupInfo.o
 
 clean:
-	rm MetadataRecord.o
+	rm $(OBJLIST)
