@@ -63,6 +63,8 @@ namespace peer {
     // Generate the fileID
     std::string fileID = encryptionSecret;
 
+    // Create btBackupDir if it's not already present TODO
+
     // Make directory in our backup directory to house hard link
     boost::filesystem::path fileIDDir(btBackupDir_ + "/" + BACKUP_DIR + "/" + fileID);
     if (!boost::filesystem::create_directory(fileIDDir)) {
@@ -72,13 +74,13 @@ namespace peer {
     std::cout << "Made dir " + fileIDDir.string() << std::endl;
 
     // Create hardlink to file in our backup directory
-    boost::filesystem::path boostPath(path);
-    std::string baseName = boostPath.basename();
-    boost::filesystem::path hardlinkPath(fileIDDir.string() + "/" + baseName);
+    boost::filesystem::path originalPath(path);
+    std::string fileName = originalPath.filename().string();
+    boost::filesystem::path hardlinkPath(fileIDDir.string() + "/" + fileName);
     int err = link(path.c_str(), hardlinkPath.string().c_str());
     if (err != 0) {
       std::cout << "Error creating hardlink " + hardlinkPath.string() << std::endl;
-      perror();
+      perror(NULL);
       return false;
     }
     std::cout << "Made hardlink " + hardlinkPath.string() << std::endl;
@@ -141,32 +143,28 @@ namespace peer {
   }
   
   bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
-<<<<<<< HEAD
-    
-=======
-		using boost::asio::ip::tcp;
+    using boost::asio::ip::tcp;
 		
-		// All secrets must be 20 characters long
-		if (secret.length() != 20)
-			throw std::runtime_error("Invalid secret; secrets must be "
-															 "20 characters long");
+    // All secrets must be 20 characters long
+    if (secret.length() != 20)
+      throw std::runtime_error("Invalid secret; secrets must be "
+			       "20 characters long");
 		
-		bool result = false;
-		boost::asio::io_service ioService;
-		tcp::resolver resolver(ioService);
-		tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT);
-		tcp::resolver::iterator iterator = resolver.resolve(query);
+    bool result = false;
+    boost::asio::io_service ioService;
+    tcp::resolver resolver(ioService);
+    tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT);
+    tcp::resolver::iterator iterator = resolver.resolve(query);
 		
-		tcp::socket socket(ioService);
+    tcp::socket socket(ioService);
 		
-		try {
-			boost::asio::write(socket, boost::asio::buffer(secret.data(), 20));
-		} catch(boost::system::system_error& error) {
-			std::cerr << "In Peer::askNodeToBackup: " << error.what() << std::endl;
-		}
+    try {
+      boost::asio::write(socket, boost::asio::buffer(secret.data(), 20));
+    } catch(boost::system::system_error& error) {
+      std::cerr << "In Peer::askNodeToBackup: " << error.what() << std::endl;
+    }
 		
-		return result;
->>>>>>> e9751b42df1619e3c0d5ba20fc15517c478a24a8
+    return result;
   }
 
   std::string Peer::sha256String(std::string input) {
