@@ -4,6 +4,7 @@
 
 #include "btsync/BTSyncInterface.h"
 #include "metadata/MetadataInterface.h"
+#include "metadata/LocalBackupInfo.h"
 
 #include <memory>
 
@@ -43,7 +44,7 @@ class Peer {
   bool removeBackup(std::string path);
 
   // Update the metadata layer with a file's new size
-  bool updateFileSize(std::string path, uint64_t size);
+  bool updateFileSize(std::string fileID, uint64_t size);
   
   // Give potential replicant node at nodeIP the secret to store.
   // Return whether or not they ACK
@@ -86,7 +87,6 @@ class Peer {
   // TODO create dumpToDisk for this 
   // use JSON for data structure
   // make public getter with const reference so metadata controller can access
-
   // The folder we will place hardlinks of backed up files and store other peers' files
   // Should have two subdirectories: BACKUP_DIR and STORE_DIR
   // TODO create those dirs if not present
@@ -94,6 +94,7 @@ class Peer {
 
   std::shared_ptr<btsync::BTSyncInterface> btSyncInterface_;
   std::shared_ptr<metadata::MetadataInterface> metadataInterface_;
+	metadata::LocalBackupInfo localBackupInfo_;
 }; // class Peer
 
 } // namespace peer

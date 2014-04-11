@@ -1,7 +1,7 @@
 
 CFLAGS = -c -std=c++11 -I.
-CLIENT_LDFLAGS = -pthread -lboost_system -Lcore -lbtcore -Ltracker -ltrackerclient -L/usr/local/lib -ljsoncpp metadata/MetadataRecord.o peer/peer.o btsync/BTSyncInterface.o -lcrypto -L/usr/lib/x86_64-linux-gnu -lcurlpp -lcurl -Wl,-Bsymbolic-functions -Wl,-z,relro
-TRACKER_LDFLAGS = -pthread -lboost_system -Ltracker -ltrackerserver -Lcore -lbtcore -L/usr/local/lib -ljsoncpp metadata/MetadataRecord.o
+CLIENT_LDFLAGS = -pthread -lboost_system -Lcore -lbtcore -Ltracker -ltrackerclient -L/usr/local/lib -ljsoncpp peer/peer.o -Lmetadata -lmeta btsync/BTSyncInterface.o -lcrypto -L/usr/lib/x86_64-linux-gnu -lcurlpp -lcurl -Wl,-Bsymbolic-functions -Wl,-z,relro
+TRACKER_LDFLAGS = -pthread -lboost_system -Ltracker -ltrackerserver -Lcore -lbtcore -L/usr/local/lib -ljsoncpp -Lmetadata -lmeta
 CC = g++
 LD = $(CC)
 CLIENT_TARGET = btbackup

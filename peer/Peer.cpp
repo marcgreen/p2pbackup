@@ -8,6 +8,7 @@
 #include <exception>
 #include <stdexcept>
 #include <sstream>
+#include <cassert>
 #include <cstdlib>
 #include <memory>
 #include <openssl/sha.h> // TODO update f/ heartbleed
@@ -31,8 +32,8 @@ namespace peer {
 
   // private
   Peer::Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
-	     std::shared_ptr<btsync::BTSyncInterface> btSyncI,
-	     std::string btBackupDir) :
+						 std::shared_ptr<btsync::BTSyncInterface> btSyncI,
+						 std::string btBackupDir) :
     metadataInterface_(metadataI), btSyncInterface_(btSyncI), btBackupDir_(btBackupDir) { 
 
     // Create root backup directory, btBackupDir, if it's not already present
@@ -166,8 +167,8 @@ namespace peer {
       // Store relevant data in JSON data structure and write to file 
 
       numberReplicas++;
-    }
-
+			}*/
+		return true;
   }
 
   bool Peer::storeFile(std::string secret) {
@@ -178,11 +179,22 @@ namespace peer {
 
   }
 
-  bool Peer::updateFileSize(std::string path, uint64_t size) {
-
+  bool Peer::updateFileSize(std::string fileID, uint64_t size) {
+    Json::Value& backupNodeList = localBackupInfo_["backupTo"][fileID];
+		
+    if (!backupNodeList.isArray())
+      throw std::runtime_error("In Peer::updateFile: Malformed SimpleMetaInfo "
+			       "(expected an array)");
+		
+    for (int nodeIndex = 0; nodeIndex < backupNodeList.size(); ++nodeIndex)
+      metadataInterface_->updateFileSize(backupNodeList[nodeIndex].asString(), fileID, size);
+		
+    // There isn't anything to indiciate that something went wrong, so just
+    // return true
+    return true;
   }
   
-  bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {/*
+  bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
     using boost::asio::ip::tcp;
 		
     // All secrets must be 20 characters long
@@ -190,23 +202,32 @@ namespace peer {
       throw std::runtime_error("Invalid secret; secrets must be "
 			       "20 characters long");
 		
-    bool result = false;
-    boost::asio::io_service ioService;
-    tcp::resolver resolver(ioService);
-    tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT);
-    tcp::resolver::iterator iterator = resolver.resolve(query);
+		bool result = false;
+		boost::asio::io_service ioService;
+		tcp::resolver resolver(ioService);
+		tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT_STR);
+		tcp::resolver::iterator iterator = resolver.resolve(query);
 		
     tcp::socket socket(ioService);
 		
-    try {
-      boost::asio::write(socket, boost::asio::buffer(secret.data(), 20));
-    } catch(boost::system::system_error& error) {
-      std::cerr << "In Peer::askNodeToBackup: " << error.what() << std::endl;
-    }
+		try {
+			boost::asio::write(socket, boost::asio::buffer(secret.data(), 20));
+			uint8_t nodeAck = 0;
+			boost::asio::read(socket, boost::asio::buffer(&nodeAck, sizeof(nodeAck)));
+			if (nodeAck != 1)
+				throw std::runtime_error("Malformed ACK received from node");
+			result = true;
+		} catch(boost::system::system_error& error) {
+			std::cerr << "boost::system:system_error in Peer::askNodeToBackup: "
+								<< error.what() << std::endl;
+		} catch(std::runtime_error& error) {
+			std::cerr << "std::runtime_error in Peer::askNodeToBackup: "
+								<< error.what() << std::endl;
+		}
 		
     return result;
-								      */  }
-
+  }
+  
   void Peer::createDirIfNeeded(std::string path) {
     boost::filesystem::path dir(path);
 

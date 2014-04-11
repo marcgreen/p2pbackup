@@ -4,12 +4,14 @@
 
 #include <boost/asio.hpp>
 #include <memory>
+#include <string>
 
 #include "Controller.h"
 
 namespace core {
 
 const int CLIENT_PORT = 57000;
+const std::string CLIENT_PORT_STR = "57000";
 
 using boost::asio::ip::tcp;
 
