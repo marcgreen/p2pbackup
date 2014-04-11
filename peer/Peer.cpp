@@ -42,6 +42,9 @@ Peer::Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
   // Create backup and store subdirectories if not already present
   createDirIfNeeded(btBackupDir + "/" + BACKUP_DIR);
   createDirIfNeeded(btBackupDir + "/" + STORE_DIR);
+
+  // Read in persistent localBackupInfo
+  localBackupInfo_.readFromDisk(btBackupDir +"/"+ LOCAL_BACKUP_INFO_FILE);
 }
 
 bool Peer::joinNetwork() {
@@ -52,9 +55,8 @@ bool Peer::joinNetwork() {
   string peerID = btSyncInterface_->getSecrets(true)["encryption"].asString();
   peerID_ = peerID;
 
-  cout << "Connecting to metadata with id " + peerID;
-
   // Send JOIN command to metadata layer
+  cout << "Joining network with id " + peerID;
   try {
     metadataInterface_->joinNetwork(peerID);
   } catch (exception& e) {
@@ -66,7 +68,6 @@ bool Peer::joinNetwork() {
 
 bool Peer::blacklistNode(std::string nodeID) {
   std::cout << "Blacklisting " + nodeID << std::endl;
-
   metadataInterface_->blacklistNode(peerID_, nodeID);
 }
 
@@ -99,7 +100,7 @@ bool Peer::backupFile(std::string path) {
   boost::filesystem::path hardlinkPath = fileIDDir / fileName;
   int err = link(path.c_str(), hardlinkPath.string().c_str());
   if (err != 0) {
-    cout << "Error creating hardlink " + hardlinkPath.string() << endl;
+    cerr << "Error creating hardlink " + hardlinkPath.string() << endl;
     perror(NULL);
     return false;
   }
@@ -107,6 +108,13 @@ bool Peer::backupFile(std::string path) {
 
   // Get size of file being backed up for use in finding replicant nodes
   uint64_t filesize = boost::filesystem::file_size(hardlinkPath);
+
+  // Keep track of filesize locally for synchronization between BTSync and Metadata Layer
+  localBackupInfo_[fileID]["size"] = std::to_string(filesize);
+  if (!localBackupInfo_.dumpToDisk(btBackupDir_ +"/"+ LOCAL_BACKUP_INFO_FILE)) {
+    cerr << "Error writing local backup info to disk" << endl;
+    return false;
+  }
 
   // Add file to BTSync
   btSyncInterface_->addFolder(fileIDDir.string(), rwSecret);
@@ -122,6 +130,12 @@ bool Peer::backupFile(std::string path) {
     // Find potential replicant node
     string nodeID = metadataInterface_->findClosestNode(id);
     cout << "\tPotential replicant node: " + nodeID << endl;
+
+    // Are we already storing this file on the node?
+    Json::Value nodeArray = localBackupInfo_[fileID]["nodes"];
+    for (Json::Value node : nodeArray)
+      if (nodeID == node.asString())
+	continue;
 
     // Determine if node is obligated to store file, given the amount they currently backup and store
     metadata::MetadataRecord nodeMetadata;
@@ -161,7 +175,12 @@ bool Peer::backupFile(std::string path) {
     }
     cout << "success!" << endl;
 
-    // Store relevant data in JSON data structure and write to file 
+    // Store relevant data in JSON data structure and write to file
+    localBackupInfo_[fileID]["nodes"].append(nodeID);
+    if (!localBackupInfo_.dumpToDisk(btBackupDir_ + "/"+ LOCAL_BACKUP_INFO_FILE)) {
+      cerr << "Error writing local backup info to disk" << endl;
+      return false;
+    }
 
     numberReplicas++;
   }

@@ -68,7 +68,7 @@ class Peer {
   const int TOTAL_REPLICA_COUNT = 5;
   const std::string BACKUP_DIR = "backup";
   const std::string STORE_DIR = "store";
-
+  const std::string LOCAL_BACKUP_INFO_FILE = "local_backup_info";
  private:
   // Create necessary directories for backing up and storing data
   Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
@@ -80,21 +80,21 @@ class Peer {
   // Keep track of our own ID
   std::string peerID_;
 
-  // Keep track of salts used to find replication nodes.
   // pathToHardLink => (originalPath, fileID, salt, nodeID, size)
-  // TODO how to deal with moved files? may need new command for client, or maybe we can auto detect
-  // std::map<std::string, >;
-  // TODO create dumpToDisk for this 
-  // use JSON for data structure
-  // make public getter with const reference so metadata controller can access
-  // The folder we will place hardlinks of backed up files and store other peers' files
+
+  // The folder in which we will place hardlinks of backed up files and store other peers' files
   // Should have two subdirectories: BACKUP_DIR and STORE_DIR
-  // TODO create those dirs if not present
   std::string btBackupDir_;
 
   std::shared_ptr<btsync::BTSyncInterface> btSyncInterface_;
   std::shared_ptr<metadata::MetadataInterface> metadataInterface_;
-	metadata::LocalBackupInfo localBackupInfo_;
+
+  // Data structure used to keep track of all files we're backing up.
+  // This is persisent; it's written to/read from disk.
+  // BTSyncController uses it for synchronizing filesizes between BTSync and Metadata Layer
+  // MetadataController uses it to keep track of how often a node fails a challenge, etc
+  metadata::LocalBackupInfo localBackupInfo_;
+
 }; // class Peer
 
 } // namespace peer
