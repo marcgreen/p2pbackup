@@ -110,7 +110,7 @@ The purpose of peer to peer networks (and more broadly, networks in general) is 
 To join a structured overlay network, a peer must know at least one other peer already in the network. This peer is often called the \textit{bootstrap peer}. The joining peer will contact the bootstrap peer to find its proper place in the topology. We address this in more detail in the explanation of how to find other peers.
 
 % TODO cite router.bittorrent.com as well known bootstrap node?
-%In BitTorrent's structured overlay network \footnote{To clarify, we are referring to BitTorrent's distributed hash table, not its unstructured network. The latter involves using centralized trackers, the former removes such dependency. We refraim from using the term \textit{distributed hash table} to keep the explanation simple without loss of generality. We discuss distributed hash tables in section \ref{sec:dht}.}, a well known bootstrap node \footnote{The BitTorrent specification uses \textit{node} to refer to participants of its structured overlay network and \textit{peer} as a more general term \cite{bittorrentDHT}. We will adopt this convention when speaking about BitTorrent, and use them interchangeably otherwise.} is router.bittorrent.com. A BitTorrent node randomly chooses a 160 bit \textit{nodeID} to use as an address. To join the network, it will contact a bootstrap node to find the nodes it is closest to in the topology. Closeness, in BitTorrent's case, is determined by taking the $XOR$ of \textit{nodeID}s; smaller values are defined as closer \cite{bittorrentDHT}.
+%In BitTorrent's structured overlay network \footnote{To clarify, we are referring to BitTorrent's distributed hash table, not its unstructured network. The latter involves using centralized trackers, the former removes such dependency. We refraim from using the term \textit{distributed hash table} to keep the explanation simple without loss of generality. We discuss distributed hash tables in section \ref{sec:backgroundDHT}.}, a well known bootstrap node \footnote{The BitTorrent specification uses \textit{node} to refer to participants of its structured overlay network and \textit{peer} as a more general term \cite{bittorrentDHT}. We will adopt this convention when speaking about BitTorrent, and use them interchangeably otherwise.} is router.bittorrent.com. A BitTorrent node randomly chooses a 160 bit \textit{nodeID} to use as an address. To join the network, it will contact a bootstrap node to find the nodes it is closest to in the topology. Closeness, in BitTorrent's case, is determined by taking the $XOR$ of \textit{nodeID}s; smaller values are defined as closer \cite{bittorrentDHT}.
 % TODO define XOR?
 % TODO maybe remove this entire paragraph, since it doesn't really clarify anything. it just gives another example of picking an id and mysteriously finding nodes its closest to. if we end up remove it, we should reword end of previous paragraph
 
@@ -155,7 +155,7 @@ Encryption in P2P backup systems is necessary to prevent the peers who are stori
 
 \textit{Hashing} is the process of applying a \textit{hash function} to some arbitrary-length message, resulting in a fixed sized \textit{hash}. A good hash function will uniformly distribute the hashes it produces. \textit{Cryptographic hash functions} are hash functions that are suitable for use in cryptography. They possess mathematical properties that allow for confidentiality to be provided, among other properties.
 
-Convergent encryption is a technique used in pStore and PeerStore to ensure confidentiality \cite{pStore, PeerStore}. To use this encryption mechanism, the hash of the unencrypted data is calculated, and then the hash is used as the symmetric key to encrypt the data. The main benefit of using convergent encryption is that the same data will be encrypted the same way each time, so identical blocks in the network can be shared between peers in their encrypted form, without the need for a complicated key exchange protocol. Convergent encryption is illustrated in figure \ref{fig:convergent}.
+\textit{Convergent encryption} is a technique used in pStore and PeerStore to ensure confidentiality \cite{pStore, PeerStore}. Convergent encryption involves taking the hash of the unencrypted data, and then using the hash as the symmetric key to encrypt the data. The main benefit of using convergent encryption is that the same data will be encrypted the same way each time, so identical blocks in the network can be shared between peers in their encrypted form, without the need for a complicated key exchange protocol. Convergent encryption is illustrated in figure \ref{fig:convergent}.
 
 \begin{figure} \label{fig:convergent}
   \centering
@@ -165,12 +165,17 @@ Convergent encryption is a technique used in pStore and PeerStore to ensure conf
 
 While this is a convenient optimization, it has the following security weakness: any user who has access to the unencrypted version of a file can confirm whether or not that file is being stored in the system. This encroaches on users' privacy.
 
-\section{Distributed Hash Tables} \label{sec:dht}
+% TODO relate convergent encryption to our system
 
-A Distributed Hash Table (DHT) is a data structure used to store (key, value) pairs in a decentralized manner \textit{DHTs share the $put$ and $get$ interface offered by hash tables, ...} DHTs are composed of multiple nodes, each responsible for a portion of the data being stored. 
+\section{Distributed Hash Tables} \label{sec:backgroundDHT}
 
-% finds peers that are a part of the overlay network
+A \textit{hash table} is a data structure that maps unique keys to values. It has attractive performance features, such as $O(1)$ average lookup time. This means that, on average, the time it takes to retrieve a value from the hash table is independent of the number of entries being stored. This performace comes from the use of a hash function when organizing the data internally. Hash tables also have $O(1)$ insertion and deletion time.
 
+A \textit{distributed hash table} (DHT) is a hash table that is stored across mutliple nodes. Each node is responsible for a portion of the hash table's contents. In exchange for distributing the storage cost among several nodes, DHTs do not have $O(1)$ search, insertion, or deletion time. However, this is generally acceptable because the usefulness of distributing the storage cost far outweights the drawback of slower operations on the data structure. This is especially true since the network latency will likely overshadow the slower performance of the data structure. 
+
+% TODO discuss DHTs being good with churn, scale well
+
+DHTs play a major role in many P2P systems. They serve as the means through which peers can find either data or other peers, depending on the system; our system uses a DHT for the latter. In conjunction with the structured overlay network, the DHT allows for peers to discover each other. This is primarily done when looking for peers to send backups to. We discuss how we use our DHT in more detail in section \ref{sec:ourDHT}.
 
 \section{The BitTorrent Protocol}
 \label{sec:thebittorrentprotocol}
