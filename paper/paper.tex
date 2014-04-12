@@ -219,20 +219,32 @@ BitTorrent Sync leverages the BitTorrent protocol to provide quick downloads bet
 
 In this chapter, we discuss the design of our Peer to Peer backup system.
 
-\section{Ensuring Backup Safekeeping} \label{sec:challenge}
+
+
+
+
+\section{The Metadata and Data Layer}
+
+PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. Our system separates the two layers as well: the metadata layer is responsible for .. It is implement as a DHT discussed, we separate the metadata layer from the data layer. The metadata layer is responsible for keeping track 
+
+
+\section{Fairness} \label{sec:challenge}
 % This was copied from the explanation of challenge mechanisms in the background info. We will use it down here instead
 %A challenge in PeerStore consists of a randomly-generated number followed by a specified range of bytes in the file being backed up. The node holding the peer's data must take the bytes in the specified range, concatenate the random number with that data, take the hash of it, and return the result to the peer. If the correct answer is returned, then the node has passed the challenge. If the node does not respond or gives the wrong answer, the challenge has been failed. By choosing a random subset of bytes and creating a random number to include in the hash, the node cannot calculate the hash ahead of time and only store that; the whole file must be stored in order to be able to successfully complete all possible challenges. 
+
+\section{Security}
+
 
 
 \chapter{Implementation}
 \section{Language and Tools}
 \section{System Design}
 \subsection{Overview}
-\subsection{BitTorrent Sync}
+\subsection{The Data Layer: BitTorrent Sync}
 
 Cool new tool, implements bittorrent protocol, but unfortunately closed source. in production ready system, would want to open source (possibility of backdoor, etc)
 
-\subsection{DHT}
+\subsection{The Metadata Layer}
 
 Simplification:centralized tracker
 
