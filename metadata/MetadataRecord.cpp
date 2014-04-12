@@ -1,3 +1,4 @@
+
 #include <utility>
 #include <string>
 #include <jsoncpp/json.h>
@@ -21,22 +22,33 @@ uint64_t MetadataRecord::getTotalBackupSize() {
   uint64_t size = 0;
 
   for (auto& v : backedUpFiles_) {
-    size += v.second.size;
+    size += v.second.size();
   }
 
   return size;
 }
 
 bool MetadataRecord::addBackupFile(std::string fileID, std::string nodeID, uint64_t size) {
-  auto v = backedUpFiles_.insert(std::make_pair(fileID, FileMetadata(nodeID, size, std::time(NULL))));
-  return v.second;
+  if (backedUpFiles_.count(fileID) == 1) {
+		return false;
+	} else {
+		/*auto v = backedUpFiles_.insert(std::make_pair(fileID, FileMetadata(nodeID, size, std::time(NULL))));
+			return v.second;*/
+		backedUpFiles_[fileID].push_back(FileMetadata(nodeID, size, std::time(NULL)));
+		return true;
+	}
 }
 
 bool MetadataRecord::updateBackupFileSize(std::string fileID, uint64_t size) {
   if (size == 0) {
     return backedUpFiles_.erase(fileID) == 1;
   } else {
-    backedUpFiles_[fileID].size = size;
+    for (std::list<FileMetadata>::iterator backupNodeIt =
+	   backedUpFiles_[fileID].begin();
+	 backupNodeIt != backedUpFiles_[fileID].end();
+	 ++backupNodeIt)
+      (*backupNodeIt).size = size;
+    //backedUpFiles_[fileID].size = size;
     return true;
   }
 }
@@ -52,8 +64,12 @@ uint64_t MetadataRecord::getTotalStoreSize() {
 }
 
 bool MetadataRecord::addStoreFile(std::string fileID, std::string peerID, uint64_t size) {
-  auto v = storedFiles_.insert(std::make_pair(fileID, FileMetadata(peerID, size, std::time(NULL))));
-  return v.second;
+  if (storedFiles_.count(fileID) == 1) {
+		return false;
+	} else {
+		auto v = storedFiles_.insert(std::make_pair(fileID, FileMetadata(peerID, size, std::time(NULL))));
+		return v.second;
+	}
 }
 
 bool MetadataRecord::updateStoreFileSize(std::string fileID, uint64_t size) {
@@ -85,13 +101,21 @@ std::string MetadataRecord::serialize() {
   }
 
   for (auto& el : backedUpFiles_) {
-    Json::Value node;
-    node["fileID"] = el.first;
-    node["fileMetadata"]["nodeID"] = el.second.nodeID;
-    node["fileMetadata"]["size"] = std::to_string(el.second.size);
-    node["fileMetadata"]["timestamp"] = std::to_string(el.second.timestamp);
-
-    root["backedUpFiles"].append(node);
+    Json::Value backedUpFileList;
+    std::string fileID = el.first;
+    
+    for (std::list<FileMetadata>::iterator backupNodeIt =
+	   el.second.begin();
+	 backupNodeIt != el.second.end();
+	 ++backupNodeIt) {
+      Json::Value backupEntry;
+      backupEntry["nodeID"] = (*backupNodeIt).nodeID;
+      backupEntry["size"] = std::to_string((*backupNodeIt).size);
+      backupEntry["timestamp"] = std::to_string((*backupNodeIt).timestamp);
+      backedUpFileList[fileID].append(backupEntry);
+    }
+    
+    root["backedUpFiles"].append(backedUpFileList);
   }
 
   for (auto& el : storedFiles_) {
@@ -123,19 +147,33 @@ bool MetadataRecord::unserialize(std::string reply) {
     addBlacklister(el["nodeID"].asString(), el["timestamp"].asInt());
   }
 
-  for (Json::Value el : root["backedUpFiles"]) {
-    backedUpFiles_.insert(std::make_pair(el["fileID"].asString(), FileMetadata(el["nodeID"].asString(),
-									       el["size"].asInt(),
-									       el["timestamp"].asInt())));
+  for (std::string el : root["backedUpFiles"].getMemberNames()) {
+    for (Json::Value subel : root["backedUpFiles"][el]) {
+      backedUpFiles_[el].push_back
+	(FileMetadata(subel["nodeID"].asString(),
+		      subel["size"].asInt(),
+		      subel["timestamp"].asInt()));
+    }
   }
 
   for (Json::Value el : root["storedFiles"]) {
-    storedFiles_.insert(std::make_pair(el["fileID"].asString(), FileMetadata(el["nodeID"].asString(),
-									     el["size"].asInt(),
-									     el["timestamp"].asInt())));
+    storedFiles_.insert(std::make_pair(el["fileID"].asString(),
+				       FileMetadata(el["nodeID"].asString(),
+						    el["size"].asInt(),
+						    el["timestamp"].asInt())));
   }
 
     return true;
+}
+
+std::list<FileMetadata>::iterator MetadataRecord::backupNodeIteratorBegin
+  (const std::string& fileID) {
+  return backedUpFiles_[fileID].begin();
+}
+
+std::list<FileMetadata>::iterator MetadataRecord::backupNodeIteratorEnd
+  (const std::string& fileID) {
+  return backedUpFiles_[fileID].end();
 }
 
 } // namespace metadata

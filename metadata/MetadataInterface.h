@@ -34,13 +34,13 @@ class MetadataInterface {
   // This bookkeeping is used during the node selection process to determine if a given node
   //   is obliged to store data (i.e., the node is backing up x bytes of data and is storing
   //   less than k*x bytes, for some implementation specific k)
-  virtual void backupFile(std::string nodeID, std::string fileID, uint64_t size) = 0;
-
+  virtual void backupFile(std::string peerID, std::string nodeID, std::string fileID, uint64_t size) = 0;
+	
   // Inform the metadata layer that the data identified by 'fileID' being backed up
   //   to 'nodeID' is now 'size' bytes. 
-  // This will happen when a user backs up a file modifies it in the future. This is
+  // This will happen when a user backs up a file and modifies it in the future. This is
   //   used to reflect deletions, too.
-  virtual void updateFileSize(std::string nodeID, std::string fileID, uint64_t size) = 0;
+  virtual void updateFileSize(std::string peerID, std::string fileID, uint64_t size) = 0;
 
  private:
 

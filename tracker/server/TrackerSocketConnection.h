@@ -16,23 +16,23 @@ void handleTrackerSocketConnection(std::shared_ptr<tcp::socket> socket);
 
 // Helper Functions
 void handleJoin(std::shared_ptr<tcp::socket> socket,
-		Json::Value& networkData,
-		TrackerDatabase& trackerDatabase);
+								Json::Value& networkData,
+								TrackerDatabase& trackerDatabase);
 void handleFindClosestNode(std::shared_ptr<tcp::socket> socket,
-			   Json::Value& networkData,
-			   TrackerDatabase& trackerDatabase);
+													 Json::Value& networkData,
+													 TrackerDatabase& trackerDatabase);
 void handleGet(std::shared_ptr<tcp::socket> socket,
-	       Json::Value& networkData,
-	       TrackerDatabase& trackerDatabase);
+							 Json::Value& networkData,
+							 TrackerDatabase& trackerDatabase);
 void handleBlacklist(std::shared_ptr<tcp::socket> socket,
-		     Json::Value& networkData,
-		     TrackerDatabase& trackerDatabase);
+										 Json::Value& networkData,
+										 TrackerDatabase& trackerDatabase);
 void handleBackup(std::shared_ptr<tcp::socket> socket,
-		  Json::Value& networkData,
-		  TrackerDatabase& trackerDatabase);
+									Json::Value& networkData,
+									TrackerDatabase& trackerDatabase);
 void handleUpdateFileSize(std::shared_ptr<tcp::socket> socket,
-			  Json::Value& networkData,
-			  TrackerDatabase& trackerDatabase);
+													Json::Value& networkData,
+													TrackerDatabase& trackerDatabase);
 
 } } // namespace tracker::server
 

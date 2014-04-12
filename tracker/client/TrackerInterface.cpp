@@ -97,12 +97,12 @@ void TrackerInterface::backupFile(std::string peerID, std::string nodeID, std::s
 
 void TrackerInterface::updateFileSize(std::string peerID, std::string fileID, uint64_t size) {
   std::cout << "Inform server that the data identified by '" << fileID << "', "
-	    << "stored on '" << nodeID << "', is now " << size << " bytes"
+	    << "backed up by '" << peerID << "', is now " << size << " bytes"
 	    << std::endl;
 
   Json::Value msg, reply;
   msg["command"] = tracker::UPDATE_FILE_SIZE_CMD;
-	msg["peerID"] = peerID;
+  msg["peerID"] = peerID;
   msg["fileID"] = fileID;
   msg["size"] = std::to_string(size);
 

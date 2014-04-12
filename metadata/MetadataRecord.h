@@ -2,6 +2,7 @@
 #ifndef METADATA_METADATA_RECORD_H_
 #define METADATA_METADATA_RECORD_H_
 
+#include <list>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -14,8 +15,8 @@ namespace metadata {
 class FileMetadata {
  public:
   FileMetadata() {}
-  FileMetadata(std::string nodeID, uint64_t size, time_t timestamp) :
-   nodeID(nodeID), size(size), timestamp(timestamp) {}
+  FileMetadata(std::string nodeID_, uint64_t size_, time_t timestamp_) :
+   nodeID(nodeID_), size(size_), timestamp(timestamp_) {}
 
   // The node the file belongs to
   std::string nodeID;
@@ -87,6 +88,12 @@ class MetadataRecord {
     // TODO use serialize and json::value to return pretty printed string
     return nodeIP_;
   }
+	
+  std::list<FileMetadata>::iterator backupNodeIteratorBegin
+    (const std::string& fileID);
+	
+  std::list<FileMetadata>::iterator backupNodeIteratorEnd
+    (const std::string& fileID);
 
  private:
   // IP address of the node this record describes
@@ -97,7 +104,7 @@ class MetadataRecord {
   std::unordered_map<std::string, time_t> blacklisters_;
 
   // Keep track of filesizes this peer is backing up to nodes. Key is fileID
-  std::map<std::string, FileMetadata> backedUpFiles_;
+  std::map<std::string, std::list<FileMetadata>> backedUpFiles_;
 
   // Keep track of filesizes this node is backing up for other peers. Key is fileID
   std::map<std::string, FileMetadata> storedFiles_;

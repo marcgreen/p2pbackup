@@ -4,6 +4,7 @@
 
 #include <cstdint>
 #include <ctime>
+#include <iostream>
 #include <stdexcept>
 #include <utility>
 
@@ -28,9 +29,9 @@ std::string TrackerDatabase::findClosest(const std::string& id) {
   if (!found) {
     if (id.compare(sortedIDs_[currentPos]) < 0) {
       if (currentPos == 0)
-	currentPos = sortedIDs_.size() - 1;
+				currentPos = sortedIDs_.size() - 1;
       else
-	--currentPos;
+				--currentPos;
     } else {
       currentPos = (currentPos + 1) % sortedIDs_.size();
     }
@@ -47,43 +48,55 @@ TrackerDatabase::getRecord(const std::string& nodeID) {
 }
 
 bool TrackerDatabase::join(const std::string& nodeID,
-			   const std::string& ipAddress) {
+													 const std::string& ipAddress) {
   bool result = false;
   if (records_.count(nodeID) == 0) {
     result = true;
-    records_.insert(std::make_pair
-		    (nodeID, metadata::MetadataRecord(ipAddress)));
+    records_.insert(std::make_pair(
+											nodeID, metadata::MetadataRecord(ipAddress)));
   }
   return result;
 }
 
 bool TrackerDatabase::blacklistNode(const std::string& nodeID,
-				    const std::string& blacklisterID) {
+																		const std::string& blacklisterID) {
   bool result = false;
   if (records_.count(nodeID) == 1)
-    result = records_[nodeID].addBlacklister(blacklisterID, time(0));
+    result = records_[nodeID].addBlacklister(blacklisterID, std::time(NULL));
   return result;
 }
 
-bool TrackerDatabase::backupFile(const std::string& nodeID,
-				 const std::string& fileID,
-				 uint64_t size,
-				 const std::string& peerID) {
+// +
+bool TrackerDatabase::backupFile(const std::string& peerID,
+																 const std::string& nodeID,
+																 const std::string& fileID,
+																 uint64_t size) {
   bool result = false;
-  if (records_.count(peerID) == 1 && records_.count(nodeID) == 1)
-    result = records_[peerID].addBackupFile(fileID, nodeID, size) &&
-      records_[nodeID].addStoreFile(fileID, peerID, size);
+  if (records_.count(peerID) == 1 && records_.count(nodeID) == 1) {
+    if (!records_[peerID].addBackupFile(fileID, nodeID, size))
+			std::cout << "This is not the first time that fileID " << fileID
+								<< "has been backed up" << std::endl;
+		result = records_[nodeID].addStoreFile(fileID, peerID, size);
+	}
   return result;
 }
 
-bool TrackerDatabase::updateFileSize(const std::string& nodeID,
+// +
+bool TrackerDatabase::updateFileSize(const std::string& peerID,
 				     const std::string& fileID,
-				     uint64_t size,
-				     const std::string& peerID) {
+				     uint64_t size) {
   bool result = false;
-  if (records_.count(peerID) == 1 && records_.count(nodeID) == 1)
-    result = records_[peerID].updateBackupFileSize(fileID, size) &&
-      records_[nodeID].updateStoreFileSize(fileID, size);
+  if (records_.count(peerID) == 1) {
+    result = records_[peerID].updateBackupFileSize(fileID, size);
+    for (std::list<metadata::FileMetadata>::iterator backedupNodesIt =
+	   records_[peerID].backupNodeIteratorBegin(fileID);
+	 backedupNodesIt !=
+	   records_[peerID].backupNodeIteratorEnd(fileID);
+	 ++backedupNodesIt) {
+      result &= records_[(*backedupNodesIt).nodeID].updateStoreFileSize
+	(fileID, size);
+    }
+  }
   return result;
 }
 

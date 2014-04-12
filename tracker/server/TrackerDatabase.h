@@ -21,15 +21,14 @@ class TrackerDatabase {
   metadata::MetadataRecord& getRecord(const std::string& nodeID);
   bool join(const std::string& nodeID, const std::string& ipAddress);
   bool blacklistNode(const std::string& nodeID,
-		     const std::string& blacklisterID);
-  bool backupFile(const std::string& nodeID,
-		  const std::string& fileID,
-		  uint64_t size,
-		  const std::string& senderID);
-  bool updateFileSize(const std::string& nodeID,
-		      const std::string& fileID,
-		      uint64_t size,
-		      const std::string& peerID);
+										 const std::string& blacklisterID);
+  bool backupFile(const std::string& peerID,
+									const std::string& noddeID,
+									const std::string& fileID,
+									uint64_t size);
+	bool updateFileSize(const std::string& peerID,
+											const std::string& fileID,
+											uint64_t size);
  private:
   TrackerDatabase();
   
