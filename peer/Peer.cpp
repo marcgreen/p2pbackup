@@ -16,232 +16,351 @@
 
 namespace peer {
   
-  std::shared_ptr<Peer> Peer::instance_ = std::shared_ptr<Peer>(0);
-  
-  Peer& Peer::constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
-				std::shared_ptr<btsync::BTSyncInterface> btSyncI,
-				std::string btBackupDir) {
-    if (!instance_)
-      instance_ = std::shared_ptr<Peer>(new Peer(metadataI, btSyncI, btBackupDir));
-    return *instance_;
+std::shared_ptr<Peer> Peer::instance_ = std::shared_ptr<Peer>(0);
+
+Peer& Peer::constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
+			      std::shared_ptr<btsync::BTSyncInterface> btSyncI,
+			      std::string btBackupDir) {
+  if (!instance_)
+    instance_ = std::shared_ptr<Peer>(new Peer(metadataI, btSyncI, btBackupDir));
+  return *instance_;
+}
+
+Peer& Peer::getInstance() {
+  return *instance_;
+}
+
+// private
+Peer::Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
+					       std::shared_ptr<btsync::BTSyncInterface> btSyncI,
+					       std::string btBackupDir) :
+  metadataInterface_(metadataI), btSyncInterface_(btSyncI), btBackupDir_(btBackupDir) { 
+
+  // Create root backup directory, btBackupDir, if it's not already present
+  createDirIfNeeded(btBackupDir);
+
+  // Create backup and store subdirectories if not already present
+  createDirIfNeeded(btBackupDir + "/" + BACKUP_DIR);
+  createDirIfNeeded(btBackupDir + "/" + STORE_DIR);
+
+  // Read in persistent localBackupInfo
+  localBackupInfo_.readFromDisk(btBackupDir +"/"+ LOCAL_BACKUP_INFO_FILE);
+}
+
+bool Peer::joinNetwork() {
+  using namespace std;
+
+  // Calculate our peerID
+  // Address space is 160bits, defined by length of BTSync's encryption secret (used as fileID)
+  string peerID = btSyncInterface_->getSecrets(true)["encryption"].asString();
+  peerID_ = peerID;
+
+  // Send JOIN command to metadata layer
+  cout << "Joining network with id " + peerID;
+  try {
+    metadataInterface_->joinNetwork(peerID);
+  } catch (exception& e) {
+    cout << e.what() << endl;
   }
 
-  Peer& Peer::getInstance() {
-    return *instance_;
+  cout << "...success" << endl;
+}
+
+bool Peer::blacklistNode(std::string nodeID) {
+  std::cout << "Blacklisting " + nodeID << std::endl;
+  metadataInterface_->blacklistNode(peerID_, nodeID);
+}
+
+bool Peer::backupFile(std::string path) {
+  using namespace std;
+
+  // Generate new BTSync secrets for the file
+  Json::Value root = btSyncInterface_->getSecrets(true); // true -> encryption secret
+  string rwSecret = root["read_write"].asString();
+  string encryptionSecret = root["encryption"].asString();
+
+  // Generate the fileID
+  string fileID = encryptionSecret;
+
+  cout << "Backing up file " + path << endl
+	    << "RW secret: " + rwSecret << endl
+	    << "Encryption secret: " + encryptionSecret << endl;
+
+  // Make directory in our backup directory to house hard link
+  boost::filesystem::path fileIDDir(btBackupDir_ +"/"+ BACKUP_DIR +"/"+ fileID);
+  if (!boost::filesystem::create_directory(fileIDDir)) {
+    cout << "Error making directory " + fileIDDir.string() << endl;
+    return false;
+  }
+  cout << "Hardlink directory: " + fileIDDir.string() << endl;
+
+  // Create hardlink to file in our backup directory
+  boost::filesystem::path originalPath(path);
+  string fileName = originalPath.filename().string();
+  boost::filesystem::path hardlinkPath = fileIDDir / fileName;
+  int err = link(path.c_str(), hardlinkPath.string().c_str());
+  if (err != 0) {
+    cerr << "Error creating hardlink " + hardlinkPath.string() << endl;
+    perror(NULL);
+    return false;
+  }
+  cout << "Hardlink: " + hardlinkPath.string() << endl;
+
+  // Get size of file being backed up for use in finding replicant nodes
+  uint64_t filesize = boost::filesystem::file_size(hardlinkPath);
+
+  // Keep track of filesize locally for synchronization between BTSync and Metadata Layer
+  localBackupInfo_[fileID]["size"] = std::to_string(filesize);
+  if (!localBackupInfo_.dumpToDisk(btBackupDir_ +"/"+ LOCAL_BACKUP_INFO_FILE)) {
+    cerr << "Error writing local backup info to disk" << endl;
+    return false;
   }
 
-  // private
-  Peer::Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
-						 std::shared_ptr<btsync::BTSyncInterface> btSyncI,
-						 std::string btBackupDir) :
-    metadataInterface_(metadataI), btSyncInterface_(btSyncI), btBackupDir_(btBackupDir) { 
-	}
+  // Add file to BTSync
+  btSyncInterface_->addFolder(fileIDDir.string(), rwSecret);
+  cout << "Added folder to BTSync" << endl;
 
-  bool Peer::joinNetwork() {
-    // Calculate our peerID
-    // Address space is 160bits, defined by length of BTSync's encryption secret (used as fileID)
-    std::string peerID = btSyncInterface_->getSecrets(true)["encryption"].asString();
-    peerID_ = peerID;
+  // Replicate file on the network several times
+  int numberReplicas = 0;
+  cout << "Finding replication nodes..." << endl;
+  while (numberReplicas < TOTAL_REPLICA_COUNT) {
+    string id = btSyncInterface_->getSecrets(true)["encryption"].asString();
+    cout << "\tRandomly generated id: " << id << endl;
 
-    // Send JOIN command to metadata layer
+    // Find potential replicant node
+    string nodeID = metadataInterface_->findClosestNode(id);
+    cout << "\tPotential replicant node: " + nodeID << endl;
+
+    // Are we already storing this file on the node?
+    Json::Value nodeArray = localBackupInfo_[fileID]["nodes"];
+    for (Json::Value node : nodeArray)
+      if (nodeID == node.asString())
+	continue;
+
+    // Determine if node is obligated to store file, given the amount they currently backup and store
+    metadata::MetadataRecord nodeMetadata;
+    metadataInterface_->get(nodeID, nodeMetadata);
+    uint64_t newStorage = filesize + nodeMetadata.getTotalStoreSize();
+    uint64_t backedUpSize = nodeMetadata.getTotalBackupSize();
+    uint64_t obligatedStorage = TOTAL_REPLICA_COUNT * backedUpSize;
+    cout << "\tNode will be storing: " << to_string(newStorage) << endl
+	      << "\tNode obligated to store: " << to_string(obligatedStorage) << endl
+	      << "\t\t(" + to_string(TOTAL_REPLICA_COUNT) + " * " + to_string(backedUpSize)
+	      << endl;
+    if (newStorage >= obligatedStorage)
+      continue;
+
+    // Ensure the node doesn't have too many blacklisters
+    int numBlacklisters = nodeMetadata.getNumberBlacklisters();
+    int numStoredFiles = nodeMetadata.getNumberStoredFiles();
+    float blacklistToStoreRatio = numBlacklisters / numStoredFiles;
+    cout << "\tNode blacklist:store ratio: "
+	      << to_string(numBlacklisters) << "/" << to_string(numStoredFiles)
+	      << "(" << to_string(blacklistToStoreRatio) << ")" << endl;
+    if (blacklistToStoreRatio > MAX_BLACKLIST_STORE_RATIO)
+      continue;
+
+    // Ask (tell) node to backup. Wait for ACK, or find other replicant node if they never ACK
+    cout << "Node qualifies! Asking to backup...";
+    if (!askNodeToBackup(nodeMetadata.getNodeIP(), encryptionSecret))
+      continue;
+    cout << "success!" << endl;
+
+    // Add file to metadata layer
+    cout << "Adding to metadata layer...";
     try {
-      metadataInterface_->joinNetwork(peerID);
-    } catch (std::exception& e) {
-      std::cout << e.what() << std::endl;
+      metadataInterface_->backupFile(nodeID, fileID, filesize);
+    } catch (exception& e) {
+      cout << e.what() << endl;
     }
-  }
+    cout << "success!" << endl;
 
-  bool Peer::blacklistNode(std::string nodeID) {
-    metadataInterface_->blacklistNode(peerID_, nodeID);
-  }
-
-  bool Peer::backupFile(std::string path) {
-    /*// Generate new BTSync secrets for the file
-    Json::Value root = btSyncInterface_->getSecrets(true); // true -> encryption secret
-    std::string rwSecret = root["read_write"].asString();
-    std::string encryptionSecret = root["encryption"].asString();
-
-    // Generate the fileID
-    std::string fileID = encryptionSecret;
-
-    // Create btBackupDir if it's not already present TODO
-
-    // Make directory in our backup directory to house hard link
-    boost::filesystem::path fileIDDir(btBackupDir_ + "/" + BACKUP_DIR + "/" + fileID);
-    if (!boost::filesystem::create_directory(fileIDDir)) {
-      std::cout << "Error making directory " + fileIDDir.string() << std::endl;
+    // Store relevant data in JSON data structure and write to file
+    localBackupInfo_[fileID]["nodes"].append(nodeID);
+    if (!localBackupInfo_.dumpToDisk(btBackupDir_ + "/"+ LOCAL_BACKUP_INFO_FILE)) {
+      cerr << "Error writing local backup info to disk" << endl;
       return false;
     }
-    std::cout << "Made dir " + fileIDDir.string() << std::endl;
 
-    // Create hardlink to file in our backup directory
-    boost::filesystem::path originalPath(path);
-    std::string fileName = originalPath.filename().string();
-    boost::filesystem::path hardlinkPath(fileIDDir.string() + "/" + fileName);
-    int err = link(path.c_str(), hardlinkPath.string().c_str());
-    if (err != 0) {
-      std::cout << "Error creating hardlink " + hardlinkPath.string() << std::endl;
-      perror(NULL);
-      return false;
-    }
-    std::cout << "Made hardlink " + hardlinkPath.string() << std::endl;
+    numberReplicas++;
+  }
 
-    // Get size of file being backed up for use in finding replicant nodes
-    uint64_t filesize = boost::filesystem::file_size(hardlinkPath);
+  return true;
+}
 
-    // Add file to BTSync
-    btSyncInterface_->addFolder(fileIDDir.string(), rwSecret);
+bool Peer::storeFile(std::string secret) {
+  // create direcotry under btBackupDir/STORE_DIR and name it fileID
+}
 
-    // Replicate file on the network several times
-    int numberReplicas = 0;
-    while (numberReplicas < TOTAL_REPLICA_COUNT) {
-      std::string salt = Peer::salt();
-      std::string id = sha256String(fileID + salt);
-      
-      // Find potential replicant node
-      std::string nodeID = metadataInterface_->findClosestNode(id);
+bool Peer::removeBackup(std::string path) {
 
-      // Determine if node is obligated to store file, given the amount they currently backup and store
-      metadata::MetadataRecord nodeMetadata;
-      metadataInterface_->get(nodeID, nodeMetadata);
-      if (filesize + nodeMetadata.getTotalStoreSize() >=
-	  TOTAL_REPLICA_COUNT * nodeMetadata.getTotalBackupSize())
-	continue;
+}
 
-      // Ensure the node doesn't have too many blacklisters
-      float blacklistToStoreRatio = nodeMetadata.getNumberBlacklisters() / nodeMetadata.getNumberStoredFiles(); 
-      if (blacklistToStoreRatio > MAX_BLACKLIST_STORE_RATIO)
-	continue;
+bool Peer::updateFileSize(std::string fileID, uint64_t size) {
+  Json::Value& backupNodeList = localBackupInfo_["backupTo"][fileID];
+
+  if (!backupNodeList.isArray())
+    throw std::runtime_error("In Peer::updateFile: Malformed SimpleMetaInfo "
+			     "(expected an array)");
+
+  for (int nodeIndex = 0; nodeIndex < backupNodeList.size(); ++nodeIndex)
+    metadataInterface_->updateFileSize(backupNodeList[nodeIndex].asString(), fileID, size);
+
+  // There isn't anything to indiciate that something went wrong, so just
+  // return true
+  return true;
+}
+
+bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
+  using boost::asio::ip::tcp;
+
+  // All secrets must be 20 characters long
+  if (secret.length() != 20)
+    throw std::runtime_error("Invalid secret; secrets must be "
+			     "20 characters long");
+
+	      bool result = false;
+	      boost::asio::io_service ioService;
+	      tcp::resolver resolver(ioService);
+	      tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT_STR);
+	      tcp::resolver::iterator iterator = resolver.resolve(query);
+
+  tcp::socket socket(ioService);
+
+	      try {
+		      boost::asio::write(socket, boost::asio::buffer(secret.data(), 20));
+		      uint8_t nodeAck = 0;
+		      boost::asio::read(socket, boost::asio::buffer(&nodeAck, sizeof(nodeAck)));
+		      if (nodeAck != 1)
+			      throw std::runtime_error("Malformed ACK received from node");
+		      result = true;
+	      } catch(boost::system::system_error& error) {
+		      std::cerr << "boost::system:system_error in Peer::askNodeToBackup: "
+							      << error.what() << std::endl;
+	      } catch(std::runtime_error& error) {
+		      std::cerr << "std::runtime_error in Peer::askNodeToBackup: "
+							      << error.what() << std::endl;
+	      }
+
+  return result;
+}
+
+void Peer::createDirIfNeeded(std::string path) {
+  boost::filesystem::path dir(path);
+
+  if (exists(dir)) {
+    if (!is_directory(dir))
+      throw std::runtime_error("Supposed directory '" + dir.string() + "' isn't a directory");
+  } else {
+    std::cout << "Creating directory: " + dir.string() << std::endl;
+    if (!boost::filesystem::create_directory(dir))
+      throw std::runtime_error("Couldn't create directory: " + dir.string());
+  }
+}
+
+std::string Peer::sha256String(std::string input) {
+  unsigned char digest[SHA256_DIGEST_LENGTH];
+  SHA256((unsigned char *)input.c_str(), input.size(), digest);
+
+  std::stringstream output;
+  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+    output << std::hex << (int)digest[i];
+  }
+
+	return output.str();
+}
+
+bool Peer::updateFileSize(std::string fileID, uint64_t size) {
+	Json::Value& backupNodeList = localBackupInfo_["backupTo"][fileID];
 	
-      // Ask (tell) node to backup. Wait for ACK, or find other replicant node if they never ACK
-      if (!askNodeToBackup(nodeMetadata.getNodeIP(), encryptionSecret))
-	continue;
-          
-      // Add file to metadata layer
-      try {
-	metadataInterface_->backupFile(nodeID, fileID, filesize);
-      } catch (std::exception& e) {
-	std::cout << e.what() << std::endl;
-      }
+	if (!backupNodeList.isArray())
+		throw std::runtime_error("In Peer::updateFile: Malformed SimpleMetaInfo "
+														 "(expected an array)");
+	
+	for (int nodeIndex = 0; nodeIndex < backupNodeList.size(); ++nodeIndex)
+		metadataInterface_->updateNodeFileSize(
+			backupNodeList[nodeIndex].asString(), fileID, size);
+	
+	// There isn't anything to indiciate that something went wrong, so just
+	// return true
+	return true;
+}
 
-      // Store relevant data in JSON data structure and write to file 
+bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
+	using boost::asio::ip::tcp;
+		
+	// All secrets must be 20 characters long
+	if (secret.length() != 20)
+		throw std::runtime_error("Invalid secret; secrets must be "
+														 "20 characters long");
+	
+	bool result = false;
+	boost::asio::io_service ioService;
+	tcp::resolver resolver(ioService);
+	tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT_STR);
+	tcp::resolver::iterator iterator = resolver.resolve(query);
+	
+	tcp::socket socket(ioService);
+	
+	try {
+		boost::asio::write(socket, boost::asio::buffer(secret.data(), 20));
+		uint8_t nodeAck = 0;
+		boost::asio::read(socket, boost::asio::buffer(&nodeAck, sizeof(nodeAck)));
+		if (nodeAck != 1)
+			throw std::runtime_error("Malformed ACK received from node");
+		result = true;
+	} catch(boost::system::system_error& error) {
+		std::cerr << "boost::system:system_error in Peer::askNodeToBackup: "
+							<< error.what() << std::endl;
+	} catch(std::runtime_error& error) {
+		std::cerr << "std::runtime_error in Peer::askNodeToBackup: "
+							<< error.what() << std::endl;
+	}
+	
+	return result;
+}
 
-      numberReplicas++;
-			}*/
-		return true;
+std::string Peer::sha256File(std::string path) {
+  FILE *f;
+  unsigned char buf[8192]; // read 8kb at a time
+  unsigned char digest[SHA256_DIGEST_LENGTH];
+  SHA256_CTX sc;
+  int err;
+
+  f = fopen(path.c_str(), "rb");
+  if (f == NULL)
+    throw std::runtime_error("Couldn't open file at: " + path);
+
+  if (!SHA256_Init(&sc))
+    throw std::runtime_error("Error SHA256 Init");
+
+  for (;;) {
+    size_t len = fread(buf, 1, sizeof buf, f);
+    if (len == 0)
+      break;
+
+    if(!SHA256_Update(&sc, buf, len))
+      throw std::runtime_error("Error SHA256 Update");
   }
 
-  bool Peer::storeFile(std::string secret) {
-    // create direcotry under btBackupDir/STORE_DIR and name it fileID
+  err = ferror(f);
+  fclose(f);
+  if (err)
+    throw std::runtime_error("Couldn't close file. Error code: " + err);
+
+  if (!SHA256_Final(digest, &sc))
+    throw std::runtime_error("Error SHA256 Final");
+
+  std::stringstream output;
+  for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+    output << std::hex << (int)digest[i];
   }
 
-  bool Peer::removeBackup(std::string path) {
+  return output.str();
+}
 
-  }
-
-  bool Peer::updateFileSize(std::string fileID, uint64_t size) {
-		Json::Value& backupNodeList = localBackupInfo_["backupTo"][fileID];
-		
-		if (!backupNodeList.isArray())
-			throw std::runtime_error("In Peer::updateFile: Malformed SimpleMetaInfo "
-															 "(expected an array)");
-		
-		for (int nodeIndex = 0; nodeIndex < backupNodeList.size(); ++nodeIndex)
-			metadataInterface_->updateNodeFileSize(
-				backupNodeList[nodeIndex].asString(), fileID, size);
-		
-		// There isn't anything to indiciate that something went wrong, so just
-		// return true
-		return true;
-  }
-  
-  bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
-    using boost::asio::ip::tcp;
-		
-    // All secrets must be 20 characters long
-    if (secret.length() != 20)
-      throw std::runtime_error("Invalid secret; secrets must be "
-															 "20 characters long");
-		
-		bool result = false;
-		boost::asio::io_service ioService;
-		tcp::resolver resolver(ioService);
-		tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT_STR);
-		tcp::resolver::iterator iterator = resolver.resolve(query);
-		
-    tcp::socket socket(ioService);
-		
-		try {
-			boost::asio::write(socket, boost::asio::buffer(secret.data(), 20));
-			uint8_t nodeAck = 0;
-			boost::asio::read(socket, boost::asio::buffer(&nodeAck, sizeof(nodeAck)));
-			if (nodeAck != 1)
-				throw std::runtime_error("Malformed ACK received from node");
-			result = true;
-		} catch(boost::system::system_error& error) {
-			std::cerr << "boost::system:system_error in Peer::askNodeToBackup: "
-								<< error.what() << std::endl;
-		} catch(std::runtime_error& error) {
-			std::cerr << "std::runtime_error in Peer::askNodeToBackup: "
-								<< error.what() << std::endl;
-		}
-		
-    return result;
-  }
-
-  std::string Peer::sha256String(std::string input) {
-    unsigned char digest[SHA256_DIGEST_LENGTH];
-    SHA256((unsigned char *)input.c_str(), input.size(), digest);
-    
-    std::stringstream output;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-      output << std::hex << (int)digest[i];
-    }
-
-    return output.str();
-  }
-
-  std::string Peer::sha256File(std::string path) {
-    FILE *f;
-    unsigned char buf[8192]; // read 8kb at a time
-    unsigned char digest[SHA256_DIGEST_LENGTH];
-    SHA256_CTX sc;
-    int err;
-
-    f = fopen(path.c_str(), "rb");
-    if (f == NULL)
-      throw std::runtime_error("Couldn't open file at: " + path);
-
-    if (!SHA256_Init(&sc))
-      throw std::runtime_error("Error SHA256 Init");
-
-    for (;;) {
-      size_t len = fread(buf, 1, sizeof buf, f);
-      if (len == 0)
-	break;
-
-      if(!SHA256_Update(&sc, buf, len))
-	throw std::runtime_error("Error SHA256 Update");
-    }
-
-    err = ferror(f);
-    fclose(f);
-    if (err)
-      throw std::runtime_error("Couldn't close file. Error code: " + err);
-    
-    if (!SHA256_Final(digest, &sc))
-      throw std::runtime_error("Error SHA256 Final");
-
-    std::stringstream output;
-    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-      output << std::hex << (int)digest[i];
-    }
-
-    return output.str();
-  }
-
-  std::string Peer::salt() {
-    return std::to_string(rand());
-  }
+std::string Peer::salt() {
+  return std::to_string(rand());
+}
 
 } // namespace peer
