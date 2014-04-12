@@ -206,8 +206,19 @@ bool Peer::storeFile(std::string secret) {
   // Don't need to do anything with the metadata layer b/c the peer takes care of that
 }
 
-bool Peer::removeBackup(std::string path) {
+bool Peer::removeBackup(std::string fileID) {
+  using namespace std;
 
+  // Remove file from BTSync (fileID is secret)
+  btSyncInterface_->removeFolder(fileID);
+
+  // Update metadata layer
+  instance_->updateFileSize(fileID, 0);
+  // TODO what removes entries in metadata layer with size 0? tracker?
+
+  // Delete hardlink and containing directory
+  boost::filesystem::path fileDir(btBackupDir_ +"/"+ BACKUP_DIR +"/"+ fileID);
+  boost::filesystem::remove_all(fileDir);
 }
 
 bool Peer::updateFileSize(std::string fileID, uint64_t size) {

@@ -11,6 +11,10 @@ namespace metadata {
 // An interface for interacting with the metadata layer. The implementation
 // of the metadata layer can be a centralized tracker, DHT, etc.
 // Errors should throw an exception.
+// These functions should take the minimum amount of data needed. That is, we
+//   push the logic of doing the work down to the implementation of the metadata
+//   layer. Ex: call updateFileSize once with the peerID, fileId, and size, and
+//   the metadata layer is responsible for updating all replicant nodes
 class MetadataInterface {
  public:
   // Join the network as a node with the given nodeID
