@@ -71,6 +71,7 @@ class Peer {
   const std::string LOCAL_BACKUP_INFO_FILE = "local_backup_info";
  private:
   // Create necessary directories for backing up and storing data
+  // Read in localBackupInfo from disk
   Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
        std::shared_ptr<btsync::BTSyncInterface> btSyncI,
        std::string backupDir);
@@ -79,8 +80,6 @@ class Peer {
 
   // Keep track of our own ID
   std::string peerID_;
-
-  // pathToHardLink => (originalPath, fileID, salt, nodeID, size)
 
   // The folder in which we will place hardlinks of backed up files and store other peers' files
   // Should have two subdirectories: BACKUP_DIR and STORE_DIR
