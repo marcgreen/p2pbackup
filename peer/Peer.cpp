@@ -210,14 +210,17 @@ bool Peer::removeBackup(std::string fileID) {
   using namespace std;
 
   // Remove file from BTSync (fileID is secret)
+  cout << "Removing " << fileID << " from BTSync" << endl;
   btSyncInterface_->removeFolder(fileID);
 
   // Update metadata layer
+  cout << "Updating metadata layer to reflect backup deletion" << endl;
   instance_->updateFileSize(fileID, 0);
   // TODO what removes entries in metadata layer with size 0? tracker?
 
   // Delete hardlink and containing directory
   boost::filesystem::path fileDir(btBackupDir_ +"/"+ BACKUP_DIR +"/"+ fileID);
+  cout << "Deleting " << fileDir.string() << " to finish backup removal" << endl;
   boost::filesystem::remove_all(fileDir);
 }
 
