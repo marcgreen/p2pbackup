@@ -77,13 +77,14 @@ void TrackerInterface::blacklistNode(std::string peerID, std::string nodeID) {
   if (reply["error"] == 1) throw std::runtime_error("Error blacklisting node");
 }
 
-void TrackerInterface::backupFile(std::string nodeID, std::string fileID, uint64_t size) {
+void TrackerInterface::backupFile(std::string peerID, std::string nodeID, std::string fileID, uint64_t size) {
   std::cout << "Inform server we're backing up " << size << " bytes of data "
 	    << "identified by '" << fileID << "' to '" << nodeID << "'"
 	    << std::endl;
 
   Json::Value msg, reply;
   msg["command"] = tracker::BACKUP_FILE_CMD;
+	msg["peerID"] = peerID;
   msg["nodeID"] = nodeID;
   msg["fileID"] = fileID;
   msg["size"] = std::to_string(size);
@@ -94,14 +95,14 @@ void TrackerInterface::backupFile(std::string nodeID, std::string fileID, uint64
   if (reply["error"] == 1) throw std::runtime_error("Error backing up file");
 }
 
-void TrackerInterface::updateFileSize(std::string nodeID, std::string fileID, uint64_t size) {
+void TrackerInterface::updateFileSize(std::string peerID, std::string fileID, uint64_t size) {
   std::cout << "Inform server that the data identified by '" << fileID << "', "
 	    << "stored on '" << nodeID << "', is now " << size << " bytes"
 	    << std::endl;
 
   Json::Value msg, reply;
   msg["command"] = tracker::UPDATE_FILE_SIZE_CMD;
-  msg["nodeID"] = nodeID;
+	msg["peerID"] = peerID;
   msg["fileID"] = fileID;
   msg["size"] = std::to_string(size);
 
