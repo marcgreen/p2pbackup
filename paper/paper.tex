@@ -13,16 +13,20 @@
 \usepackage{graphicx}
 \usepackage{epstopdf}
 \usepackage{url}
+\usepackage{verbatim}
 %\usepackage[autostyle]{csquotes} 
 %\usepackage[toc,page]{appendix}
 
-%\usepackage[top=1in, bottom=1.5in, left=1.5in,right=1.5in]{geometry} % setting the page alignment with this package
+\usepackage[top=1in, bottom=1.5in, left=1.5in,right=1.5in]{geometry} % setting the page alignment with this package
 
 \DeclareGraphicsExtensions{.png}
 
 \begin{document}
+
+\begin{titlepage}
 \begin{center}
 \thispagestyle{empty}
+% TODO maybe nice pic? \includegraphics [width = 0.3\textwidth] {images/wpilogo}\\[0.3cm]
 % TODO install \textsc font
 \Large{\textbf{A Major Qualifying Project Report\\ \large{ON}}}\\[0.7cm]
 \LARGE{\textsc {\textbf{An Analysis of the Feasibility and Performance of BitTorrent as a Data Transfer Protocol in Peer to Peer Backup Systems}}}\\[0.5cm]
@@ -41,9 +45,8 @@
 \large{\textbf{Professor G\'abor N. S\'ark\"ozy}}\\
 \vspace{1cm}
 \large{\textbf{\\May 1, 2014}}\\
-\newpage
 \end{center}
-
+\end{titlepage}
 
 \begin{abstract}
 Abstract
@@ -175,10 +178,12 @@ A \textit{distributed hash table} (DHT) is a hash table that is stored across mu
 
 % TODO discuss DHTs being good with churn, scale well
 
+% TODO citations?
+
+
 DHTs play a major role in many P2P systems. They serve as the means through which peers can find either data or other peers, depending on the system; our system uses a DHT for the latter. In conjunction with the structured overlay network, the DHT allows for peers to discover each other. This is primarily done when looking for peers to send backups to. We discuss how we use our DHT in more detail in section \ref{sec:ourDHT}.
 
-\section{The BitTorrent Protocol}
-\label{sec:thebittorrentprotocol}
+\section{The BitTorrent Protocol} \label{sec:thebittorrentprotocol}
 BitTorrent is a peer to peer protocol designed for fast file sharing. A peer who wishes to share a file creates a .torrent file containing metadata about the file to be shared. This peer is known as the file's initial \textit{seeder}, and through the use of a BitTorrent client, starts \textit{seeding} the file. When a peer acts as a seeder, its sole purpose is to share the file that it is seeding with other peers. Peers who wish to download the file must acquire its .torrent file through an out-of-band channel, often a torrent indexer. Peers use the .torrent file to locate the initial seeder through either a centralized tracker or a DHT. These peers then connect to the initial seeder and start downloading the file. These peers are known as \textit{leechers} until they possess a full copy of the file, which is when they, themselves, become seeders.
 
 % TODO: add citation and more information about how much better BitTorrent is vs. direct download. Actually, add a lot of citations to this paragraph
@@ -194,6 +199,8 @@ BitTorrent Sync is a new application developed by BitTorrent, Inc. It is a P2P s
 
 Users of BitTorrent Sync have several options for having their synced devices locate each other. The following list is taken from the BitTorrent Sync technology page \cite{btsynctech} and describes each method of peer discovery:
 
+% TODO why do we discuss the different ways to find peers? We only need to talk about predfined hosts
+
 \begin{quote}
 \begin{itemize}
 \item Local peer discovery. All peers inside local network are discovered by sending broadcast packets. If there are peers with the same secret they respond to the broadcast message and connect.
@@ -208,17 +215,40 @@ To allow other developers to use BitTorrent Sync as a part of their applications
 
 BitTorrent Sync leverages the BitTorrent protocol to provide quick downloads between synced peers. We also leverage this through the use of BitTorrent Sync to provide fast recovery of backed up files. The implementation of our system is described in the next section.
 
+\chapter{BTBackup}
 
-\chapter{Implementation}
-\section{Languages and Tools}
-\section{System Design}
-\subsection{Overview}
-\subsection{}
-\subsection{DHT}
+In this chapter, we discuss the design of our Peer to Peer backup system.
+
 \section{Ensuring Backup Safekeeping} \label{sec:challenge}
 % This was copied from the explanation of challenge mechanisms in the background info. We will use it down here instead
 %A challenge in PeerStore consists of a randomly-generated number followed by a specified range of bytes in the file being backed up. The node holding the peer's data must take the bytes in the specified range, concatenate the random number with that data, take the hash of it, and return the result to the peer. If the correct answer is returned, then the node has passed the challenge. If the node does not respond or gives the wrong answer, the challenge has been failed. By choosing a random subset of bytes and creating a random number to include in the hash, the node cannot calculate the hash ahead of time and only store that; the whole file must be stored in order to be able to successfully complete all possible challenges. 
 
+
+\chapter{Implementation}
+\section{Language and Tools}
+\section{System Design}
+\subsection{Overview}
+\subsection{BitTorrent Sync}
+
+Cool new tool, implements bittorrent protocol, but unfortunately closed source. in production ready system, would want to open source (possibility of backdoor, etc)
+
+\subsection{DHT}
+
+Simplification:centralized tracker
+
+\subsection{System Core}
+
+Contrololololololers, etc
+
+\chapter{Methodology}
+
+\chapter{Results}
+
+\chapter{Conclusion}
+
+...
+
+\section{Future Work}
 
 
 \begin{thebibliography}{1}
