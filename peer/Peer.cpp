@@ -147,7 +147,7 @@ namespace peer {
 															 "(expected an array)");
 		
 		for (int nodeIndex = 0; nodeIndex < backupNodeList.size(); ++nodeIndex)
-			metadataInterface_->updateFileSize(
+			metadataInterface_->updateNodeFileSize(
 				backupNodeList[nodeIndex].asString(), fileID, size);
 		
 		// There isn't anything to indiciate that something went wrong, so just
@@ -161,7 +161,7 @@ namespace peer {
     // All secrets must be 20 characters long
     if (secret.length() != 20)
       throw std::runtime_error("Invalid secret; secrets must be "
-			       "20 characters long");
+															 "20 characters long");
 		
 		bool result = false;
 		boost::asio::io_service ioService;
