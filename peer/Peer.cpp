@@ -83,8 +83,8 @@ bool Peer::backupFile(std::string path) {
   string fileID = encryptionSecret;
 
   cout << "Backing up file " + path << endl
-	    << "RW secret: " + rwSecret << endl
-	    << "Encryption secret: " + encryptionSecret << endl;
+       << "RW secret: " + rwSecret << endl
+       << "Encryption secret: " + encryptionSecret << endl;
 
   // Make directory in our backup directory to house hard link
   boost::filesystem::path fileIDDir(btBackupDir_ +"/"+ BACKUP_DIR +"/"+ fileID);
@@ -225,10 +225,10 @@ bool Peer::removeBackup(std::string fileID) {
 }
 
 bool Peer::updateFileSize(std::string fileID, uint64_t size) {
-  Json::Value& backupNodeList = localBackupInfo_["backupTo"][fileID];
+  Json::Value& backupNodeList = localBackupInfo_[fileID]["nodes"];
 
   if (!backupNodeList.isArray())
-    throw std::runtime_error("In Peer::updateFile: Malformed SimpleMetaInfo "
+    throw std::runtime_error("In Peer::updateFile: Malformed LocalBackupInfo "
 			     "(expected an array)");
 
   for (int nodeIndex = 0; nodeIndex < backupNodeList.size(); ++nodeIndex)
