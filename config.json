@@ -7,6 +7,6 @@
 	"BTSyncPassword"    : "btsync",
 	"BTSyncIP"          : "127.0.0.1",
 	"BTSyncPort"        : "8888",
-	"BackupDirectory"   : "~/.btbackup"
+	"BackupDirectory"   : "/home/mqp/.btbackup"
 
 }

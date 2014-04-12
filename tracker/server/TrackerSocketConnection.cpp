@@ -1,4 +1,8 @@
 
+// TODO: backup and update need to be one operation that edit both the peer
+//       and the node. Also, make who you are backing up to a list (this
+//       change is to be made in MetadataRecord)
+
 #include "metadata/MetadataRecord.h"
 #include "tracker/TrackerProtocol.h"
 #include "tracker/server/TrackerDatabase.h"
@@ -67,8 +71,8 @@ void handleJoin(std::shared_ptr<tcp::socket> socket,
 }
 
 void handleFindClosestNode(std::shared_ptr<tcp::socket> socket,
-			   Json::Value& networkData,
-			   TrackerDatabase& trackerDatabase) {
+													 Json::Value& networkData,
+													 TrackerDatabase& trackerDatabase) {
   const std::string closeID = networkData["id"].asString();
   const std::string closestFound = trackerDatabase.findClosest(closeID);
   
@@ -80,8 +84,8 @@ void handleFindClosestNode(std::shared_ptr<tcp::socket> socket,
 }
 
 void handleGet(std::shared_ptr<tcp::socket> socket,
-	       Json::Value& networkData,
-	       TrackerDatabase& trackerDatabase) {
+							 Json::Value& networkData,
+							 TrackerDatabase& trackerDatabase) {
   const std::string nodeID = networkData["nodeID"].asString();
   Json::Value returnValue;
   
@@ -99,8 +103,8 @@ void handleGet(std::shared_ptr<tcp::socket> socket,
 }
 
 void handleBlacklist(std::shared_ptr<tcp::socket> socket,
-		     Json::Value& networkData,
-		     TrackerDatabase& trackerDatabase) {
+										 Json::Value& networkData,
+										 TrackerDatabase& trackerDatabase) {
   const std::string nodeID = networkData["nodeID"].asString();
   const std::string blacklisterID = networkData["peerID"].asString();
   bool commandResult = trackerDatabase.blacklistNode(nodeID, blacklisterID);
@@ -111,16 +115,15 @@ void handleBlacklist(std::shared_ptr<tcp::socket> socket,
 }
 
 void handleBackup(std::shared_ptr<tcp::socket> socket,
-		  Json::Value& networkData,
-		  TrackerDatabase& trackerDatabase) {
-  const std::string nodeID = networkData["nodeID"].asString();
-  const std::string fileID = networkData["fileID"].asString();
-  uint64_t size = boost::lexical_cast<uint64_t>
-    (networkData["size"].asString());
-  const std::string peerID =
-    socket->remote_endpoint().address().to_string();
+									Json::Value& networkData,
+									TrackerDatabase& trackerDatabase) {
+  const std::string peerID = networkData["peerID"].asString();
+	const std::string nodeID = networkData["nodeID"].asString();
+	const std::string fileID = networkData["fileID"].asString();
+  uint64_t size = boost::lexical_cast<uint64_t>(
+		networkData["size"].asString());
   bool commandResult =
-    trackerDatabase.backupFile(nodeID, fileID, size, peerID);
+    trackerDatabase.backupFile(peerID, nodeID, fileID, size);
   
   Json::Value returnValue;
   returnValue["error"] = static_cast<int>(commandResult);
@@ -130,14 +133,12 @@ void handleBackup(std::shared_ptr<tcp::socket> socket,
 void handleUpdateFileSize(std::shared_ptr<tcp::socket> socket,
 			  Json::Value& networkData,
 			  TrackerDatabase& trackerDatabase) {
-  const std::string nodeID = networkData["nodeID"].asString();
+  const std::string peerID = networkData["peerID"].asString();
   const std::string fileID = networkData["fileID"].asString();
   uint64_t size = boost::lexical_cast<uint64_t>
     (networkData["size"].asString());
-  const std::string peerID =
-    socket->remote_endpoint().address().to_string();
   bool commandResult =
-    trackerDatabase.updateFileSize(nodeID, fileID, size, peerID);
+    trackerDatabase.updateFileSize(peerID, fileID, size);
   
   Json::Value returnValue;
   returnValue["error"] = static_cast<int>(commandResult);
