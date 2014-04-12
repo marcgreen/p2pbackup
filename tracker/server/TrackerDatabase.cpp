@@ -29,9 +29,9 @@ std::string TrackerDatabase::findClosest(const std::string& id) {
   if (!found) {
     if (id.compare(sortedIDs_[currentPos]) < 0) {
       if (currentPos == 0)
-				currentPos = sortedIDs_.size() - 1;
+	currentPos = sortedIDs_.size() - 1;
       else
-				--currentPos;
+	--currentPos;
     } else {
       currentPos = (currentPos + 1) % sortedIDs_.size();
     }
@@ -68,20 +68,19 @@ bool TrackerDatabase::blacklistNode(const std::string& nodeID,
 
 // +
 bool TrackerDatabase::backupFile(const std::string& peerID,
-																 const std::string& nodeID,
-																 const std::string& fileID,
-																 uint64_t size) {
+				 const std::string& nodeID,
+				 const std::string& fileID,
+				 uint64_t size) {
   bool result = false;
   if (records_.count(peerID) == 1 && records_.count(nodeID) == 1) {
     if (!records_[peerID].addBackupFile(fileID, nodeID, size))
-			std::cout << "This is not the first time that fileID " << fileID
-								<< "has been backed up" << std::endl;
+      std::cout << "This is not the first time that fileID " << fileID
+		<< "has been backed up" << std::endl;
 		result = records_[nodeID].addStoreFile(fileID, peerID, size);
 	}
   return result;
 }
 
-// +
 bool TrackerDatabase::updateFileSize(const std::string& peerID,
 				     const std::string& fileID,
 				     uint64_t size) {

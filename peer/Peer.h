@@ -7,6 +7,7 @@
 #include "metadata/LocalBackupInfo.h"
 
 #include <memory>
+#include <mutex>
 
 namespace peer {
 
@@ -19,6 +20,7 @@ class Peer {
   static Peer& constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
 				 std::shared_ptr<btsync::BTSyncInterface> btSyncI,
 				 std::string backupDir);
+  
   static Peer& getInstance();
   
   // Contact metadata layer to join the P2P network
@@ -54,7 +56,10 @@ class Peer {
 
   // Create the given directory if it's not already created
   void createDirIfNeeded(std::string path);
-
+  
+  // Update the LocalBackupInfo and the Metadata Layer with BitTorrent Sync.
+  void synchronizeWithBTSync();
+  
   // Return the SHA256 digest for input
   static std::string sha256String(std::string input);
 
@@ -95,6 +100,10 @@ class Peer {
   // BTSyncController uses it for synchronizing filesizes between BTSync and Metadata Layer
   // MetadataController uses it to keep track of how often a node fails a challenge, etc
   metadata::LocalBackupInfo localBackupInfo_;
+  
+  // Mutex to protect access to localBackupInfo.
+  // TODO: update all uses of localBackupInfo_ so that they use this mutex
+  std::recursive_mutex localInfoMutex_;
 
 }; // class Peer
 

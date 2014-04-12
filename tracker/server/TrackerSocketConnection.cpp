@@ -71,8 +71,8 @@ void handleJoin(std::shared_ptr<tcp::socket> socket,
 }
 
 void handleFindClosestNode(std::shared_ptr<tcp::socket> socket,
-													 Json::Value& networkData,
-													 TrackerDatabase& trackerDatabase) {
+			   Json::Value& networkData,
+			   TrackerDatabase& trackerDatabase) {
   const std::string closeID = networkData["id"].asString();
   const std::string closestFound = trackerDatabase.findClosest(closeID);
   
@@ -84,8 +84,8 @@ void handleFindClosestNode(std::shared_ptr<tcp::socket> socket,
 }
 
 void handleGet(std::shared_ptr<tcp::socket> socket,
-							 Json::Value& networkData,
-							 TrackerDatabase& trackerDatabase) {
+	       Json::Value& networkData,
+	       TrackerDatabase& trackerDatabase) {
   const std::string nodeID = networkData["nodeID"].asString();
   Json::Value returnValue;
   
@@ -103,8 +103,8 @@ void handleGet(std::shared_ptr<tcp::socket> socket,
 }
 
 void handleBlacklist(std::shared_ptr<tcp::socket> socket,
-										 Json::Value& networkData,
-										 TrackerDatabase& trackerDatabase) {
+		     Json::Value& networkData,
+		     TrackerDatabase& trackerDatabase) {
   const std::string nodeID = networkData["nodeID"].asString();
   const std::string blacklisterID = networkData["peerID"].asString();
   bool commandResult = trackerDatabase.blacklistNode(nodeID, blacklisterID);
@@ -115,13 +115,12 @@ void handleBlacklist(std::shared_ptr<tcp::socket> socket,
 }
 
 void handleBackup(std::shared_ptr<tcp::socket> socket,
-									Json::Value& networkData,
-									TrackerDatabase& trackerDatabase) {
+		  Json::Value& networkData,
+		  TrackerDatabase& trackerDatabase) {
   const std::string peerID = networkData["peerID"].asString();
-	const std::string nodeID = networkData["nodeID"].asString();
-	const std::string fileID = networkData["fileID"].asString();
-  uint64_t size = boost::lexical_cast<uint64_t>(
-		networkData["size"].asString());
+  const std::string nodeID = networkData["nodeID"].asString();
+  const std::string fileID = networkData["fileID"].asString();
+  uint64_t size = networkData["size"].asUInt64();
   bool commandResult =
     trackerDatabase.backupFile(peerID, nodeID, fileID, size);
   
@@ -135,8 +134,7 @@ void handleUpdateFileSize(std::shared_ptr<tcp::socket> socket,
 			  TrackerDatabase& trackerDatabase) {
   const std::string peerID = networkData["peerID"].asString();
   const std::string fileID = networkData["fileID"].asString();
-  uint64_t size = boost::lexical_cast<uint64_t>
-    (networkData["size"].asString());
+  uint64_t size = networkData["size"].asUInt64();
   bool commandResult =
     trackerDatabase.updateFileSize(peerID, fileID, size);
   
