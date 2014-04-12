@@ -32,7 +32,7 @@ class Peer {
   // Backup the file located at "path"
   // - Find a node to backup to
   // - Add file to BTSync
-  // - Update tracker
+  // - Update metadata
   bool backupFile(std::string path);
 
   // Store the file with the given encryption secret for a node
@@ -40,8 +40,10 @@ class Peer {
 
   // Stop backing up the file at path
   // - Remove file from BTSync
-  // - Update tracker
-  bool removeBackup(std::string path);
+  // - Update metadata
+  // - Delete hardlink
+  // - Replicant node's metadata controller will notice metadata update and remove replica
+  bool removeBackup(std::string fileID);
 
   // Update the metadata layer with a file's new size
   bool updateFileSize(std::string fileID, uint64_t size);
@@ -71,6 +73,7 @@ class Peer {
   const std::string LOCAL_BACKUP_INFO_FILE = "local_backup_info";
  private:
   // Create necessary directories for backing up and storing data
+  // Read in localBackupInfo from disk
   Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
        std::shared_ptr<btsync::BTSyncInterface> btSyncI,
        std::string backupDir);
@@ -79,8 +82,6 @@ class Peer {
 
   // Keep track of our own ID
   std::string peerID_;
-
-  // pathToHardLink => (originalPath, fileID, salt, nodeID, size)
 
   // The folder in which we will place hardlinks of backed up files and store other peers' files
   // Should have two subdirectories: BACKUP_DIR and STORE_DIR

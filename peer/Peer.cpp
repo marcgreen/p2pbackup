@@ -189,11 +189,39 @@ bool Peer::backupFile(std::string path) {
 }
 
 bool Peer::storeFile(std::string secret) {
-  // create direcotry under btBackupDir/STORE_DIR and name it fileID
+  using namespace std;
+
+  // Make directory in our store directory to house backup. 'secret' is fileId
+  boost::filesystem::path fileIDDir(btBackupDir_ +"/"+ STORE_DIR +"/"+ secret);
+  if (!boost::filesystem::create_directory(fileIDDir)) {
+    cout << "Error making directory " + fileIDDir.string() << endl;
+    return false;
+  }
+  cout << "Replica directory: " + fileIDDir.string() << endl;
+
+  // Add secret to BTSync
+  btSyncInterface_->addFolder(fileIDDir.string(), secret);
+  cout << "Added folder to BTSync." << endl;
+
+  // Don't need to do anything with the metadata layer b/c the peer takes care of that
 }
 
-bool Peer::removeBackup(std::string path) {
+bool Peer::removeBackup(std::string fileID) {
+  using namespace std;
 
+  // Remove file from BTSync (fileID is secret)
+  cout << "Removing " << fileID << " from BTSync" << endl;
+  btSyncInterface_->removeFolder(fileID);
+
+  // Update metadata layer
+  cout << "Updating metadata layer to reflect backup deletion" << endl;
+  instance_->updateFileSize(fileID, 0);
+  // TODO what removes entries in metadata layer with size 0? tracker?
+
+  // Delete hardlink and containing directory
+  boost::filesystem::path fileDir(btBackupDir_ +"/"+ BACKUP_DIR +"/"+ fileID);
+  cout << "Deleting " << fileDir.string() << " to finish backup removal" << endl;
+  boost::filesystem::remove_all(fileDir);
 }
 
 bool Peer::updateFileSize(std::string fileID, uint64_t size) {
@@ -224,7 +252,6 @@ bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
   tcp::resolver resolver(ioService);
   tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT_STR);
   tcp::resolver::iterator iterator = resolver.resolve(query);
-  
   tcp::socket socket(ioService);
   
   try {
