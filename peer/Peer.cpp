@@ -44,6 +44,7 @@ Peer::Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
   createDirIfNeeded(btBackupDir + "/" + STORE_DIR);
 
   // Read in persistent localBackupInfo
+  std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
   localBackupInfo_.readFromDisk(btBackupDir +"/"+ LOCAL_BACKUP_INFO_FILE);
 }
 
@@ -108,7 +109,10 @@ bool Peer::backupFile(std::string path) {
 
   // Get size of file being backed up for use in finding replicant nodes
   uint64_t filesize = boost::filesystem::file_size(hardlinkPath);
-
+  
+  // Acquire access to the LocalBackupInfo data structure until the end of the
+  // method.
+  std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
   // Keep track of filesize locally for synchronization between BTSync and Metadata Layer
   localBackupInfo_[fileID]["size"] = std::to_string(filesize);
   if (!localBackupInfo_.dumpToDisk(btBackupDir_ +"/"+ LOCAL_BACKUP_INFO_FILE)) {
@@ -225,7 +229,9 @@ bool Peer::removeBackup(std::string fileID) {
 }
 
 bool Peer::updateFileSize(std::string fileID, uint64_t size) {
+  std::unique_lock<std::recursive_mutex> localInfoLock(localInfoMutex_);
   Json::Value& backupNodeList = localBackupInfo_[fileID]["nodes"];
+  localInfoLock.unlock();
 
   if (!backupNodeList.isArray())
     throw std::runtime_error("In Peer::updateFile: Malformed LocalBackupInfo "
@@ -282,6 +288,32 @@ void Peer::createDirIfNeeded(std::string path) {
     std::cout << "Creating directory: " + dir.string() << std::endl;
     if (!boost::filesystem::create_directory(dir))
       throw std::runtime_error("Couldn't create directory: " + dir.string());
+  }
+}
+
+void Peer::synchronizeWithBTSync() {
+  Json::Value folderInfo = btSyncInterface_->getFolders();
+  
+  // Acquire access to the LocalBackupInfo data structure
+  std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
+  
+  for (Json::Value folder : folderInfo) {
+    // TODO: get sizes as strings, convert them to uint64_t
+    std::string currentFileID = folder["secret"].asString();
+    uint64_t btSyncFileSize = folder["size"].asUInt64();
+    uint64_t localInfoFileSize = localBackupInfo_[currentFileID]["size"].asUInt64();
+    
+    // If the sizes are different, then the file size has changed. Update
+    // the LocalBackupInfo data structure and inform the Metadata Layer of the
+    // change.
+    if (btSyncFileSize != localInfoFileSize) {
+      std::cout << "Change in file size found. Information: " << std::endl
+		<< "File ID: " << currentFileID << std::endl
+		<< "LocalBackupInfo size: " << localInfoFileSize << std::endl
+		<< "BTSync size: " << btSyncFileSize << std::endl;
+      localBackupInfo_[currentFileID]["size"] = static_cast<Json::UInt64>(btSyncFileSize);
+      updateFileSize(currentFileID, btSyncFileSize);
+    }
   }
 }
 

@@ -2,7 +2,9 @@
 #ifndef CORE_BTSYNC_CONTROLLER_H_
 #define CORE_BTSYNC_CONTROLLER_H_
 
+#include <chrono>
 #include <memory>
+#include <thread>
 
 #include "Controller.h"
 

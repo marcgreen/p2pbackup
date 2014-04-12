@@ -30,13 +30,11 @@ uint64_t MetadataRecord::getTotalBackupSize() {
 
 bool MetadataRecord::addBackupFile(std::string fileID, std::string nodeID, uint64_t size) {
   if (backedUpFiles_.count(fileID) == 1) {
-		return false;
-	} else {
-		/*auto v = backedUpFiles_.insert(std::make_pair(fileID, FileMetadata(nodeID, size, std::time(NULL))));
-			return v.second;*/
-		backedUpFiles_[fileID].push_back(FileMetadata(nodeID, size, std::time(NULL)));
-		return true;
-	}
+    return false;
+  } else {
+    backedUpFiles_[fileID].push_back(FileMetadata(nodeID, size, std::time(NULL)));
+    return true;
+  }
 }
 
 bool MetadataRecord::updateBackupFileSize(std::string fileID, uint64_t size) {
@@ -48,7 +46,6 @@ bool MetadataRecord::updateBackupFileSize(std::string fileID, uint64_t size) {
 	 backupNodeIt != backedUpFiles_[fileID].end();
 	 ++backupNodeIt)
       (*backupNodeIt).size = size;
-    //backedUpFiles_[fileID].size = size;
     return true;
   }
 }
@@ -65,11 +62,11 @@ uint64_t MetadataRecord::getTotalStoreSize() {
 
 bool MetadataRecord::addStoreFile(std::string fileID, std::string peerID, uint64_t size) {
   if (storedFiles_.count(fileID) == 1) {
-		return false;
-	} else {
-		auto v = storedFiles_.insert(std::make_pair(fileID, FileMetadata(peerID, size, std::time(NULL))));
-		return v.second;
-	}
+    return false;
+  } else {
+    auto v = storedFiles_.insert(std::make_pair(fileID, FileMetadata(peerID, size, std::time(NULL))));
+    return v.second;
+  }
 }
 
 bool MetadataRecord::updateStoreFileSize(std::string fileID, uint64_t size) {
@@ -110,7 +107,7 @@ std::string MetadataRecord::serialize() {
 	 ++backupNodeIt) {
       Json::Value backupEntry;
       backupEntry["nodeID"] = (*backupNodeIt).nodeID;
-      backupEntry["size"] = std::to_string((*backupNodeIt).size);
+      backupEntry["size"] = static_cast<Json::UInt64>((*backupNodeIt).size);
       backupEntry["timestamp"] = std::to_string((*backupNodeIt).timestamp);
       backedUpFileList[fileID].append(backupEntry);
     }
@@ -122,7 +119,7 @@ std::string MetadataRecord::serialize() {
     Json::Value node;
     node["fileID"] = el.first;
     node["fileMetadata"]["nodeID"] = el.second.nodeID;
-    node["fileMetadata"]["size"] = std::to_string(el.second.size);
+    node["fileMetadata"]["size"] = static_cast<Json::UInt64>(el.second.size);
     node["fileMetadata"]["timestamp"] = std::to_string(el.second.timestamp);
 
     root["storedFiles"].append(node);
@@ -151,7 +148,7 @@ bool MetadataRecord::unserialize(std::string reply) {
     for (Json::Value subel : root["backedUpFiles"][el]) {
       backedUpFiles_[el].push_back
 	(FileMetadata(subel["nodeID"].asString(),
-		      subel["size"].asInt(),
+		      subel["size"].asUInt64(),
 		      subel["timestamp"].asInt()));
     }
   }
@@ -159,7 +156,7 @@ bool MetadataRecord::unserialize(std::string reply) {
   for (Json::Value el : root["storedFiles"]) {
     storedFiles_.insert(std::make_pair(el["fileID"].asString(),
 				       FileMetadata(el["nodeID"].asString(),
-						    el["size"].asInt(),
+						    el["size"].asUInt64(),
 						    el["timestamp"].asInt())));
   }
 
