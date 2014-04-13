@@ -55,15 +55,11 @@ TrackerDatabase::getRecord(const std::string& nodeID) {
 
 bool TrackerDatabase::join(const std::string& nodeID,
 			   const std::string& ipAddress) {
-  bool result = false;
-  if (records_.count(nodeID) == 0) {
-    result = true;
-    records_.insert(std::make_pair
-		    (nodeID, metadata::MetadataRecord(ipAddress)));
-    sortedIDs_.push_back(nodeID);
-    std::sort(sortedIDs_.begin(), sortedIDs_.end());
-  }
-  return result;
+  records_.insert(std::make_pair
+		  (nodeID, metadata::MetadataRecord(ipAddress)));
+  sortedIDs_.push_back(nodeID);
+  std::sort(sortedIDs_.begin(), sortedIDs_.end());
+  return true;
 }
 
 bool TrackerDatabase::blacklistNode(const std::string& nodeID,
