@@ -172,7 +172,6 @@ bool Peer::backupFile(std::string path) {
 
     // Ask (tell) node to backup. Wait for ACK, or find other replicant node if they never ACK
     cout << "Node qualifies! Asking to backup...";
-    cout << encryptionSecret << endl;
     std::string nodeIP = nodeMetadata.getNodeIP();
     if (!askNodeToBackup(nodeIP, encryptionSecret))
       continue;
@@ -306,8 +305,6 @@ bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
     throw boost::system::system_error(error);
 
   try {
-    std::cout << "askNodeToBackup: secret data/secret size: " 
-	      << secret.data() << "/" << secret.size() << std::endl;
     boost::asio::write(socket, boost::asio::buffer(secret.data(), secret.size()));
     uint8_t nodeAck = 0;
     boost::asio::read(socket, boost::asio::buffer(&nodeAck, sizeof(nodeAck)));
