@@ -183,7 +183,7 @@ bool Peer::backupFile(std::string path) {
 	      << "\tNode obligated to store: " << to_string(obligatedStoreSize) << endl
 	      << "\t\t(" + to_string(TOTAL_REPLICA_COUNT) + " * " + to_string(backedUpSize) + ")"
 	      << endl;
-    if (newStoredSize >= obligatedStoreSize || storedSize < MINIMUM_STORE_SIZE)
+    if (newStoredSize >= obligatedStoreSize && storedSize > MINIMUM_STORE_SIZE)
       continue;
 
     // Ensure the node doesn't have too many blacklisters
