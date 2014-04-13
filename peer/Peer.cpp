@@ -66,7 +66,6 @@ bool Peer::joinNetwork() {
   using namespace std;
 
   // Calculate our peerID
-  // Address space is 160bits, defined by length of BTSync's encryption secret (used as fileID)
   string peerID;
   
   if (localBackupInfo_.isMember("ID"))
