@@ -158,7 +158,7 @@ bool Peer::backupFile(std::string path) {
   // Replicate file on the network several times
   int numberReplicas = 0;
   cout << "Finding replication nodes..." << endl;
-  while (numberReplicas < TOTAL_REPLICA_COUNT) {
+ FIND_NODE: while (numberReplicas < TOTAL_REPLICA_COUNT) {
     string id = btSyncInterface_->getSecrets(true)["encryption"].asString();
     cout << "\tRandomly generated id: " << id << endl;
 
@@ -170,7 +170,7 @@ bool Peer::backupFile(std::string path) {
     Json::Value nodeArray = localBackupInfo_[fileID]["nodes"];
     for (Json::Value node : nodeArray)
       if (nodeID == node.asString())
-	continue;
+	goto FIND_NODE;
 
     // Determine if node is obligated to store file, given the amount they currently backup and store
     metadata::MetadataRecord nodeMetadata;
