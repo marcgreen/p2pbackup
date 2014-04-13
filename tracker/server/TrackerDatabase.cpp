@@ -2,6 +2,7 @@
 #include "metadata/MetadataRecord.h"
 #include "tracker/server/TrackerDatabase.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <ctime>
 #include <iostream>
@@ -15,6 +16,8 @@ std::string TrackerDatabase::findClosest(const std::string& id) {
   int min = 0, max = sortedIDs_.size() - 1;
   int currentPos;
   bool found = false, done = false;
+  
+  std::cout << "Finding closest " << max << std::endl;
   
   while (max >= min && !found) {
     currentPos = (min + max) / 2;
@@ -37,6 +40,9 @@ std::string TrackerDatabase::findClosest(const std::string& id) {
     }
   }
   
+  std::cout << "Found closest " << currentPos << " "
+	    << sortedIDs_[currentPos] << std::endl;
+  
   return sortedIDs_[currentPos];
 }
 
@@ -48,12 +54,14 @@ TrackerDatabase::getRecord(const std::string& nodeID) {
 }
 
 bool TrackerDatabase::join(const std::string& nodeID,
-													 const std::string& ipAddress) {
+			   const std::string& ipAddress) {
   bool result = false;
   if (records_.count(nodeID) == 0) {
     result = true;
-    records_.insert(std::make_pair(
-											nodeID, metadata::MetadataRecord(ipAddress)));
+    records_.insert(std::make_pair
+		    (nodeID, metadata::MetadataRecord(ipAddress)));
+    sortedIDs_.push_back(nodeID);
+    std::sort(sortedIDs_.begin(), sortedIDs_.end());
   }
   return result;
 }
