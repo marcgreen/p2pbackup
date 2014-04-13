@@ -26,8 +26,10 @@ void sendWrapper(const Json::Value& dataToSend,
 }
 
 void handleTrackerSocketConnection(std::shared_ptr<tcp::socket> socket) {
+  std::cout << "Handling request" << std::endl;
   Json::Value value;
   recv(value, *socket);
+  std::cout << "Received data" << std::endl;
   
   tracker::TrackerCommand command =
     static_cast<tracker::TrackerCommand>(value["command"].asInt());
