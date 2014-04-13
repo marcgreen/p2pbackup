@@ -24,7 +24,7 @@ void TrackerInterface::joinNetwork(std::string nodeID) {
   msg["nodeID"] = nodeID;
 
   std::string error = executeCommand(msg, reply);
-  if (error.empty()) throw std::runtime_error(error);
+  if (!error.empty()) throw std::runtime_error(error);
 
   if (reply["error"] == 1) throw std::runtime_error("Error joining network");
 }
