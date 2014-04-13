@@ -79,6 +79,7 @@ class Peer {
   static const std::string BACKUP_DIR;
   static const std::string STORE_DIR;
   static const std::string LOCAL_BACKUP_INFO_FILE;
+  static const int BTSYNC_FOLDER_RESCAN_INTERVAL;
  private:
   // Create necessary directories for backing up and storing data
   // Read in localBackupInfo from disk

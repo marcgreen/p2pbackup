@@ -18,12 +18,13 @@ namespace peer {
   
 std::shared_ptr<Peer> Peer::instance_ = std::shared_ptr<Peer>(0);
 const int Peer::ENCRYPTION_SECRET_LENGTH = 33;
-const int Peer::DEFAULT_BTSYNC_PORT = 48247;
 const float Peer::MAX_BLACKLIST_STORE_RATIO = .25;
 const int Peer::TOTAL_REPLICA_COUNT = 2; // TODO change when testing large scale
 const std::string Peer::BACKUP_DIR = "backup";
 const std::string Peer::STORE_DIR = "store";
 const std::string Peer::LOCAL_BACKUP_INFO_FILE = "local_backup_info";
+const int Peer::BTSYNC_FOLDER_RESCAN_INTERVAL = 60;
+const int Peer::DEFAULT_BTSYNC_PORT = 48247;
 
 Peer& Peer::constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
 			      std::shared_ptr<btsync::BTSyncInterface> btSyncI,
@@ -53,6 +54,12 @@ Peer::Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
   // Read in persistent localBackupInfo
   std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
   localBackupInfo_.readFromDisk(btBackupDir +"/"+ LOCAL_BACKUP_INFO_FILE);
+
+  // Set BTSync preferences
+  Json::Value prefs;
+  prefs["folder_rescan_interval"] = BTSYNC_FOLDER_RESCAN_INTERVAL;
+  prefs["listening_port"] = DEFAULT_BTSYNC_PORT;
+  btSyncInterface_->setPreferences(prefs);
 }
 
 bool Peer::joinNetwork() {
