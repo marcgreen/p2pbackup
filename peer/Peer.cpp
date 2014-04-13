@@ -61,14 +61,17 @@ bool Peer::joinNetwork() {
     metadataInterface_->joinNetwork(peerID);
   } catch (exception& e) {
     cout << e.what() << endl;
+    return false;
   }
 
   cout << "Successfully joined network" << endl;
+  return true;
 }
 
 bool Peer::blacklistNode(std::string nodeID) {
   std::cout << "Blacklisting " + nodeID << std::endl;
   metadataInterface_->blacklistNode(peerID_, nodeID);
+  return true;
 }
 
 bool Peer::backupFile(std::string path) {
@@ -216,6 +219,8 @@ bool Peer::storeFile(std::string secret) {
   cout << "Added folder to BTSync." << endl;
 
   // Don't need to do anything with the metadata layer b/c the peer takes care of that
+
+  return true;
 }
 
 bool Peer::removeBackup(std::string fileID) {
@@ -223,17 +228,25 @@ bool Peer::removeBackup(std::string fileID) {
 
   // Remove file from BTSync (fileID is secret)
   cout << "Removing " << fileID << " from BTSync" << endl;
-  btSyncInterface_->removeFolder(fileID);
+  Json::Value ret = btSyncInterface_->removeFolder(fileID);
+  if (ret["error"] != 0)
+    return false;
 
   // Update metadata layer
   cout << "Updating metadata layer to reflect backup deletion" << endl;
-  instance_->updateFileSize(fileID, 0);
+  if (!instance_->updateFileSize(fileID, 0))
+    return false;
+  // TODO Peer functions return bools and throw exceptions. we should make that consistent. we should
+  //   also actually check return values and catch exceptions
   // TODO what removes entries in metadata layer with size 0? tracker?
 
   // Delete hardlink and containing directory
   boost::filesystem::path fileDir(btBackupDir_ +"/"+ BACKUP_DIR +"/"+ fileID);
   cout << "Deleting " << fileDir.string() << " to finish backup removal" << endl;
   boost::filesystem::remove_all(fileDir);
+  // TODO error check remove_all
+
+  return true;
 }
 
 bool Peer::updateFileSize(std::string fileID, uint64_t size) {
