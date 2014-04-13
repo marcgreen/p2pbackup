@@ -29,7 +29,6 @@ ConsoleController::ConsoleController(std::shared_ptr<Dispatcher> dispatcher) :
   createControllers();
 }
 
-// TODO: for each command, call the appropriate Peer method
 void ConsoleController::start() {
   bool exitCommandUsed = false;
   Json::Value configInfo;
@@ -69,16 +68,18 @@ void ConsoleController::start() {
     if (splitInput.size() < 1) {
       std::cerr << "Error parsing user input" << std::endl;
     }	else if (splitInput[0] == "") {
-      // The usger entered nothing, so just go back to waiting for input
+      // The user entered nothing, so just go back to waiting for input
       continue;
     } else if (splitInput[0] == "exit" || splitInput[0] == "q") {
       exitCommandUsed = true;
     } else if (splitInput[0] == "backup") {
       if (splitInput.size() < 2)
 	std::cerr << "Usage: backup <fileName>" << std::endl;
+      peer.backupFile(splitInput[1]);
     } else if (splitInput[0] == "rm") {
       if (splitInput.size() < 2)
 	std::cerr << "Usage: rm <fileName>" << std::endl;
+      peer.removeBackup(splitInput[1]);
     } else if (splitInput[0] == "help") {
       std::cout << "Available commands: " << std::endl
 		<< "exit              - exits the program." << std::endl
