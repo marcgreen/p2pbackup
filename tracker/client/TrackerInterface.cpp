@@ -105,7 +105,7 @@ void TrackerInterface::updateFileSize(std::string peerID, std::string fileID, ui
   msg["command"] = tracker::UPDATE_FILE_SIZE_CMD;
   msg["peerID"] = peerID;
   msg["fileID"] = fileID;
-  msg["size"] = std::to_string(size);
+  msg["size"] = static_cast<Json::UInt64>(size);
 
   std::string error = executeCommand(msg, reply);
   if (!error.empty()) throw std::runtime_error(error);
