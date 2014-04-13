@@ -18,7 +18,7 @@ namespace peer {
   
 std::shared_ptr<Peer> Peer::instance_ = std::shared_ptr<Peer>(0);
 const int Peer::ENCRYPTION_SECRET_LENGTH = 33;
-const int Peer::DEFAULT_BTSYNC_PORT = 11589;
+const int Peer::DEFAULT_BTSYNC_PORT = 48247;
 const float Peer::MAX_BLACKLIST_STORE_RATIO = .25;
 const int Peer::TOTAL_REPLICA_COUNT = 2; // TODO change when testing large scale
 const std::string Peer::BACKUP_DIR = "backup";
@@ -129,9 +129,16 @@ bool Peer::backupFile(std::string path) {
     return false;
   }
 
-  // Add file to BTSync
+  // Add file to BTSync and set folder preferences
   btSyncInterface_->addFolder(fileIDDir.string(), rwSecret);
-  cout << "Added folder to BTSync" << endl;
+  Json::Value params;
+  params["use_hosts"] = 1;
+  params["use_sync_trash"] = 0;
+  params["use_tracker"] = 0;
+  params["use relay_server"] = 0;
+  params["search_lan"] = 0;
+  btSyncInterface_->setFolderPreferences(rwSecret, params);
+  cout << "Added folder to BTSync and modified preferences" << endl;
 
   // Replicate file on the network several times
   int numberReplicas = 0;
@@ -195,13 +202,12 @@ bool Peer::backupFile(std::string path) {
     cout << "success!" << endl;
 
     // Tell BTSync how to find the node
-    Json::Value params, hosts;
+    Json::Value hosts = btSyncInterface_->getFolderHosts(rwSecret);
     Json::FastWriter writer;
     hosts.append(nodeIP + ":" + to_string(DEFAULT_BTSYNC_PORT));
-    params["use_hosts"] = 1;
+
     cout << "Adding predefined host: " << writer.write(hosts) << endl;
     btSyncInterface_->setFolderHosts(rwSecret, hosts);
-    btSyncInterface_->setFolderPreferences(rwSecret, params);
     
     // Store relevant data in JSON data structure and write to file
     localBackupInfo_[fileID]["nodes"].append(nodeID);
