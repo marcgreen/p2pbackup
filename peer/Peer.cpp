@@ -70,8 +70,10 @@ bool Peer::joinNetwork() {
   
   if (localBackupInfo_.isMember("ID"))
     peerID = localBackupInfo_["ID"].asString();
-  else
+  else {
     peerID = btSyncInterface_->getSecrets(true)["encryption"].asString();
+    localBackupInfo_["ID"] = peerID;
+  }
   
   peerID_ = peerID;
   localBackupInfo_.dumpToDisk(btBackupDir_ + "/" + LOCAL_BACKUP_INFO_FILE);
