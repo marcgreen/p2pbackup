@@ -151,20 +151,24 @@ bool Peer::backupFile(std::string path) {
     uint64_t obligatedStorage = TOTAL_REPLICA_COUNT * backedUpSize;
     cout << "\tNode will be storing: " << to_string(newStorage) << endl
 	      << "\tNode obligated to store: " << to_string(obligatedStorage) << endl
-	      << "\t\t(" + to_string(TOTAL_REPLICA_COUNT) + " * " + to_string(backedUpSize)
+	      << "\t\t(" + to_string(TOTAL_REPLICA_COUNT) + " * " + to_string(backedUpSize) + ")"
 	      << endl;
-    if (newStorage >= obligatedStorage)
-      continue;
+    if (newStorage >= obligatedStorage) {
+      // TODO need to be able to bootstrap network 
+      //continue;
+    }
 
     // Ensure the node doesn't have too many blacklisters
     int numBlacklisters = nodeMetadata.getNumberBlacklisters();
     int numStoredFiles = nodeMetadata.getNumberStoredFiles();
-    float blacklistToStoreRatio = numBlacklisters / numStoredFiles;
-    cout << "\tNode blacklist:store ratio: "
-	      << to_string(numBlacklisters) << "/" << to_string(numStoredFiles)
-	      << "(" << to_string(blacklistToStoreRatio) << ")" << endl;
-    if (blacklistToStoreRatio > MAX_BLACKLIST_STORE_RATIO)
-      continue;
+    if (numStoredFiles != 0) {
+      float blacklistToStoreRatio = numBlacklisters / numStoredFiles;
+      cout << "\tNode blacklist:store ratio: "
+	   << to_string(numBlacklisters) << "/" << to_string(numStoredFiles)
+	   << "(" << to_string(blacklistToStoreRatio) << ")" << endl;
+      if (blacklistToStoreRatio > MAX_BLACKLIST_STORE_RATIO)
+	continue;
+    }
 
     // Ask (tell) node to backup. Wait for ACK, or find other replicant node if they never ACK
     cout << "Node qualifies! Asking to backup...";
@@ -178,15 +182,17 @@ bool Peer::backupFile(std::string path) {
     try {
       metadataInterface_->backupFile(peerID_, nodeID, fileID, filesize);
     } catch (exception& e) {
-      cout << e.what() << endl;
+      cout << "Error adding file to metadata: " << e.what() << endl;
+      return false;
     }
     cout << "success!" << endl;
 
     // Tell BTSync how to find the node
     Json::Value params, hosts;
+    Json::FastWriter writer;
     hosts.append(nodeIP + ":" + to_string(DEFAULT_BTSYNC_PORT));
     params["use_hosts"] = 1;
-    cout << "Adding predefined host: " << hosts.asString() << endl;
+    cout << "Adding predefined host: " << writer.write(hosts) << endl;
     btSyncInterface_->setFolderHosts(fileID, hosts);
     btSyncInterface_->setFolderPreferences(fileID, params);
     
@@ -197,9 +203,11 @@ bool Peer::backupFile(std::string path) {
       return false;
     }
 
+    cout << "Completed replication to the node. Good job!" << endl;
     numberReplicas++;
   }
 
+  cout << "Completed file backup. Excellent!" << endl;
   return true;
 }
 
@@ -269,20 +277,35 @@ bool Peer::updateFileSize(std::string fileID, uint64_t size) {
 bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
   using boost::asio::ip::tcp;
 
-  // All secrets must be 20 characters long
-  if (secret.length() != 20)
+  // All secrets must be 32 characters long
+  // TODO figure out length of secret
+  /*
+  if (secret.length() != ENCRYPTION_SECRET_LENGTH)
     throw std::runtime_error("Invalid secret; secrets must be "
-			     "20 characters long");
+			     + std::to_string(ENCRYPTION_SECRET_LENGTH) + 
+			     " characters long");
+  */
 
   bool result = false;
   boost::asio::io_service ioService;
   tcp::resolver resolver(ioService);
   tcp::resolver::query query(tcp::v4(), nodeIP, core::CLIENT_PORT_STR);
   tcp::resolver::iterator iterator = resolver.resolve(query);
+  tcp::resolver::iterator end;
+
   tcp::socket socket(ioService);
+  boost::system::error_code error = boost::asio::error::host_not_found;
   
+  while (error && iterator != end) {
+    socket.close();
+    socket.connect(*iterator++, error);
+  }
+  
+  if (error)
+    throw boost::system::system_error(error);
+
   try {
-    boost::asio::write(socket, boost::asio::buffer(secret.data(), 20));
+    boost::asio::write(socket, boost::asio::buffer(secret.data(), secret.size()));
     uint8_t nodeAck = 0;
     boost::asio::read(socket, boost::asio::buffer(&nodeAck, sizeof(nodeAck)));
     if (nodeAck != 1)
@@ -321,6 +344,9 @@ void Peer::synchronizeWithBTSync() {
   for (Json::Value folder : folderInfo) {
     // TODO get size of backed up file, not of folder as a whole
     // (btsync has content in backed up folder)
+    // also need to look into rwSecrets vs encryptionSecrets
+
+    
     std::string currentFileID = folder["secret"].asString();
     uint64_t btSyncFileSize = folder["size"].asUInt64();
     uint64_t localInfoFileSize = localBackupInfo_[currentFileID]["size"].asUInt64();

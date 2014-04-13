@@ -26,7 +26,7 @@ void TrackerInterface::joinNetwork(std::string nodeID) {
   std::string error = executeCommand(msg, reply);
   if (!error.empty()) throw std::runtime_error(error);
 
-  if (reply["error"] == 1) throw std::runtime_error("Error joining network");
+  if (reply["error"] == 1) throw std::runtime_error("Server says error joining network");
 }
 
 std::string TrackerInterface::findClosestNode(std::string id) {
@@ -39,7 +39,7 @@ std::string TrackerInterface::findClosestNode(std::string id) {
   std::string error = executeCommand(msg, reply);
   if (!error.empty()) throw std::runtime_error(error);
 
-  if (reply["error"] == 1) throw std::runtime_error("Error finding closest node");
+  if (reply["error"] == 1) throw std::runtime_error("Server says error finding closest node");
 
   return reply["nodeID"].asString();
 }
@@ -54,7 +54,7 @@ void TrackerInterface::get(std::string nodeID, metadata::MetadataRecord &metadat
   std::string error = executeCommand(msg, reply);
   if (!error.empty()) throw std::runtime_error(error);
 
-  if (reply["error"] == 1) throw std::runtime_error("Error getting node metadata");
+  if (reply["error"] == 1) throw std::runtime_error("Server says error getting node metadata");
 
   if (!metadataRecord.unserialize(reply["metadata"].asString())) {
     throw std::runtime_error("Error unserializing JSON from get reply");
@@ -74,7 +74,7 @@ void TrackerInterface::blacklistNode(std::string peerID, std::string nodeID) {
   std::string error = executeCommand(msg, reply);
   if (!error.empty()) throw std::runtime_error(error);
 
-  if (reply["error"] == 1) throw std::runtime_error("Error blacklisting node");
+  if (reply["error"] == 1) throw std::runtime_error("Server says error blacklisting node");
 }
 
 void TrackerInterface::backupFile(std::string peerID, std::string nodeID, std::string fileID, uint64_t size) {
@@ -87,12 +87,12 @@ void TrackerInterface::backupFile(std::string peerID, std::string nodeID, std::s
 	msg["peerID"] = peerID;
   msg["nodeID"] = nodeID;
   msg["fileID"] = fileID;
-  msg["size"] = std::to_string(size);
+  msg["size"] = static_cast<Json::UInt64>(size);
 
   std::string error = executeCommand(msg, reply);
   if (!error.empty()) throw std::runtime_error(error);
 
-  if (reply["error"] == 1) throw std::runtime_error("Error backing up file");
+  if (reply["error"] == 1) throw std::runtime_error("Server says error recording data of backed up file");
 }
 
 void TrackerInterface::updateFileSize(std::string peerID, std::string fileID, uint64_t size) {
@@ -109,7 +109,7 @@ void TrackerInterface::updateFileSize(std::string peerID, std::string fileID, ui
   std::string error = executeCommand(msg, reply);
   if (!error.empty()) throw std::runtime_error(error);
 
-  if (reply["error"] == 1) throw std::runtime_error("Error updating file size");
+  if (reply["error"] == 1) throw std::runtime_error("Server says error updating file size");
 
 }
 
