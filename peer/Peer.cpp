@@ -123,7 +123,7 @@ bool Peer::backupFile(std::string path) {
   // method.
   std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
   // Keep track of filesize locally for synchronization between BTSync and Metadata Layer
-  localBackupInfo_[fileID]["size"] = std::to_string(filesize);
+  localBackupInfo_[fileID]["size"] = static_cast<Json::UInt64>(filesize);
   if (!localBackupInfo_.dumpToDisk(btBackupDir_ +"/"+ LOCAL_BACKUP_INFO_FILE)) {
     cerr << "Error writing local backup info to disk" << endl;
     return false;
