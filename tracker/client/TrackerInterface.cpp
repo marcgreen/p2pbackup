@@ -121,8 +121,18 @@ std::string TrackerInterface::executeCommand(const Json::Value &msg, Json::Value
   tcp::resolver resolver(io_service);
   tcp::resolver::query query(tcp::v4(), serverIP_, serverPort_);
   tcp::resolver::iterator iterator = resolver.resolve(query);
+  tcp::resolver::iterator end;
 
   tcp::socket s(io_service);
+  boost::system::error_code error = boost::asio::error::host_not_found;
+  
+  while (error && iterator != end) {
+    s.close();
+    s.connect(*iterator++, error);
+  }
+  
+  if (error)
+    throw boost::system::system_error(error);
 
   if (!tracker::send(msg, s)) return "Error sending to server";
   if (!tracker::recv(reply, s)) return "Error recving from server";
