@@ -57,6 +57,11 @@ void ConsoleController::start() {
        configInfo["BTSyncPort"].asString())),
      configInfo["BackupDirectory"].asString());
   
+  if (!peer.joinNetwork()) {
+    std::cerr << "Fatal error: could not join network" << std::endl;
+    return;
+  }
+  
   startAllAsync();
   
   while (!exitCommandUsed) {
