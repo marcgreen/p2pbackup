@@ -132,25 +132,17 @@ bool MetadataRecord::unserialize(std::string reply) {
   Json::Value root;
   Json::Reader reader;
 
-  std::cout << "1";
-
   bool parsingSuccessful = reader.parse(reply, root);
   if (!parsingSuccessful) {
     std::cout  << "Failed to parse configuration\n";
     return false;
   }
 
-  std::cout << "2";
-
   nodeIP_ = root["nodeIP"].asString();
-
-  std::cout << "3";
 
   for (Json::Value el : root["blacklisters"]) {
     addBlacklister(el["nodeID"].asString(), el["timestamp"].asInt());
   }
-
-  std::cout << "4";
 
   for (std::string el : root["backedUpFiles"].getMemberNames()) {
     for (Json::Value subel : root["backedUpFiles"][el]) {
@@ -161,16 +153,12 @@ bool MetadataRecord::unserialize(std::string reply) {
     }
   }
 
-  std::cout << "5";
-
   for (Json::Value el : root["storedFiles"]) {
     storedFiles_.insert(std::make_pair(el["fileID"].asString(),
 				       FileMetadata(el["nodeID"].asString(),
 						    el["size"].asUInt64(),
 						    el["timestamp"].asInt())));
   }
-
-  std::cout << "6";
 
     return true;
 }
