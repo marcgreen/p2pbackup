@@ -182,7 +182,7 @@ bool Peer::backupFile(std::string path) {
 
     // Tell BTSync how to find the node
     Json::Value params, hosts;
-    hosts.append(nodeIP + ":11589");
+    hosts.append(nodeIP + ":" + to_string(DEFAULT_BTSYNC_PORT));
     params["use_hosts"] = 1;
     cout << "Adding predefined host: " << hosts.asString() << endl;
     btSyncInterface_->setFolderHosts(fileID, hosts);

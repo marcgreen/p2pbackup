@@ -71,6 +71,7 @@ class Peer {
   // Return a salt to be concat'd to contents of pre-hash data
   static std::string salt();
 
+  const int DEFAULT_BTSYNC_PORT = 11589;
   const float MAX_BLACKLIST_STORE_RATIO = .25;
   const int TOTAL_REPLICA_COUNT = 5;
   const std::string BACKUP_DIR = "backup";
