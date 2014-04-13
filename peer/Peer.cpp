@@ -135,7 +135,7 @@ bool Peer::backupFile(std::string path) {
   params["use_hosts"] = 1;
   params["use_sync_trash"] = 0;
   params["use_tracker"] = 0;
-  params["use relay_server"] = 0;
+  params["use_relay_server"] = 0;
   params["search_lan"] = 0;
   btSyncInterface_->setFolderPreferences(rwSecret, params);
   cout << "Added folder to BTSync and modified preferences" << endl;
