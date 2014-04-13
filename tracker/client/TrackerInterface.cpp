@@ -24,7 +24,7 @@ void TrackerInterface::joinNetwork(std::string nodeID) {
   msg["nodeID"] = nodeID;
 
   std::string error = executeCommand(msg, reply);
-  if (!error.empty()) throw std::runtime_error(error);
+  if (error.empty()) throw std::runtime_error(error);
 
   if (reply["error"] == 1) throw std::runtime_error("Error joining network");
 }
@@ -124,8 +124,8 @@ std::string TrackerInterface::executeCommand(const Json::Value &msg, Json::Value
 
   tcp::socket s(io_service);
 
-  if (tracker::send(msg, s)) return "Error sending to server";
-  if (tracker::recv(reply, s)) return "Error recving from server";
+  if (!tracker::send(msg, s)) return "Error sending to server";
+  if (!tracker::recv(reply, s)) return "Error recving from server";
 
   return "";
 }

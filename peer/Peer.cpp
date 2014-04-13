@@ -57,14 +57,13 @@ bool Peer::joinNetwork() {
   peerID_ = peerID;
 
   // Send JOIN command to metadata layer
-  cout << "Joining network with id " + peerID;
   try {
     metadataInterface_->joinNetwork(peerID);
   } catch (exception& e) {
     cout << e.what() << endl;
   }
 
-  cout << "...success" << endl;
+  cout << "Successfully joined network" << endl;
 }
 
 bool Peer::blacklistNode(std::string nodeID) {
@@ -307,7 +306,8 @@ void Peer::synchronizeWithBTSync() {
   std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
   
   for (Json::Value folder : folderInfo) {
-    // TODO: get sizes as strings, convert them to uint64_t
+    // TODO get size of backed up file, not of folder as a whole
+    // (btsync has content in backed up folder)
     std::string currentFileID = folder["secret"].asString();
     uint64_t btSyncFileSize = folder["size"].asUInt64();
     uint64_t localInfoFileSize = localBackupInfo_[currentFileID]["size"].asUInt64();
