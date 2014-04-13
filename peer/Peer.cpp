@@ -24,7 +24,7 @@ const std::string Peer::STORE_DIR = "store";
 const std::string Peer::LOCAL_BACKUP_INFO_FILE = "local_backup_info";
 const int Peer::BTSYNC_FOLDER_RESCAN_INTERVAL = 60;
 const int Peer::DEFAULT_BTSYNC_PORT = 48247;
-const uint64_t Peers::MINIMUM_STORE_SIZE = 2 << 31; // 2gb
+const uint64_t Peer::MINIMUM_STORE_SIZE = 2 << 31; // 2gb
 
 Peer& Peer::constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
 			      std::shared_ptr<btsync::BTSyncInterface> btSyncI,
@@ -272,7 +272,6 @@ bool Peer::removeBackup(std::string fileID) {
     return false;
   // TODO Peer functions return bools and throw exceptions. we should make that consistent. we should
   //   also actually check return values and catch exceptions
-  // TODO what removes entries in metadata layer with size 0? tracker?
 
   // Delete hardlink and containing directory
   boost::filesystem::path fileDir(btBackupDir_ +"/"+ BACKUP_DIR +"/"+ fileID);
