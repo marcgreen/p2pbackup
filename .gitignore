@@ -6,6 +6,9 @@
 *.pdf
 .SyncIgnore
 
+# Config file
+config.json
+
 # Executables
 Peer
 BTSyncInterface
