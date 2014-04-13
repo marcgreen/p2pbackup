@@ -19,7 +19,7 @@ void handlePeerSocketConnection(std::shared_ptr<tcp::socket> socket) {
 	      << "Error = " << error.what() << std::endl;
   }
   
-  std::string secret(secretBuffer, 20);
+  std::string secret(secretBuffer, peer::Peer::ENCRYPTION_SECRET_LENGTH);
   peer::Peer& peer = peer::Peer::getInstance();
   bool storeSuccessful = peer.storeFile(secret);
   
