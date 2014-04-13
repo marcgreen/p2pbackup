@@ -166,7 +166,8 @@ bool Peer::backupFile(std::string path) {
 
     // Ask (tell) node to backup. Wait for ACK, or find other replicant node if they never ACK
     cout << "Node qualifies! Asking to backup...";
-    if (!askNodeToBackup(nodeMetadata.getNodeIP(), encryptionSecret))
+    std::string nodeIP = nodeMetadata.getNodeIP();
+    if (!askNodeToBackup(nodeIP, encryptionSecret))
       continue;
     cout << "success!" << endl;
 
@@ -179,6 +180,14 @@ bool Peer::backupFile(std::string path) {
     }
     cout << "success!" << endl;
 
+    // Tell BTSync how to find the node
+    Json::Value params, hosts;
+    hosts.append(nodeIP + ":11589");
+    params["use_hosts"] = 1;
+    cout << "Adding predefined host: " << hosts.asString() << endl;
+    btSyncInterface_->setFolderHosts(fileID, hosts);
+    btSyncInterface_->setFolderPreferences(fileID, params);
+    
     // Store relevant data in JSON data structure and write to file
     localBackupInfo_[fileID]["nodes"].append(nodeID);
     if (!localBackupInfo_.dumpToDisk(btBackupDir_ + "/"+ LOCAL_BACKUP_INFO_FILE)) {
