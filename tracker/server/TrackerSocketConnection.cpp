@@ -64,6 +64,7 @@ void handleTrackerSocketConnection(std::shared_ptr<tcp::socket> socket) {
     std::cerr << "Unknown message type "
 	      << command << " received" << std::endl;
   }
+  std::cout << "Finished request" << std::endl;
 }
 
 void handleJoin(std::shared_ptr<tcp::socket> socket,
@@ -118,7 +119,7 @@ void handleBlacklist(std::shared_ptr<tcp::socket> socket,
   bool commandResult = trackerDatabase.blacklistNode(nodeID, blacklisterID);
   
   Json::Value returnValue;
-  returnValue["error"] = static_cast<int>(commandResult);
+  returnValue["error"] = static_cast<int>(!commandResult);
   sendWrapper(returnValue, *socket, "handleBlacklist");
 }
 
@@ -133,7 +134,7 @@ void handleBackup(std::shared_ptr<tcp::socket> socket,
     trackerDatabase.backupFile(peerID, nodeID, fileID, size);
   
   Json::Value returnValue;
-  returnValue["error"] = static_cast<int>(commandResult);
+  returnValue["error"] = static_cast<int>(!commandResult);
   sendWrapper(returnValue, *socket, "handleBackup");
 }
 
@@ -147,7 +148,7 @@ void handleUpdateFileSize(std::shared_ptr<tcp::socket> socket,
     trackerDatabase.updateFileSize(peerID, fileID, size);
   
   Json::Value returnValue;
-  returnValue["error"] = static_cast<int>(commandResult);
+  returnValue["error"] = static_cast<int>(!commandResult);
   sendWrapper(returnValue, *socket, "handleUpdateFileSize");
 }
 
