@@ -35,21 +35,27 @@ void handleTrackerSocketConnection(std::shared_ptr<tcp::socket> socket) {
   
   switch (command) {
   case JOIN_NETWORK_CMD:
+    std::cout << "Handling join" << std::endl;
     handleJoin(socket, value, trackerDatabase);
     break;
   case FIND_CLOSEST_NODE_CMD:
+    std::cout << "Handling find closest" << std::endl;
     handleFindClosestNode(socket, value, trackerDatabase);
     break;
   case GET_CMD:
+    std::cout << "Handling get" << std::endl;
     handleGet(socket, value, trackerDatabase);
     break;
   case BLACKLIST_NODE_CMD:
+    std::cout << "Handling blacklist" << std::endl;
     handleBlacklist(socket, value, trackerDatabase);
     break;
   case BACKUP_FILE_CMD:
+    std::cout << "Handling backup" << std::endl;
     handleBackup(socket, value, trackerDatabase);
     break;
   case UPDATE_FILE_SIZE_CMD:
+    std::cout << "Handling update" << std::endl;
     handleUpdateFileSize(socket, value, trackerDatabase);
     break;
   default:
