@@ -73,7 +73,7 @@ class Peer {
 
   const int DEFAULT_BTSYNC_PORT = 11589;
   const float MAX_BLACKLIST_STORE_RATIO = .25;
-  const int TOTAL_REPLICA_COUNT = 5;
+  const int TOTAL_REPLICA_COUNT = 1; // TODO change when testing large scale
   const std::string BACKUP_DIR = "backup";
   const std::string STORE_DIR = "store";
   const std::string LOCAL_BACKUP_INFO_FILE = "local_backup_info";
