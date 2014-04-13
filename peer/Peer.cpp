@@ -240,6 +240,8 @@ bool Peer::backupFile(std::string path) {
 bool Peer::storeFile(std::string secret) {
   using namespace std;
 
+  // TODO check that peer doesn't have too many blacklisters
+
   // Make directory in our store directory to house backup. 'secret' is fileId
   boost::filesystem::path fileIDDir(btBackupDir_ +"/"+ STORE_DIR +"/"+ secret);
   if (!boost::filesystem::create_directory(fileIDDir)) {
