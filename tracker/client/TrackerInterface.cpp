@@ -59,7 +59,6 @@ void TrackerInterface::get(std::string nodeID, metadata::MetadataRecord &metadat
   if (!metadataRecord.unserialize(reply["metadata"].asString())) {
     throw std::runtime_error("Error unserializing JSON from get reply");
   }
-
 }
 
 

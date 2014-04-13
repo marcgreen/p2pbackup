@@ -37,7 +37,7 @@ class BTSyncInterface {
 
   Json::Value getFolderHosts(std::string secret);
 
-  // The 'hosts' param should look like: [ "host1:port1", "host2:port2", ... ]
+  // The 'hosts' param should look like: { "hosts": [ "host1:port1", "host2:port2", ... ] }
   Json::Value setFolderHosts(std::string secret, Json::Value hosts);
 
   Json::Value getPreferences();

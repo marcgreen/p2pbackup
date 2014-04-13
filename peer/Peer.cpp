@@ -204,9 +204,8 @@ bool Peer::backupFile(std::string path) {
     // Tell BTSync how to find the node
     Json::Value hosts = btSyncInterface_->getFolderHosts(rwSecret);
     Json::FastWriter writer;
-    hosts.append(nodeIP + ":" + to_string(DEFAULT_BTSYNC_PORT));
-
-    cout << "Adding predefined host: " << writer.write(hosts) << endl;
+    hosts["hosts"].append(nodeIP + ":" + to_string(DEFAULT_BTSYNC_PORT));
+    cout << "Predefined hosts: " << writer.write(hosts) << endl;
     btSyncInterface_->setFolderHosts(rwSecret, hosts);
     
     // Store relevant data in JSON data structure and write to file

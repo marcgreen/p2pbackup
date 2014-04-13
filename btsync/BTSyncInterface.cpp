@@ -110,7 +110,7 @@ Json::Value BTSyncInterface::setFolderHosts(std::string secret,
   std::string csv;
   for (unsigned int i = 0; i < hosts.size(); i++) {
     if (i != 0) csv += ",";
-    csv += hosts[i].asString();
+    csv += hosts["hosts"][i].asString();
   }
 
   return request_("set_folder_hosts&secret=" + secret +
