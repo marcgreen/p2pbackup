@@ -61,17 +61,6 @@ class Peer {
   //   of all files, as determined by BTSync
   void synchronizeWithBTSync();
   
-  // Return the SHA256 digest for input
-  static std::string sha256String(std::string input);
-
-  // Return the SHA256 digest for the file at path
-  // Reads 8kb of file at a time
-  // Throws runtime error if things go wrong
-  static std::string sha256File(std::string path);
-
-  // Return a salt to be concat'd to contents of pre-hash data
-  static std::string salt();
-
   static const int ENCRYPTION_SECRET_LENGTH;
   static const int DEFAULT_BTSYNC_PORT;
   static const float MAX_BLACKLIST_STORE_RATIO;
@@ -80,6 +69,7 @@ class Peer {
   static const std::string STORE_DIR;
   static const std::string LOCAL_BACKUP_INFO_FILE;
   static const int BTSYNC_FOLDER_RESCAN_INTERVAL;
+  static const uint64_t MINIMUM_STORE_SIZE;
  private:
   // Create necessary directories for backing up and storing data
   // Read in localBackupInfo from disk
@@ -106,7 +96,6 @@ class Peer {
   metadata::LocalBackupInfo localBackupInfo_;
   
   // Mutex to protect access to localBackupInfo.
-  // TODO: update all uses of localBackupInfo_ so that they use this mutex
   std::recursive_mutex localInfoMutex_;
 
 }; // class Peer
