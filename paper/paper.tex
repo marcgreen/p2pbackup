@@ -231,34 +231,35 @@ PeerStore showed that separating the metadata layer from the data layer can resu
 
 \subsection{The Metadata Layer}
 
-The DHT
+% The DHT (what information would be stored in it)
 
 \subsubsection{Security}
 
-Signature stuff
+% Signature stuff in our original DHT design (need to rework this)
 
 \subsection{The Data Layer}
 
+% Synchronization software
+% Use of BitTorrent
+
 \subsubsection{Security}
 
-Reduction of information leakage
+% Reduction of information leakage
 
-BTSync crypto and security
+% BTSync crypto and security
 
 \subsection{Churn and Data Migration}
 
-If less than X number of replicas, a peer should make a new replica on a node that has yet to hold a replica.
-
+%If less than X number of replicas, a peer should make a new replica on a node that has yet to hold a replica.
 
 \section{Fairness} \label{sec:challenge}
+
+% Introduce terminology: "store" and "back up" (and, further, "node" and "peer")
+% People store proportional amount of data compared to how much they are backing up
 
 \subsection{Challenge Mechanism}
 % This was copied from the explanation of challenge mechanisms in the background info. We will use it down here instead
 %A challenge in PeerStore consists of a randomly-generated number followed by a specified range of bytes in the file being backed up. The node holding the peer's data must take the bytes in the specified range, concatenate the random number with that data, take the hash of it, and return the result to the peer. If the correct answer is returned, then the node has passed the challenge. If the node does not respond or gives the wrong answer, the challenge has been failed. By choosing a random subset of bytes and creating a random number to include in the hash, the node cannot calculate the hash ahead of time and only store that; the whole file must be stored in order to be able to successfully complete all possible challenges. 
-
-\section{}
-
-
 
 
 \chapter{Implementation} \label{chap:impl}
@@ -269,19 +270,20 @@ If less than X number of replicas, a peer should make a new replica on a node th
 % Jsoncpp - serialization for message passing (BTSync uses it too)
 % cURLpp
 
-
 \section{System Design}
 \subsection{Overview}
 
 %Diagram of system design
 
-\subsection{The Data Layer: BitTorrent Sync}
+\subsection{The Data Layer}
 
+% BitTorrent Sync as synchronization software
 %Cool new tool, implements bittorrent protocol, but unfortunately closed source. in production ready system, would want to open source (possibility of backdoor, etc)
 
 \subsection{The Metadata Layer}
 
-%Simplification: centralized tracker
+% Simplification: centralized tracker
+% simplification: metadataRecord (doesn't hold all the information)
 
 %1 sentence about dispatcher being a threadpool
 
