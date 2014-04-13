@@ -357,10 +357,8 @@ void Peer::synchronizeWithBTSync() {
   for (Json::Value folder : folderInfo) {
     // TODO get size of backed up file, not of folder as a whole
     // (btsync has content in backed up folder)
-    // also need to look into rwSecrets vs encryptionSecrets
-
-    
-    std::string currentFileID = folder["secret"].asString();
+    std::string rwSecret = folder["secret"].asString();
+    std::string currentFileID = btSyncInterface_->getSecrets(rwSecret, true)["encryption"].asString();
     uint64_t btSyncFileSize = folder["size"].asUInt64();
     uint64_t localInfoFileSize = localBackupInfo_[currentFileID]["size"].asUInt64();
     

@@ -57,7 +57,8 @@ class Peer {
   // Create the given directory if it's not already created
   void createDirIfNeeded(std::string path);
   
-  // Update the LocalBackupInfo and the Metadata Layer with BitTorrent Sync.
+  // Synchronize the metadata layer (and our localBackupInfo) with the correct size
+  //   of all files, as determined by BTSync
   void synchronizeWithBTSync();
   
   // Return the SHA256 digest for input
