@@ -85,7 +85,7 @@ bool TrackerDatabase::backupFile(const std::string& peerID,
       std::cout << "This is not the first time that fileID " << fileID
 		<< "has been backed up" << std::endl;
 		result = records_[nodeID].addStoreFile(fileID, peerID, size);
-	}
+  }
   return result;
 }
 
