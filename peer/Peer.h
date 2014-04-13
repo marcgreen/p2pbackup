@@ -71,13 +71,13 @@ class Peer {
   // Return a salt to be concat'd to contents of pre-hash data
   static std::string salt();
 
-  const int ENCRYPTION_SECRET_LENGTH = 33;
-  const int DEFAULT_BTSYNC_PORT = 11589;
-  const float MAX_BLACKLIST_STORE_RATIO = .25;
-  const int TOTAL_REPLICA_COUNT = 2; // TODO change when testing large scale
-  const std::string BACKUP_DIR = "backup";
-  const std::string STORE_DIR = "store";
-  const std::string LOCAL_BACKUP_INFO_FILE = "local_backup_info";
+  static const int ENCRYPTION_SECRET_LENGTH = 33;
+  static const int DEFAULT_BTSYNC_PORT = 11589;
+  static const float MAX_BLACKLIST_STORE_RATIO = .25;
+  static const int TOTAL_REPLICA_COUNT = 2; // TODO change when testing large scale
+  static const std::string BACKUP_DIR = "backup";
+  static const std::string STORE_DIR = "store";
+  static const std::string LOCAL_BACKUP_INFO_FILE = "local_backup_info";
  private:
   // Create necessary directories for backing up and storing data
   // Read in localBackupInfo from disk
