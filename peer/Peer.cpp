@@ -67,9 +67,16 @@ bool Peer::joinNetwork() {
 
   // Calculate our peerID
   // Address space is 160bits, defined by length of BTSync's encryption secret (used as fileID)
-  string peerID = btSyncInterface_->getSecrets(true)["encryption"].asString();
+  string peerID;
+  
+  if (localBackupInfo_.isMember("ID"))
+    peerID = localBackupInfo_["ID"].asString();
+  else
+    peerID = btSyncInterface_->getSecrets(true)["encryption"].asString();
+  
   peerID_ = peerID;
-
+  localBackupInfo_.dumpToDisk(btBackupDir_ + "/" + LOCAL_BACKUP_INFO_FILE);
+  
   // Send JOIN command to metadata layer
   try {
     metadataInterface_->joinNetwork(peerID);

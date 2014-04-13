@@ -83,7 +83,7 @@ bool TrackerDatabase::backupFile(const std::string& peerID,
   if (records_.count(peerID) == 1 && records_.count(nodeID) == 1) {
     if (!records_[peerID].addBackupFile(fileID, nodeID, size))
       std::cout << "This is not the first time that fileID " << fileID
-		<< "has been backed up" << std::endl;
+		<< " has been backed up" << std::endl;
 		result = records_[nodeID].addStoreFile(fileID, peerID, size);
   }
   return result;
@@ -95,6 +95,7 @@ bool TrackerDatabase::updateFileSize(const std::string& peerID,
   bool result = false;
   if (records_.count(peerID) == 1) {
     result = records_[peerID].updateBackupFileSize(fileID, size);
+    std::cout << "result1 = " << result << std::endl;
     for (std::list<metadata::FileMetadata>::iterator backedupNodesIt =
 	   records_[peerID].backupNodeIteratorBegin(fileID);
 	 backedupNodesIt !=
@@ -102,7 +103,10 @@ bool TrackerDatabase::updateFileSize(const std::string& peerID,
 	 ++backedupNodesIt) {
       result &= records_[(*backedupNodesIt).nodeID].updateStoreFileSize
 	(fileID, size);
+      std::cout << "result = " << result << std::endl;
     }
+  } else {
+    std::cout << "Hey" << std::endl;
   }
   return result;
 }
