@@ -217,48 +217,116 @@ BitTorrent Sync leverages the BitTorrent protocol to provide quick downloads bet
 
 \chapter{BTBackup}
 
-In this chapter, we discuss the design of our Peer to Peer backup system. See chapter \ref{sec:impl} for our implementation of it.
+In this chapter, we discuss the design of our Peer to Peer backup system. See chapter \ref{chap:impl} for our implementation of it.
 
 
 
 
 
-\section{The Metadata and Data Layer}
+\section{Data Exchange}
 
-PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. Our system separates the two layers as well: the metadata layer is responsible for .. It is implement as a DHT discussed, we separate the metadata layer from the data layer. The metadata layer is responsible for keeping track 
+This chapter discusses everything in our system that is concerned with moving data between entities in the network.
 
-
-\section{Fairness} \label{sec:challenge}
-% This was copied from the explanation of challenge mechanisms in the background info. We will use it down here instead
-%A challenge in PeerStore consists of a randomly-generated number followed by a specified range of bytes in the file being backed up. The node holding the peer's data must take the bytes in the specified range, concatenate the random number with that data, take the hash of it, and return the result to the peer. If the correct answer is returned, then the node has passed the challenge. If the node does not respond or gives the wrong answer, the challenge has been failed. By choosing a random subset of bytes and creating a random number to include in the hash, the node cannot calculate the hash ahead of time and only store that; the whole file must be stored in order to be able to successfully complete all possible challenges. 
-
-\section{Security}
-
-
-
-\chapter{Implementation} \label{sec:impl}
-\section{Language and Tools}
-\section{System Design}
-\subsection{Overview}
-\subsection{The Data Layer: BitTorrent Sync}
-
-Cool new tool, implements bittorrent protocol, but unfortunately closed source. in production ready system, would want to open source (possibility of backdoor, etc)
+PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. Our system separates the two layers as well: the metadata layer is responsible for .. 
 
 \subsection{The Metadata Layer}
 
-Simplification:centralized tracker
+The DHT
+
+\subsubsection{Security}
+
+Signature stuff
+
+\subsection{The Data Layer}
+
+\subsubsection{Security}
+
+Reduction of information leakage
+
+BTSync crypto and security
+
+\subsection{Churn and Data Migration}
+
+If less than X number of replicas, a peer should make a new replica on a node that has yet to hold a replica.
+
+
+\section{Fairness} \label{sec:challenge}
+
+\subsection{Challenge Mechanism}
+% This was copied from the explanation of challenge mechanisms in the background info. We will use it down here instead
+%A challenge in PeerStore consists of a randomly-generated number followed by a specified range of bytes in the file being backed up. The node holding the peer's data must take the bytes in the specified range, concatenate the random number with that data, take the hash of it, and return the result to the peer. If the correct answer is returned, then the node has passed the challenge. If the node does not respond or gives the wrong answer, the challenge has been failed. By choosing a random subset of bytes and creating a random number to include in the hash, the node cannot calculate the hash ahead of time and only store that; the whole file must be stored in order to be able to successfully complete all possible challenges. 
+
+\section{}
+
+
+
+
+\chapter{Implementation} \label{chap:impl}
+\section{Language and Tools}
+
+% C++
+% Boost
+% Jsoncpp - serialization for message passing (BTSync uses it too)
+% cURLpp
+
+
+\section{System Design}
+\subsection{Overview}
+
+%Diagram of system design
+
+\subsection{The Data Layer: BitTorrent Sync}
+
+%Cool new tool, implements bittorrent protocol, but unfortunately closed source. in production ready system, would want to open source (possibility of backdoor, etc)
+
+\subsection{The Metadata Layer}
+
+%Simplification: centralized tracker
+
+%1 sentence about dispatcher being a threadpool
+
+\subsection{The Peer}
+
+% abstraction of what the peer is and does (sits below metadata/btsync, sits above system core)
 
 \subsection{System Core}
 
-Contrololololololers, etc
+%Made up of controllers that make the system go
+
+\subsubsection{Console Controller}
+
+%Takes user input
+%the reader can think about this as the ``client'' part of the peer
+%Spawns all other controllers
+
+\subsubsection{BTSync Controller}
+% think about changing name to something more accurate
+
+%Keeps the metadata layer up to date with local filesize changes of backed up data.
+
+\subsubsection{Network Controller}
+
+%Handles incoming connections from other Peers
+%- requests to store data
+%- the reader can think of tihs as the ``server'' part of the peer
 
 \chapter{Methodology}
+
+% Explain virtual machines if need be
+
+\section{Environment}
+
+% Ubuntu 12.04 x64 in VM in kvm
+% Using SZTAKICloud at MTA SZTAKI in Budapest
+% (how much are we allowed to talk about it? ask Mihaly)
+
+\section{Test Scenarios}
+
+
 
 \chapter{Results}
 
 \chapter{Conclusion}
-
-...
 
 \section{Future Work}
 
