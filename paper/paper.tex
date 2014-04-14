@@ -289,11 +289,12 @@ To combat this, we have designed a challenge system that forces nodes to prove t
 
 \chapter{Implementation} \label{chap:impl}
 \section{Language and Tools}
-
 % C++
 % Boost
 % Jsoncpp - serialization for message passing (BTSync uses it too)
 % cURLpp
+
+Our implementation of BTBackup is written in C++. 
 
 \section{System Design}
 \subsection{Overview}
@@ -301,9 +302,12 @@ To combat this, we have designed a challenge system that forces nodes to prove t
 %Diagram of system design
 
 \subsection{The Data Layer}
-
 % BitTorrent Sync as synchronization software
 %Cool new tool, implements bittorrent protocol, but unfortunately closed source. in production ready system, would want to open source (possibility of backdoor, etc)
+% TODO: find out how many unique secret prefixes there are, factoring that into the calculation of how many unique addresses there are.
+To implement the data layer of our system, we use BitTorrent Sync. Each peer runs a copy of BitTorrent Sync as a daemon on their system. Our program interacts with it through the use of the BitTorrent Sync API \cite{btsyncapi}, several aspects of which we take advantage of. The first and main aspect is that is takes care of the actual data transfer; so long as our program provides BitTorrent Sync with the appropriate secrets and IP addresses of hosts involved in each file backup, it will take care of all data transfer in the data layer. The second is that the secrets that BitTorrent Sync generates can be used as general-purpose IDs in our system. We use these secrets as IDs for each peer for when they join the overlay network, so that peers can be uniquely identified. This is possible due to the massive range of IDs that exist; according to the BitTorrent Sync Technology page, IDs must be at least 20 bytes long \cite{btsynctech}, which gives a minimum address space of $2^{160}$ unique addresses.
+
+There is one downside to using BitTorrent Sync: the software is currently in closed-source Beta.
 
 \subsection{The Metadata Layer}
 
@@ -313,18 +317,21 @@ To combat this, we have designed a challenge system that forces nodes to prove t
 %1 sentence about dispatcher being a threadpool
 
 \subsection{The Peer}
-
 % abstraction of what the peer is and does (sits below metadata/btsync, sits above system core)
 
 \subsection{System Core}
-
 %Made up of controllers that make the system go
+The system core is composed of several controllers, each of which implements a different logcial unit of the system. Each controller is explained in detail below.
 
-\subsubsection{Console Controller}
-
+\subsubsection{Console Controller} % This section is not finished
 %Takes user input
 %the reader can think about this as the ``client'' part of the peer
 %Spawns all other controllers
+The main purpose of the Console Controller is to allow input to our program from a text console. During runtime, it waits for the user to enter a command, determines which command was entered and with what parameters when applicable, and calls the appropriate function to handle the command. It acts as the main thread of execution in our program. Currently, there are only two commands that are supported via this controller:
+\begin{itemize}
+\item backup  $<$fileName$>$ - adds a file to backup.
+\item rm $<$fileName$>$ - removes a file that is already being backed up.
+\end{itemize}
 
 \subsubsection{BTSync Controller}
 % think about changing name to something more accurate
