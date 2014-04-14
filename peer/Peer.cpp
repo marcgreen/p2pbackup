@@ -149,7 +149,8 @@ bool Peer::backupFile(std::string path) {
   Json::Value params;
   params["use_hosts"] = 1;
   params["use_sync_trash"] = 0;
-  params["use_tracker"] = 0;
+  // TODO keep this set to 1 b/c otherwise btsync doesn't sync
+  //params["use_tracker"] = 0;
   params["use_relay_server"] = 0;
   params["search_lan"] = 0;
   btSyncInterface_->setFolderPreferences(rwSecret, params);
