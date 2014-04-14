@@ -256,9 +256,15 @@ PeerStore showed that separating the metadata layer from the data layer can resu
 
 % BTSync crypto and security
 
-\subsection{Churn and Data Migration}
+\subsection{Churn and Data Migration} \label{sec:churnanddatamigration}
 
 %If less than X number of replicas, a peer should make a new replica on a node that has yet to hold a replica.
+For users of our system to take advantage of the speed increases offered by the BitTorrent protocol, a sufficient number of replicas need to be maintained in the overlay network (for a comprehensive explanation of how the BitTorrent protocol works, see section \ref{sec:thebittorrentprotocol}). Since the P2P network will be composed of ordinary network users, backups that are created may not always be available. Therefore, it is not enough to rely on the backups that are created when a file is first backed up; in the worst-case scenario, all of the nodes that a user has created replicas on have permanently left the network, leaving the user with no way to retrieve any backup. Even if one or two replica nodes are online when the backups are needed,  the user will not see much of a speed benefit from the BitTorrent protocol, as opposed to all replicas being online.
+
+To solve this problem, peers need to periodically check on the nodes that they are using as backup locations in order to gauge how available they are. During normal program operation, each peer pings its backup locations to see whether or not they are online. If a backup node is found to be online, then the peer does not need to do anything; it will continue to think that it is reliable. If the node is offline, however, the peer will take note that it was unavailable during a ping test, and that the node might be unreliable in general. It would be unfair to immediately conclude that the node is unreliable, since it may have been temporarily offline (for example, a user temporarily shutting down his/her computer). Therefore, a node needs to fail the ping test several times before the peer that uses it concludes that it is unreliable. It is possible that a node gets unlucky and happens to be offline during all checks, even though that it is online during a different part of the day. However, if this is the case, then the node is not frequently available for that node, and should be seen as unreliable.
+
+% TODO: I'm not sure if we need to explain the blacklist here, or if it has already been explained.
+When a peer determines that a node is unreliable, it does two things. The first is that it adds its own ID to the node's blacklist in the DHT. The blacklist is a list of peer ID and timestamp pairs, where the peer IDs are the IDs of those who have determined that the node is unreliable and the timestamp is the time when the ID was inserted. This information is used by peers who are considering using the node as a backup location in the future. If the node has too many blacklisters, peers will decide against using that node, and move on to select another node. % Pick up here
 
 \section{Fairness} \label{sec:challenge}
 
