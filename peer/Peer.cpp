@@ -305,14 +305,10 @@ bool Peer::updateFileSize(std::string fileID, uint64_t size) {
 bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
   using boost::asio::ip::tcp;
 
-  // All secrets must be 32 characters long
-  // TODO figure out length of secret
-  /*
   if (secret.length() != ENCRYPTION_SECRET_LENGTH)
     throw std::runtime_error("Invalid secret; secrets must be "
 			     + std::to_string(ENCRYPTION_SECRET_LENGTH) + 
 			     " characters long");
-  */
 
   bool result = false;
   boost::asio::io_service ioService;
@@ -370,8 +366,6 @@ void Peer::synchronizeWithBTSync() {
   std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
   
   for (Json::Value folder : folderInfo) {
-    // TODO get size of backed up file, not of folder as a whole
-    // (btsync has content in backed up folder)
     std::string rwSecret = folder["secret"].asString();
     std::string currentFileID = btSyncInterface_->getSecrets(rwSecret, true)["encryption"].asString();
     uint64_t btSyncFileSize = folder["size"].asUInt64();

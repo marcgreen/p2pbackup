@@ -1,8 +1,4 @@
 
-// TODO: backup and update need to be one operation that edit both the peer
-//       and the node. Also, make who you are backing up to a list (this
-//       change is to be made in MetadataRecord)
-
 #include "metadata/MetadataRecord.h"
 #include "tracker/TrackerProtocol.h"
 #include "tracker/server/TrackerDatabase.h"
