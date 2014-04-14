@@ -3,7 +3,11 @@
 *.a
 *.log
 *.aux
+*.lof
 *.pdf
+*.toc
+*.gz
+*.out
 .SyncIgnore
 
 # Config file
