@@ -233,22 +233,82 @@ In this chapter, we discuss the design of our Peer to Peer backup system. See ch
 
 \section{Data Exchange}
 
-This chapter discusses everything in our system that is concerned with moving data between entities in the network.
+% todo reword
+This chapter discusses the infrastructure and the protocols of our system that are concerned with moving data between entities in the network. Henceforth, we use the following terminology to disambiguate participants:
 
-PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. Our system separates the two layers as well: the metadata layer is responsible for .. 
+% todo use package enumitem to make labels italics instead of bold
+\begin{description}
+  \item[Peer:] A particpant who is sending replicas of their data into the network for safekeeping. We refer to this process as \textit{backing up} data.
+  \item[Node:] A participant who is storing a replica for a peer. We refer to this process as \textit{storing} data.
+\end{description}
+  
+This terminology is used to give context. It is very likely that every participant in the system will eventually serve both roles (perhaps even simultaneously), but we refer to them as \textit{peer} or \textit{node} depending on what role they are playing in a given situation. A peer plays the role of the client, whereas a node plays the role of a server.\footnote{We may qualify each term to help give context. For example, we may say "\ldots a \textit{replication} node \ldots" to emphasize the fact that the node is storing a replica.} When there is no context, we use the terms interchangeably. 
+
+Note the emphasis of the action taken by each: a peer is said to \textit{back up} data, and a node is said to \textit{store} a replica of the peer's data. 
+
+PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unneccessary to immediately find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the possibility of not being able to recover data that is backed up. We leverage the fact that this situation is unavoidable in all backup systems by sacrificing theoretical availability for performance and usability. See section \ref{subsec:TheMetadataLayer_sec:SystemDesign} for the discussion of the parameterization of these variables in our implementation. See section \ref{} for our methodology of testing the parameter. Finally, see section \ref{} for a comparison of the results of different values for the parameter.}
+% TODO add references once we know section names
+
+Our system separates the two layers as well: the metadata layer is responsible for storing information about each data layer exchange (among other information), and the data layer is responsible for the actual exchange of the data. We discuss each, in turn, below.
 
 \subsection{The Metadata Layer}
 
-% The DHT (what information would be stored in it)
+In the broadest sense, the metadata layer is used by peers to find nodes. Peers use it to determine which nodes will be used to store their data, and, in the event of local data loss, peers use it to find those same nodes so they can recover their data.
+
+The metadata layer is a DHT that maps a given \textit{node ID} to information about the node (e.g., its IP address), called its \textit{metadata record}. A \textit{node ID} is a unique identifier for a node. It is used as the address of the node in the structured overlay network.
+
+A \textit{metadata record} is used for three purposes:
+
+\begin{enumerate}
+  \item Find the IP address of the node it describes,
+  \item Determine if the node it describes should be used to store one's data, and 
+  \item Recall the nodes that the peer it describes is backing up to.\footnote{To clarify: each metadata record belongs to single entity. In the first two use cases, a peer looking to backup data queries for the node's metadata record. In the last use case, a peer starts the data recovery process by querying for its own metadata record. The entity requesting the metadata record changes based on the context.}
+\end{enumerate}
+
+The primary function of the the metadata layer is to record the nodes to which a peer is backing up. This information is used for data recovery, described next. A secondary function of the metadata layer is to find nodes to backup to, described after. A tertiary function of the metadata layer is [something about fairness], described last.
+
+\subsubsection{Data Recovery}
+ 
+The purpose of a backup system is to ensure one's data is not permanently lost. 
+
+ a peer will consult the metadata layer to find the nodes that are storing replicas of its data. (See section \ref{subsec:TheDataLayer} for how the data layer uses this information to recover the files.)
+ 
+a peer will request its own metadata record 
+
+\subsubsection{Finding Nodes}
+
+A secondary function of the metadata layer is to find nodes to backup to.
+
+\subsubsection{Fairness}
+
+A tertiary function of the metadata layer is fairness
+
+% todo/reminder: blacklisters semi explained in churn section
+
+  \textit{metadata record} 
+
+The metadata layer is used for three purposes:
+
+\begin{
+
+In this sense, the metadata layer can be thought of as the bookkeeper for our system.
+
+  It serves three functions: (1) peers uses it to find holds information meta-information about each backup that occurs, along with additional information needed for the node selection process. Figure \ref{fig:metadata} enumerates the information stored in the metadata layer.
+
+%\subsubsection{The Metadata Record} \label{subsubsec:TheMetadataRecord}
+
+
 
 \subsubsection{Security}
 
 % Signature stuff in our original DHT design (need to rework this)
 
-\subsection{The Data Layer}
+\subsection{The Data Layer} \label{subsec:TheDataLayer}
 
+% talking to peers and transferring data
 % Synchronization software
 % Use of BitTorrent
+% 
 
 \subsubsection{Security}
 
@@ -294,7 +354,7 @@ When a peer determines that a node is unreliable, it does two things. The first 
 % BitTorrent Sync as synchronization software
 %Cool new tool, implements bittorrent protocol, but unfortunately closed source. in production ready system, would want to open source (possibility of backdoor, etc)
 
-\subsection{The Metadata Layer}
+\subsection{The Metadata Layer} \label{subsec:TheMetadataLayer_sec:SystemDesign}
 
 % Simplification: centralized tracker
 % simplification: metadataRecord (doesn't hold all the information)
