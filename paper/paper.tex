@@ -209,7 +209,7 @@ The BitTorrent Protocol takes advantage of this by having leechers download cont
 BitTorrent can transfer files quickly due to multiple seeders each uploading different chunks of the file to each leecher. This parallelized download is enhanced by the fact that leechers, too, upload the chunks of the file they possess to other leechers who don't have those chunks. \footnote {This is a simplified version of the BitTorrent protocol. For more information, see \cite{bittorrentProtocol}}
 
 \section{BitTorrent Sync}
-BitTorrent Sync is a new application developed by BitTorrent, Inc. It is a P2P synchronization tool that allows users to share files between trusted devices. This is accomplished by generating a set of 20-byte "secrets" for each folder to share and distributing the secret to each trusted device. All data is encrypted using AES-128 in counter mode \cite{btsynctech}, the key of which is derived from the secret. There are three different secrets, each of which provide different permissions for the peer that is given the secret: the read/write secret, the read only secret, and the encryption secret, which allows the node to store an encrypted version of the data, so that it cannot read the contents. A variation of the read/write and read only secrets also exists called the one-time secret, which allows a peer to send out a valid key that is only usable by one node \cite{btsyncuserguide}.
+BitTorrent Sync is a new application developed by BitTorrent, Inc. It is a P2P synchronization tool that allows users to share files between trusted devices. This is accomplished by generating a set of 20-byte "secrets" for each folder to share and distributing the secret to each trusted device. All data is encrypted using AES-128 in counter mode \cite{btsynctech}, the key of which is derived from the secret. There are three different secrets, each of which provide different permissions for the peer that is given the secret: the read/write secret, the read only secret, and the encryption secret, which allows the node to store an encrypted version of the data so that it cannot read the contents. A variation of the read/write and read only secrets also exists called the one-time secret, which allows a peer to send out a valid key that is only usable by one node \cite{btsyncuserguide}.
 
 Users of BitTorrent Sync have several options for having their synced devices locate each other. The following list is taken from the BitTorrent Sync technology page \cite{btsynctech} and describes each method of peer discovery:
 
@@ -226,11 +226,11 @@ Users of BitTorrent Sync have several options for having their synced devices lo
 
 To allow other developers to use BitTorrent Sync as a part of their applications, the BitTorrent Sync API has been created \cite{btsyncapi}. Developers can obtain an API key by applying for one and have the application accepted by the BitTorrent Sync developers. The API key allows a developer to use all API functions, which are issued in the form of HTTP requests sent to the web interface that is started by the BitTorrent Sync executable.
 
-BitTorrent Sync leverages the BitTorrent protocol to provide quick downloads between synced peers. We also leverage this through the use of BitTorrent Sync to provide fast recovery of backed up files. The implementation of our system is described in the next section.
+BitTorrent Sync leverages the BitTorrent protocol to provide quick downloads between synced peers. We, too, leverage this through the use of BitTorrent Sync to provide fast recovery of backed up files. The specification of our system is described in the next chapter.
 
 \chapter{BTBackup}
 
-In this chapter, we discuss the design of our Peer to Peer backup system. See chapter \ref{chap:impl} for our implementation of it.
+In this chapter, we discuss the design of our Peer to Peer backup system. See Chapter \ref{chap:impl} for our implementation of it.
 
 \section{Data Exchange} \label{sec:DataExchange}
 
@@ -244,17 +244,19 @@ This section discusses the infrastructure and the protocols of our system that a
 \end{description}
   
 This terminology is used to give context. It is very likely that every participant in the system will eventually serve both roles (perhaps even simultaneously), but we refer to them as \textit{peer} or \textit{node} depending on what role they are playing in a given situation. A peer plays the role of the client, whereas a node plays the role of a server.\footnote{We may qualify each term to help give context. For example, we may say "\ldots a \textit{replication} node \ldots" to emphasize the fact that the node is storing a replica.} When there is no context, we use the terms interchangeably. 
+% TODO find/replace all uses of replicant node with replication node or vice versa
 
 Note the emphasis of the action taken by each: a peer is said to \textit{back up} data, and a node is said to \textit{store} a replica of the peer's data. 
 
-PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unneccessary to immediately find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the possibility of not being able to recover data that is backed up. We leverage the fact that this situation is unavoidable in all backup systems by sacrificing theoretical availability for performance and usability. See section \ref{subsec:TheMetadataLayer_sec:SystemDesign} for the discussion of the parameterization of these variables in our implementation. See section \ref{} for our methodology of testing the parameter. Finally, see section \ref{} for a comparison of the results of different values for the parameter.}
+PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unneccessary to immediately find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the low possibility of not being able to recover data that is backed up. Note that this situation is unavoidable in \textbf{all} backup systems. By relaxing the aforementioned requirement like PeerStore, we leverage this fact by sacrificing theoretical availability for performance and usability. See section \ref{subsec:TheMetadataLayer_sec:SystemDesign} for the discussion of the parameterization of these variables in our implementation. See section \ref{} for our methodology of testing the parameter. Finally, see section \ref{} for a comparison of the results of different values for the parameter.}
 % TODO add references once we know section names
 
-Our system separates the two layers as well: the metadata layer is responsible for storing information about each data layer exchange (among other information), and the data layer is responsible for the actual exchange of the data. We discuss each, in turn, below.
+Our system separates the two layers as well: the metadata layer is responsible for storing information about each data layer exchange (among other information), and the data layer is responsible for the actual exchange of the data.
 
 \subsection{The Metadata Layer} \label{sec:TheMetadataLayer_DataExchange}
 
-In the broadest sense, the metadata layer is used by peers to find nodes. Peers use it to determine which nodes will be used to store their data, and, in the event of local data loss, peers use it to find those same nodes so they can recover their data. The former is described in section \ref{subsubsec:FindingReplicantNodes}, the latter in section \ref{subsubsec:MetadataRecord}.
+In the broadest sense, the metadata layer is used by peers to find nodes. Peers use it to determine which nodes will be used to store their data, and, in the event of local data loss, peers use it to find those same nodes so they can recover their data. The former is described below in \textbf{Finding Replicant Nodes}, the latter in \textbf{Metadata Record}.
+% TODO don't hardcode these
 
 The metadata layer is a DHT that maps a given \textit{node ID} to information about the node (e.g., its IP address), called its \textit{metadata record}. A \textit{node ID} is a unique identifier for a node. It is used as the address of the node in the structured overlay network.
 
@@ -265,7 +267,7 @@ A \textit{metadata record} is used for three purposes:
 \begin{enumerate}
   \item Find the IP address of the node it describes
   \item Determine if the node it describes should be used to store one's data 
-  \item Recall the nodes that the peer it describes is backing up to.\footnote{To clarify: each metadata record belongs to single entity. In the first two use cases, a peer looking to back up data queries for the node's metadata record. In the last use case, a peer starts the data recovery process by querying for its own metadata record. The entity requesting the metadata record (the the reason for doing so) changes based on the context.}
+  \item Find the nodes to which the peer it describes is backing up\footnote{To clarify: each metadata record belongs to single entity. In the first two use cases, a peer looking to back up data queries for the node's metadata record. In the last use case, a peer starts the data recovery process by querying for its own metadata record. The entity requesting the metadata record (and the reason for doing so) changes based on the context.}
 \end{enumerate}
 
 A thorough explanation of the information stored in a metadata record follows. Table \ref{tab:metadataRecord} summarizes the information.
