@@ -287,7 +287,7 @@ A thorough explanation of the information stored in a metadata record follows. T
 
 \subsubsection{Finding Replicant Nodes} \label{subsubsec:FindingReplicantNodes}
 
-For every file a peer wishes to backup, it must find a predetermined number of nodes that can store the file. To ensure an even distributionof responsibility in the structured overlay network, a random bitstring in the address space of the overlay network is generated. The DHT provides the functionality to find the node whose ID is \texit{closest} to the randomly generated bitstring. The peer then gets the metadata record for the node from the DHT. From the metadata record, the peer can calculate if the node is \textit{obligated} to store its file. We discuss the situation in which a node is obligated to store a peers file in section \ref{sec:Fairness}. The peer also uses the metadata record to ensure the node does not have too many blacklisters. If the node meets both requirements, the peer uses the data layer to contact the node to inform it of the decision. The metadata layer is updated appropriately, and the data layer is used to transfer the file. This process repeats until the predetermined number of nodes are found.
+For every file a peer wishes to backup, it must find a predetermined number of nodes that can store the file. To ensure an even distributionof responsibility in the structured overlay network, a random bitstring in the address space of the overlay network is generated. The DHT provides the functionality to find the node whose ID is \textit{closest} to the randomly generated bitstring. The peer then gets the metadata record for the node from the DHT. From the metadata record, the peer can calculate if the node is \textit{obligated} to store its file. We discuss the situation in which a node is obligated to store a peers file in section \ref{sec:Fairness}. The peer also uses the metadata record to ensure the node does not have too many blacklisters. If the node meets both requirements, the peer uses the data layer to contact the node to inform it of the decision. The metadata layer is updated appropriately, and the data layer is used to transfer the file. This process repeats until the predetermined number of nodes are found.
 
 \subsection{The Data Layer} \label{subsec:TheDataLayer}
 
@@ -369,6 +369,7 @@ Our tracker implementation is a standalone multithreaded application. It uses a 
 
 \subsection{The Peer}
 % abstraction of what the peer is and does (sits below metadata/btsync, sits above system core)
+In our implementation, we have a central object called the Peer. The Peer, as the name suggests, is used to represent the information and functionality associated with a single peer in the network. Much of the functionality of the controllers in the system core, which is described below, is implemented as calls to Peer methods. This is because the Peer is what allows access to the data and metadata layers. It also keeps track of the \textit{backed up files} part of the peer's metadata, in a data structure called the LocalBackupInfo. This information is important to all of the controllers in some way, helping to serve as their access to the peer's view of the relevant parts of the system.
 
 \subsection{System Core}
 %Made up of controllers that make the system go
