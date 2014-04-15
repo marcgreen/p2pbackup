@@ -339,7 +339,7 @@ t=max(s,n\sum\limits_{i=1}^{|F|} size(F_i))
 \end{equation}
 When a peer finds a node that has a value of $t$ greater than the size of the file it is trying to replicate, it can choose that node as a replication site, knowing that it will be able to accept the data.
 
-\subsection{Challenge Mechanism} \label{subsec:ChallengeMechanism_Fairness}
+\subsection{Challenge Mechanism} \label{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}
 Even though the technique described above allows peers to find nodes with a sufficient amount of storage space, it does not guarantee that the node will keep its promise and actually store the data. For instance, a node can accept a peer's data, only to discard it immediately. A peer will only find out that its data has been discarded when it needs to retrieve backups, at which point it is too late to create new backups.
 
 To combat this, we have designed a challenge system that forces nodes to prove that they are actually storing the data that they are claiming to store. This system is based on the mechanism used in PeerStore \cite{PeerStore}. A challenge in our system consists of a randomly-generated salt followed by a specified range of bytes in the file being backed up. The node holding the peer's data must take the bytes in the specified range, hash it using the provided salt, and return the result to the peer. The peer is able to test whether the answer is correct by encrypting the file in the same way as it is stored on the node and hashing the byte range accordingly. If the correct answer is returned, then the node has passed the challenge. If the node does not respond or gives the wrong answer, the challenge has been failed. By choosing a random subset of bytes and by using a salt, the node cannot calculate the hash ahead of time and only store that; the whole file must be stored in order to be able to successfully complete all possible challenges.
@@ -360,28 +360,35 @@ Our implementation of BTBackup is written in C++.
 %Diagram of system design
 
 \subsection{The Data Layer}
-% BitTorrent Sync as synchronization software
-%Cool new tool, implements bittorrent protocol, but unfortunately closed source. in production ready system, would want to open source (possibility of backdoor, etc)
 % TODO: find out how many unique secret prefixes there are, factoring that into the calculation of how many unique addresses there are.
 To implement the data layer of our system, we use BitTorrent Sync. Each peer runs a copy of BitTorrent Sync as a daemon on their system. Our program interacts with it through the use of the BitTorrent Sync API \cite{btsyncapi}, several aspects of which we take advantage of. The first and main aspect is that is takes care of the actual data transfer; so long as our program provides BitTorrent Sync with the appropriate secrets and IP addresses of hosts involved in each file backup, it will take care of all data transfer in the data layer. The second is that the secrets that BitTorrent Sync generates can be used as general-purpose IDs in our system. We use these secrets as IDs for each peer for when they join the overlay network, so that peers can be uniquely identified. This is possible due to the massive range of IDs that exist; according to the BitTorrent Sync Technology page, IDs must be at least 20 bytes long \cite{btsynctech}, which gives a minimum address space of $2^{160}$ unique addresses.
 
-There is one downside to using BitTorrent Sync: the software is currently in closed-source Beta.
+There are two downsides to using BitTorrent Sync. The first is that the software is currently closed-source. This means that, while BitTorrent claims that BitTorrent Sync is completely secure, we have no know way of confirming this. It also means that we have less control over how our data layer functions and what information can be accessed from it. This is a problem that we had to solve with regard to the challenge mechanism described in section \ref{subsec:ChallengeMechanism_Fairness}, the solution for which is described in section \ref{subsubsec:MetadataController_sec:SystemCore_chap:Implementation}. Ideally, we would find an open source version of BitTorrent Sync. However, we were not able to find any such systems that were fully functional. The second downside is that BitTorrent Sync is currently in Beta release. This means that, while the system is usable and has all of its features, there still might be many bugs, which leads to more error in our system.
 
 \subsection{The Metadata Layer} \label{subsec:TheMetadataLayer_sec:SystemDesign}
-
 % Simplification: centralized tracker
 % simplification: metadataRecord (doesn't hold all the information)
-
 %1 sentence about dispatcher being a threadpool
+% TODO: Remove note to professor in the paragraph in the future.
+For simplification purposes, we implemented the metadata layer of our system as a tracker, rather than a DHT [Professor: the reasoning for this is the time constraints of our project. Should we say this in the paper? Should we talk about time constraints in general?]. To make the future transition to a DHT as easy as possible, we created a standard interface that our program uses to interact with a metadata layer, where each interface call is general enough to be implemented for any type of metadata layer implementation. The following operations are supported:
+\begin{description}
+\item[Join Network:] The peer registers itself with the overlay network, specifying what ID it wants to use.
+\item[Find Closest Node:] Given a valid ID, return the closest ID that is registered in the network. This is used for finding nodes to replicate on. In our implementation this is accomplished via a binary search through an array of all registered keys, giving an average case search time of $O(\log n)$.
+\item[Get:] Given an ID, return the Metadata Record of the corresponding node. This is most closely related to the standard get function used in hash tables.
+\item[Blacklist Node:] When a peer performs this interface call, it adds its own ID to the list of blacklisters for a specified node.
+\item[Backup File:] Register the creation of a newly-created backup to a particular node with the metadata layer.
+\item[Update File Size:] Let the metadata layer know that the size of a given file has changed.
+\end{description}
+Our tracker implementation is a standalone multithreaded application. It uses a custom threadpool implementation, called the Dispatcher, to accept several connections at a time from peers to process the interface calls listed above. Each Metadata Record is stored in an unordered map, which maps node IDs to their corresponding record.
 
 \subsection{The Peer}
 % abstraction of what the peer is and does (sits below metadata/btsync, sits above system core)
 
 \subsection{System Core}
 %Made up of controllers that make the system go
-The system core is composed of several controllers, each of which implements a different logcial unit of the system. Each controller is explained in detail below.
+The system core is composed of several controllers, each of which implements a different logical unit of the system. Each controller is explained in detail below.
 
-\subsubsection{Console Controller} % This section is not finished
+\subsubsection{Console Controller}
 %Takes user input
 %the reader can think about this as the ``client'' part of the peer
 %Spawns all other controllers
@@ -390,17 +397,21 @@ The main purpose of the Console Controller is to allow input to our program from
 \item backup  $<$fileName$>$ - adds a file to backup.
 \item rm $<$fileName$>$ - removes a file that is already being backed up.
 \end{itemize}
+Since the Console Controller runs on the main thread of execution, it manages the life cycle of the other controllers.
 
-\subsubsection{BTSync Controller}
-% think about changing name to something more accurate
-
-%Keeps the metadata layer up to date with local filesize changes of backed up data.
-
-\subsubsection{Network Controller}
-
+\subsubsection{Network Controller} \label{subsubsec:NetworkController_subsec:SystemCore_sec:SystemDesign_chap:Implementation}
 %Handles incoming connections from other Peers
 %- requests to store data
 %- the reader can think of tihs as the ``server'' part of the peer
+The Network Controller is used to wait for incoming connections from the network and handle the connection based on the data being sent. It is implemented so that any handler can be registered, making it a flexible solution. We take advantage of this by using it in both our tracker and peer applications. The peer application uses it to handle backup requests from other peers, while the tracker uses it to accept metadata layer information calls. If the system is expanded, the Network Controller will have more responsibilities, such as handling DHT requests in the peer and carrying out node challenges.
+
+\subsubsection{BTSync Controller} \label{subsubsec:BTSyncController_subsec:SystemCore_sec:SystemDesign_chap:Implementation}
+% think about changing name to something more accurate
+%Keeps the metadata layer up to date with local filesize changes of backed up data.
+A challenge that is created by having our data layer implemented as a separate application is that the way the two programs view the network needs to be kept in sync. For example, when a file that is tracked by BitTorrent Sync is updated, the changes and content are automatically managed without the intervention of our program. Although BitTorrent Sync will see those changes and update its information accordingly, our program has no way of knowing that a change occurred. To remedy this, we created the BTSync Controller, whose purpose is to periodically query BitTorrent Sync through its API for changes in file size. Each peer stores a local copy of the metadata on its backed up files, which is compared to the data from the API query. If there is any difference in the file sizes, then the file size has changed since the last check. In this case, the peer updates its local copy of the data and sends an update to the metadata layer to register the change in the network.
+
+\subsubsection{Metadata Controller} \label{subsubsec:MetadataController_subsec:SystemCore_sec:SystemDesign_chap:Implementation}
+The purpose of the Metadata Controller is similar to that of the BTSync Controller, in the sense that its purpose is to periodically check for changes in the system state. In this case, it is to make sure that sufficient replicas of each file are being maintained. In our implementation, the Metadata Controller periodically attempts to ping the nodes that are backing up data for the peer to determine how reliable they are; this is a simplification of the challenge mechanism in section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}. When a node is deemed unreliable enough, the Metadata Controller initiates the creation of a new backup and the deletion of the unreliable one.
 
 \chapter{Methodology}
 
@@ -423,7 +434,7 @@ The main purpose of the Console Controller is to allow input to our program from
 \section{Future Work}
 
 
-\begin{thebibliography}{1}
+\begin{thebibliography}{11}
 
 \bibitem{dropboxusers} https://www.dropbox.com/news/company-info
 \bibitem{pStore} pStore
