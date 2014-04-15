@@ -111,7 +111,7 @@ There are three categories of overlay networks that can be used as the network a
 
 We discuss structured overlay networks in more detail below, as that is the type of overlay network our P2P backup system uses.
 
-\subsubsection{Structured Overlay Networks}
+\subsubsection{Structured Overlay Networks} \label{subsubsec:StructuredOverlayNetworks}
 
 Structured overlay networks are defined by a topology and a virtual address space. For example, in our system, peers are organized in a ring and addressed by 20 byte numbers---our address space is the set of all 20 byte numbers. In other systems, peers could be organized in a 3D cube and addressed by their (x,y,z) coordinates. The topology defines the set of neighbors each peer has in the overlay. The address space serves as a way to uniquely identify peers.
 % TODO maybe insert figure of chord ring topology (or our own!)
@@ -208,7 +208,6 @@ BitTorrent Sync is a new application developed by BitTorrent, Inc. It is a P2P s
 Users of BitTorrent Sync have several options for having their synced devices locate each other. The following list is taken from the BitTorrent Sync technology page \cite{btsynctech} and describes each method of peer discovery:
 
 % TODO why do we discuss the different ways to find peers? We only need to talk about predfined hosts
-
 \begin{quote}
 \begin{itemize}
 \item Local peer discovery. All peers inside local network are discovered by sending broadcast packets. If there are peers with the same secret they respond to the broadcast message and connect.
@@ -227,14 +226,10 @@ BitTorrent Sync leverages the BitTorrent protocol to provide quick downloads bet
 
 In this chapter, we discuss the design of our Peer to Peer backup system. See chapter \ref{chap:impl} for our implementation of it.
 
-
-
-
-
 \section{Data Exchange}
 
 % todo reword
-This chapter discusses the infrastructure and the protocols of our system that are concerned with moving data between entities in the network. Henceforth, we use the following terminology to disambiguate participants:
+This section discusses the infrastructure and the protocols of our system that are concerned with moving data between entities in the network. Henceforth, we use the following terminology to disambiguate participants:
 
 % todo use package enumitem to make labels italics instead of bold
 \begin{description}
@@ -253,66 +248,59 @@ Our system separates the two layers as well: the metadata layer is responsible f
 
 \subsection{The Metadata Layer} \label{sec:TheMetadataLayer_DataExchange}
 
-In the broadest sense, the metadata layer is used by peers to find nodes. Peers use it to determine which nodes will be used to store their data, and, in the event of local data loss, peers use it to find those same nodes so they can recover their data.
+In the broadest sense, the metadata layer is used by peers to find nodes. Peers use it to determine which nodes will be used to store their data, and, in the event of local data loss, peers use it to find those same nodes so they can recover their data. The former is described in section \ref{subsubsec:FindingReplicantNodes}, the latter in section \ref{subsubsec:MetadataRecord}.
 
 The metadata layer is a DHT that maps a given \textit{node ID} to information about the node (e.g., its IP address), called its \textit{metadata record}. A \textit{node ID} is a unique identifier for a node. It is used as the address of the node in the structured overlay network.
+
+\subsubsection{Metadata Record} \label{subsubsec:MetadataRecord}
 
 A \textit{metadata record} is used for three purposes:
 
 \begin{enumerate}
-  \item Find the IP address of the node it describes,
-  \item Determine if the node it describes should be used to store one's data, and 
-  \item Recall the nodes that the peer it describes is backing up to.\footnote{To clarify: each metadata record belongs to single entity. In the first two use cases, a peer looking to backup data queries for the node's metadata record. In the last use case, a peer starts the data recovery process by querying for its own metadata record. The entity requesting the metadata record changes based on the context.}
+  \item Find the IP address of the node it describes
+  \item Determine if the node it describes should be used to store one's data 
+  \item Recall the nodes that the peer it describes is backing up to.\footnote{To clarify: each metadata record belongs to single entity. In the first two use cases, a peer looking to backup data queries for the node's metadata record. In the last use case, a peer starts the data recovery process by querying for its own metadata record. The entity requesting the metadata record (the the reason for doing so) changes based on the context.}
 \end{enumerate}
 
-The primary function of the the metadata layer is to record the nodes to which a peer is backing up. This information is used for data recovery, described next. A secondary function of the metadata layer is to find nodes to backup to, described after. A tertiary function of the metadata layer is [something about fairness], described last.
+A thorough explanation of the information stored in a metadata record follows. Table \ref{tab:metadataRecord} summarizes the information.
 
-\subsubsection{Data Recovery}
- 
-The purpose of a backup system is to ensure one's data is not permanently lost. 
+\begin{description}
+  \item[Node IP:] The IP address of the node that the metadata record describes. This is used by peers who wish to backup a file on this node to directly contact the node.
+  \item[Blacklisters:] The list of (peer ID, timestamp) pairs, where the peer IDs are the IDs of those who have determined that the node is \textit{unreliable} (see section \ref{sec:ChurnandDataMigration_DataExchange} for the definition of what makes a node unreliable) and the timestamp is the time when the ID was inserted. This information is used by peers who are considering using the node as a backup location in the future. If the node has too many blacklisters (greater than some number $n$), peers will decide against using that node, and move on to select another node. In order to prevent sybil attacks, where a malicious user has many identities and blacklists a node many times, the number of blacklisters should be a nontrivial amount and proportional to the size of the network. In order to prevent nodes from permanently being shut out from the network, entries in the blacklist are removed some set amount of time after they are inserted; this is accomplished via the aforementioned timestamp.
+  \item[Backed Up Files:] The list of information on the files backed up by the peer that the metadata record describes. Each element in the list stores the following data: the file ID, the filesize, the list of replicant node IPs, and a timestamp indicating when each replicant node stored the file. The \textit{file ID} is a unique identifier for the file, and must be in the same address space as node IDs (as explained in section \ref{subsubsec:StructuredOverlayNetworks}). This information is used by peers looking to recover their data. After retrieving their own metadata record, peers will ask the corresponding replicant nodes to transfer the data for each file they wish to recover. The more replicant nodes that are online for a given file, the faster the recovery of the file (due to the BitTorrent protocol used in the data layer). The timestamp is not yet used, but is included because future revisions to the specification may need it (for example, for peers to check that the node's replica is up-to-date).
+  \item[Stored Files:] The list of information on the files stored by the node that the metadata record describes. Each element in the list stores the following data: the file ID, the filesize, the peer backing up the file, and a timestamp indicating when the node stored the file. This information, in conjunction with the information in \textbf{Backed Up Files}, is used as part of the fairness mechanism, described in section \ref{sec:Fairness}.
+\end{description}
 
- a peer will consult the metadata layer to find the nodes that are storing replicas of its data. (See section \ref{subsec:TheDataLayer} for how the data layer uses this information to recover the files.)
- 
-a peer will request its own metadata record 
+\begin{table}
+\begin{center}
+    \begin{tabular}{| l | l |} 
+    \hline
+    Node IP & Self explanatory \\ \hline
+    Blacklisters & List of peers who consider this node unreliable\\ \hline
+    Backed Up Files & List of information on files this peer has backed up \\ \hline
+    Stored Files & List of information on files this node stores for other peers \\ \hline
+    \end{tabular}
+    \caption{Summary of a metadata record}
+    \label{tab:metadataRecord}
+\end{center}
+\end{table}
 
-\subsubsection{Finding Nodes}
+\subsubsection{Finding Replicant Nodes} \label{subsubsec:FindingReplicantNodes}
 
-A secondary function of the metadata layer is to find nodes to backup to.
-
-\subsubsection{Fairness}
-
-A tertiary function of the metadata layer is fairness
-
-% todo/reminder: blacklisters semi explained in churn section
-
-%  \textit{metadata record} 
-
-%The metadata layer is used for three purposes:
-
-%In this sense, the metadata layer can be thought of as the bookkeeper for our system.
-
-%  It serves three functions: (1) peers uses it to find holds information meta-information about each backup that occurs, along with additional information needed for the node selection process. Figure \ref{fig:metadata} enumerates the information stored in the metadata layer.
-
-%\subsubsection{The Metadata Record} \label{subsubsec:TheMetadataRecord}
-
-
-
-\subsubsection{Security}
-
-% Signature stuff in our original DHT design (need to rework this)
+For every file a peer wishes to backup, it must find a predetermined number of nodes that can store the file. To ensure an even distributionof responsibility in the structured overlay network, a random bitstring in the address space of the overlay network is generated. The DHT provides the functionality to find the node whose ID is \texit{closest} to the randomly generated bitstring. The peer then gets the metadata record for the node from the DHT. From the metadata record, the peer can calculate if the node is \textit{obligated} to store its file. We discuss the situation in which a node is obligated to store a peers file in section \ref{sec:Fairness}. The peer also uses the metadata record to ensure the node does not have too many blacklisters. If the node meets both requirements, the peer uses the data layer to contact the node to inform it of the decision. The metadata layer is updated appropriately, and the data layer is used to transfer the file. This process repeats until the predetermined number of nodes are found.
 
 \subsection{The Data Layer} \label{subsec:TheDataLayer}
 
-% talking to peers and transferring data
-% Synchronization software
-% Use of BitTorrent
-% 
+The data layer is responsible for copying the data to be backed up from the peer to the node. This includes the quick communication by the peer to the node informing it that it is a replicant node for a given file.
+
+Our main contribution in this paper, and the only requirement of the data layer, is that it uses BitTorrent as the data transport portocol. By doing so, we increase the speed of data recovery because the peer can download the data from all replicant nodes simultaneously.
 
 \subsubsection{Security}
 
-% Reduction of information leakage
+The data that is transported via the data layer is encrypted so that the replicant nodes cannot read it. The strength of the encryption is left unspecified as a means of future-proofing this specification.
 
-% BTSync crypto and security
+% TODO note that this isn't done in the impl
+Furthermore, all communication between peers and nodes is encrypted to limit information leakage.
 
 \subsection{Churn and Data Migration} \label{sec:ChurnandDataMigration_DataExchange}
 
@@ -322,10 +310,8 @@ For users of our system to take advantage of the speed increases offered by the 
 % TODO: please pay extra attention during the review of this paragraph; I had to work in references to the challenge system after writing it, so some things might sound awkward.
 To solve this problem, peers in our system periodically check on the nodes that they are using as backup locations in order to gauge how available they are. During normal program operation, each peer tests the availability of its backup locations (along with a challenge mechanism, which is described in section \ref{subsec:ChallengeMechanism_Fairness}) to see whether or not they are online. If a backup node is found to be online and it passes the challenge, then the peer does not need to do anything; it will continue to think that it is reliable. If the node is offline or fails the challenge, however, the peer will take note that it was unavailable during an availability test, and that the node might be unreliable in general. It would be unfair to immediately conclude that the node is unreliable, since it may have been temporarily offline (for example, a user temporarily shutting down his/her computer). Therefore, a node needs to fail the ping test several times before the peer that uses it concludes that it is unreliable. It is possible that a node gets unlucky and happens to be offline during all checks, even though that it is online during a different part of the day. However, if this is the case, then the node is not frequently available for that node, and should be seen as unreliable.
 
-% TODO: move this up to the metadata layer section, and combine the first two sentences of this paragraph with the next paragraph.
-When a peer determines that a node is unreliable, it does two things. The first is that it adds its own ID to the node's blacklist in the DHT. The blacklist is a list of peer ID and timestamp pairs, where the peer IDs are the IDs of those who have determined that the node is unreliable and the timestamp is the time when the ID was inserted. This information is used by peers who are considering using the node as a backup location in the future. If the node has too many blacklisters (greater than some number \textit{n}), peers will decide against using that node, and move on to select another node. In order to prevent sybil attacks, where a malicious user has many identities and blacklists a node many times, the number of blacklisters should be a nontrivial amount and proportional to the size of the network. In order to prevent nodes from permanently being shut out from the network, entries in the blacklist are removed a set amount of tme after they are inserted; this is accomplished via the timestamp mentioned above.
-
-The second action that the peer takes is to move its replica to a new node. The peer sends an update to the DHT that it is removing the replica on the unreliable node. This accomplishes two things: all other peers in the network can see that the node is storing less data, and the node can see that it no longer needs to store the replica, so it can remove it the next time it checks the DHT for any changes. The peer will then look for a new node to put a replica on, using the same process that was used for creating the original backups (see section \ref{sec:TheMetadataLayer}). Since this process uses a randomly generated salt to help pick the ID of the new node, each node has an equal chance of being selected, assuming that it has enough space to store the replica and is not blacklisted by too many peers. This helps to prevent some nodes from being left out of the selection process.
+% TODO: rework this paragraph to make it flow better now that the two paragraphs have been combined
+When a peer determines that a node is unreliable, it does two things. The first is that it adds its own ID to the node's blacklist in the DHT. The second is to move its replica to a new node. The peer sends an update to the DHT that it is removing the replica on the unreliable node. This accomplishes two things: all other peers in the network can see that the node is storing less data, and the node can see that it no longer needs to store the replica, so it can remove it the next time it checks the DHT for any changes. The peer will then look for a new node to put a replica on, using the same process that was used for creating the original backups (see section \ref{sec:TheMetadataLayer}). Since this process uses a randomly generated salt to help pick the ID of the new node, each node has an equal chance of being selected, assuming that it has enough space to store the replica and is not blacklisted by too many peers. This helps to prevent some nodes from being left out of the selection process.
 
 \section{Fairness} \label{sec:Fairness}
 % People store proportional amount of data compared to how much they are backing up
@@ -433,6 +419,10 @@ The purpose of the Metadata Controller is similar to that of the BTSync Controll
 
 \section{Future Work}
 
+% Incorporate security into the design of our system
+% - DHT (add digital signatures to each column, have each updater sign over old data like in bitcoin's blockchain)
+
+% NAT traversal of client
 
 \begin{thebibliography}{11}
 
