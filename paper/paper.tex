@@ -332,13 +332,12 @@ To combat this, we have designed a challenge system that forces nodes to prove t
 
 
 \chapter{Implementation} \label{chap:impl}
-\section{Language and Tools}
-% C++
-% Boost
-% Jsoncpp - serialization for message passing (BTSync uses it too)
-% cURLpp
 
-Our implementation of BTBackup is written in C++. 
+Our goals for the implementation of BTBackup were that it is fast, modular, platform independent, and as close to the specification as time permitted. Furthermore, it should allow us to adequately analyze the feasibility and performance of BitTorrent Sync as the data transport protocol in the backup system.
+
+\section{Language and Tools}
+
+Our implementation of BTBackup is written in C++. This language was primarily chosen for its speed. We use the Boost library (version 1.55) to remain platform independent. We use Jsoncpp (version 0.6.0-rc2) to serialize and unserialize the JSON that the implementation uses for message passing. We use cURLpp (version 0.7.3) to interface with the BitTorrent Sync Web API.
 
 \section{System Design}
 \subsection{Overview}
