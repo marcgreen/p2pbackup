@@ -340,9 +340,17 @@ Our goals for the implementation of BTBackup were that it is fast, modular, plat
 Our implementation of BTBackup is written in C++. This language was primarily chosen for its speed. We use the Boost library (version 1.55) to remain platform independent. We use Jsoncpp (version 0.6.0-rc2) to serialize and unserialize the JSON that the implementation uses for message passing. We use cURLpp (version 0.7.3) to interface with the BitTorrent Sync Web API.
 
 \section{System Design}
-\subsection{Overview}
-
+\subsection{Overview} \label{subsec:Overview_sec:SystemDesign_chap:Implementation}
 %Diagram of system design
+We have designed our system to be modular. We realize that future work on our system might include the replacement of our data and metadata layers. Our solution for making these parts interchangeable with different implementations is to define standard interfaces between the two layers, which can be followed to create new implementations for the two layers. Along with these two layers, there is one more major part to our application: the system core. The system core comprises the core functionality of our system, which includes accepting and executing user commands, receiving network requests from other peers, and maintaining the P2P system.
+
+\begin{figure} \label{fig:SystemDesign}
+  \centering
+  \includegraphics[scale=0.4]{SystemDesign}
+  \caption{The design of our system}
+\end{figure}
+
+We explain each of these components in the following sections.
 
 \subsection{The Data Layer}
 % TODO: find out how many unique secret prefixes there are, factoring that into the calculation of how many unique addresses there are.
