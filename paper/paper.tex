@@ -208,7 +208,6 @@ BitTorrent Sync is a new application developed by BitTorrent, Inc. It is a P2P s
 Users of BitTorrent Sync have several options for having their synced devices locate each other. The following list is taken from the BitTorrent Sync technology page \cite{btsynctech} and describes each method of peer discovery:
 
 % TODO why do we discuss the different ways to find peers? We only need to talk about predfined hosts
-
 \begin{quote}
 \begin{itemize}
 \item Local peer discovery. All peers inside local network are discovered by sending broadcast packets. If there are peers with the same secret they respond to the broadcast message and connect.
@@ -288,21 +287,20 @@ A thorough explanation of the information stored in a metadata record follows. T
 
 \subsubsection{Finding Replicant Nodes} \label{subsubsec:FindingReplicantNodes}
 
-For every file a peer wishes to backup, it must find a predetermined number of nodes that can store the file. To ensure an even distributionof responsibility in the structured overlay network, a random bitstring in the address space of the overlay network is generated. The DHT provides the functionality to find the node whose ID is \texit{closest} to the randomly generated bitstring. The peer then gets the metadata record for the node from the DHT. From the metadata record, the peer can calculate if the node is \textit{obligated} to store its file. We discuss the situation in which a node is obligated to store a peers file in section \ref{sec:Fairness}. The peer also uses the metadata record to ensure the node does not have too many blacklisters. If the node meets both requirements, the peer contacts the node to inform it of the decision. The metadata layer is updated appropriately, and the data layer is used to transfer the file. This process repeats until the predetermined number of nodes are found.
+For every file a peer wishes to backup, it must find a predetermined number of nodes that can store the file. To ensure an even distributionof responsibility in the structured overlay network, a random bitstring in the address space of the overlay network is generated. The DHT provides the functionality to find the node whose ID is \texit{closest} to the randomly generated bitstring. The peer then gets the metadata record for the node from the DHT. From the metadata record, the peer can calculate if the node is \textit{obligated} to store its file. We discuss the situation in which a node is obligated to store a peers file in section \ref{sec:Fairness}. The peer also uses the metadata record to ensure the node does not have too many blacklisters. If the node meets both requirements, the peer uses the data layer to contact the node to inform it of the decision. The metadata layer is updated appropriately, and the data layer is used to transfer the file. This process repeats until the predetermined number of nodes are found.
 
 \subsection{The Data Layer} \label{subsec:TheDataLayer}
 
-% talking to peers and transferring data
-% Synchronization software
-% - should auto 
-% Use of BitTorrent
-% 
+The data layer is responsible for copying the data to be backed up from the peer to the node. This includes the quick communication by the peer to the node informing it that it is a replicant node for a given file.
+
+Our main contribution in this paper, and the only requirement of the data layer, is that it uses BitTorrent as the data transport portocol. By doing so, we increase the speed of data recovery because the peer can download the data from all replicant nodes simultaneously.
 
 \subsubsection{Security}
 
-% Reduction of information leakage
+The data that is transported via the data layer is encrypted so that the replicant nodes cannot read it. The strength of the encryption is left unspecified as a means of future-proofing this specification.
 
-% BTSync crypto and security
+% TODO note that this isn't done in the impl
+Furthermore, all communication between peers and nodes is encrypted to limit information leakage.
 
 \subsection{Churn and Data Migration} \label{sec:ChurnandDataMigration_DataExchange}
 
