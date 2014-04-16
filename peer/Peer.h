@@ -36,6 +36,12 @@ class Peer {
   // - Add file to BTSync
   // - Update metadata
   bool backupFile(std::string path);
+  
+  // Creates a single replica of the file with ID fileID.
+  bool createReplica(const std::string& fileID,
+		     const std::string& rwSecret,
+		     const std::string& encryptionSecret,
+		     uint64_t filesize);
 
   // Store the file with the given encryption secret for a node
   bool storeFile(std::string secret);
@@ -61,6 +67,10 @@ class Peer {
   //   of all files, as determined by BTSync
   void synchronizeWithBTSync();
   
+  // Check on all nodes that this peer uses to backup, and move any backups if
+  // necessary. This is called by the MetadataController
+  void checkOnBackupNodes();
+  
   static const int ENCRYPTION_SECRET_LENGTH;
   static const int DEFAULT_BTSYNC_PORT;
   static const float MAX_BLACKLIST_STORE_RATIO;
@@ -69,6 +79,7 @@ class Peer {
   static const std::string STORE_DIR;
   static const std::string LOCAL_BACKUP_INFO_FILE;
   static const int BTSYNC_FOLDER_RESCAN_INTERVAL;
+  static const int METADATA_RESCAN_INTERVAL;
   static const uint64_t MINIMUM_STORE_SIZE;
  private:
   // Create necessary directories for backing up and storing data
