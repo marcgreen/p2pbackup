@@ -13,7 +13,7 @@ BTSyncController::BTSyncController(std::shared_ptr<Dispatcher> dispatcher) :
 }
 
 BTSyncController::~BTSyncController() {
-  std::cout << "BTSyncController shutting down" << std::endl;
+  
 }
 
 void BTSyncController::start() {

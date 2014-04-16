@@ -139,24 +139,50 @@ void ConsoleController::stopAllAsync() {
 }
 
 bool ConsoleController::getTrackerInfo(Json::Value& configInfo) {
-	std::ifstream configFile("config.json");
-	bool result = false;
-	
-	if (configFile) {
-		Json::Reader jsonReader;
-		jsonReader.parse(configFile, configInfo);
-		if (configInfo.isMember("TrackerIP") &&
-				configInfo.isMember("TrackerPort") &&
-				configInfo.isMember("BTSyncUsername") &&
-				configInfo.isMember("BTSyncPassword") &&
-				configInfo.isMember("BTSyncIP") &&
-				configInfo.isMember("BTSyncPort") &&
-				configInfo.isMember("BackupDirectory")) {
-			result = true;
-		}
-	}
-	
-	return result;
+  std::ifstream configFile("config.json");
+  bool result = false;
+  
+  if (configFile) {
+    Json::Reader jsonReader;
+    jsonReader.parse(configFile, configInfo);
+    result = true;
+    if (!configInfo.isMember("TrackerIP")) {
+      std::cout << "Didn't find TrackerIP" << std::endl;
+      result = false;
+    }
+    if (!configInfo.isMember("TrackerPort")) {
+      std::cout << "Didn't find TrackerPort" << std::endl;
+      result = false;
+    }
+    if (!configInfo.isMember("BTSyncUsername")) {
+      std::cout << "Didn't find BTSyncUsername" << std::endl;
+      result = false;
+    }
+    if (!configInfo.isMember("BTSyncPassword")) {
+      std::cout << "Didn't find BTSyncPassword" << std::endl;
+      result = false;
+    }
+    if (!configInfo.isMember("BTSyncIP")) {
+      std::cout << "Didn't find BTSyncIP" << std::endl;
+      result = false;
+    }
+    if (!configInfo.isMember("BTSyncPort")) {
+      std::cout << "Didn't find BTSyncPort" << std::endl;
+      result = false;
+    }
+    if (!configInfo.isMember("BackupDirectory")) {
+      std::cout << "Didn't find BackupDirectory" << std::endl;
+      result = false;
+    }
+    
+    if (!result) {
+      std::cout << "Config was found but is invalid" << std::endl;
+    }
+  } else {
+    std::cout << "File could not be opened" << std::endl;
+  }
+  
+  return result;
 }
 
 } // namespace core
