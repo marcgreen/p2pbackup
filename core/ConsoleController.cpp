@@ -3,6 +3,7 @@
 #include "core/ConsoleController.h"
 #include "core/Controller.h"
 #include "core/Dispatcher.h"
+#include "core/MetadataController.h"
 #include "core/NetworkController.h"
 #include "core/PeerSocketConnection.h"
 #include "metadata/MetadataInterface.h"
@@ -65,6 +66,7 @@ void ConsoleController::start() {
   startAllAsync();
   
   while (!exitCommandUsed) {
+    std::cout << "> " << std::endl;
     std::string userInput;
     std::getline(std::cin, userInput);
     std::vector<std::string> splitInput;
@@ -104,13 +106,16 @@ void ConsoleController::start() {
 
 void ConsoleController::createControllers() {
   asyncControllers_.push_back(
-		std::shared_ptr<Controller>(
-			new NetworkController(
-				dispatcher_,
-				NetworkHandlerFunction(handlePeerSocketConnection))));
+    std::shared_ptr<Controller>(
+      new NetworkController(
+        dispatcher_,
+	NetworkHandlerFunction(handlePeerSocketConnection))));
   asyncControllers_.push_back(
-		std::shared_ptr<Controller>(
-			new BTSyncController(dispatcher_)));
+    std::shared_ptr<Controller>(
+      new BTSyncController(dispatcher_)));
+  asyncControllers_.push_back(
+    std::shared_ptr<Controller>(
+      new MetadataController(dispatcher_)));
 }
 
 void ConsoleController::startAllAsync() {

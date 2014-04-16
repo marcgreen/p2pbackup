@@ -22,7 +22,8 @@ const int Peer::TOTAL_REPLICA_COUNT = 2; // TODO change when testing large scale
 const std::string Peer::BACKUP_DIR = "backup";
 const std::string Peer::STORE_DIR = "store";
 const std::string Peer::LOCAL_BACKUP_INFO_FILE = "local_backup_info";
-const int Peer::BTSYNC_FOLDER_RESCAN_INTERVAL = 60;
+const int Peer::BTSYNC_FOLDER_RESCAN_INTERVAL = 60; // seconds
+const int Peer::METADATA_RESCAN_INTERVAL = 60; // seconds
 const int Peer::DEFAULT_BTSYNC_PORT = 48247;
 const uint64_t Peer::MINIMUM_STORE_SIZE = 2 << 31; // 2gb
 
@@ -159,82 +160,90 @@ bool Peer::backupFile(std::string path) {
   // Replicate file on the network several times
   int numberReplicas = 0;
   cout << "Finding replication nodes..." << endl;
- FIND_NODE: while (numberReplicas < TOTAL_REPLICA_COUNT) {
-    string id = btSyncInterface_->getSecrets(true)["encryption"].asString();
-    cout << "\tRandomly generated id: " << id << endl;
-
-    // Find potential replicant node
-    string nodeID = metadataInterface_->findClosestNode(id);
-    cout << "\tPotential replicant node: " + nodeID << endl;
-
-    // Are we already storing this file on the node?
-    Json::Value nodeArray = localBackupInfo_[fileID]["nodes"];
-    for (Json::Value node : nodeArray)
-      if (nodeID == node.asString())
-	goto FIND_NODE;
-
-    // Determine if node is obligated to store file, given the amount they currently backup and store
-    metadata::MetadataRecord nodeMetadata;
-    metadataInterface_->get(nodeID, nodeMetadata);
-    uint64_t storedSize = nodeMetadata.getTotalStoreSize();
-    uint64_t newStoredSize = filesize + storedSize;
-    uint64_t backedUpSize = nodeMetadata.getTotalBackupSize();
-    uint64_t obligatedStoreSize = TOTAL_REPLICA_COUNT * backedUpSize;
-    cout << "\tNode will be storing: " << to_string(newStoredSize) << endl
-	      << "\tNode obligated to store: " << to_string(obligatedStoreSize) << endl
-	      << "\t\t(" + to_string(TOTAL_REPLICA_COUNT) + " * " + to_string(backedUpSize) + ")"
-	      << endl;
-    if (newStoredSize >= obligatedStoreSize && storedSize > MINIMUM_STORE_SIZE)
-      continue;
-
-    // Ensure the node doesn't have too many blacklisters
-    int numBlacklisters = nodeMetadata.getNumberBlacklisters();
-    int numStoredFiles = nodeMetadata.getNumberStoredFiles();
-    if (numStoredFiles != 0) {
-      float blacklistToStoreRatio = numBlacklisters / numStoredFiles;
-      cout << "\tNode blacklist:store ratio: "
-	   << to_string(numBlacklisters) << "/" << to_string(numStoredFiles)
-	   << "(" << to_string(blacklistToStoreRatio) << ")" << endl;
-      if (blacklistToStoreRatio > MAX_BLACKLIST_STORE_RATIO)
-	continue;
-    }
-
-    // Ask (tell) node to backup. Wait for ACK, or find other replicant node if they never ACK
-    cout << "Node qualifies! Asking to backup...";
-    std::string nodeIP = nodeMetadata.getNodeIP();
-    if (!askNodeToBackup(nodeIP, encryptionSecret))
-      continue;
-    cout << "success!" << endl;
-
-    // Add file to metadata layer
-    cout << "Adding to metadata layer...";
-    try {
-      metadataInterface_->backupFile(peerID_, nodeID, fileID, filesize);
-    } catch (exception& e) {
-      cout << "Error adding file to metadata: " << e.what() << endl;
-      return false;
-    }
-    cout << "success!" << endl;
-
-    // Tell BTSync how to find the node
-    Json::Value hosts = btSyncInterface_->getFolderHosts(rwSecret);
-    Json::FastWriter writer;
-    hosts["hosts"].append(nodeIP + ":" + to_string(DEFAULT_BTSYNC_PORT));
-    cout << "Predefined hosts: " << writer.write(hosts) << endl;
-    btSyncInterface_->setFolderHosts(rwSecret, hosts);
-    
-    // Store relevant data in JSON data structure and write to file
-    localBackupInfo_[fileID]["nodes"].append(nodeID);
-    if (!localBackupInfo_.dumpToDisk(btBackupDir_ + "/"+ LOCAL_BACKUP_INFO_FILE)) {
-      cerr << "Error writing local backup info to disk" << endl;
-      return false;
-    }
-
-    cout << "Completed replication to the node. Good job!" << endl;
-    numberReplicas++;
-  }
+  
+  while (numberReplicas < TOTAL_REPLICA_COUNT)
+    if (createReplica(fileID, rwSecret, encryptionSecret, filesize))
+      ++numberReplicas;
 
   cout << "Completed file backup. Excellent!" << endl;
+  return true;
+}
+
+bool Peer::createReplica(const std::string& fileID,
+			 const std::string& rwSecret,
+			 const std::string& encryptionSecret,
+			 uint64_t filesize) {
+  using namespace std;
+  string id = btSyncInterface_->getSecrets(true)["encryption"].asString();
+  cout << "\tRandomly generated id: " << id << endl;
+  
+  // Find potential replicant node
+  string nodeID = metadataInterface_->findClosestNode(id);
+  cout << "\tPotential replicant node: " + nodeID << endl;
+  
+  // Are we already storing this file on the node?
+  Json::Value nodeArray = localBackupInfo_[fileID]["nodes"];
+  for (Json::Value node : nodeArray)
+    if (nodeID == node.asString())
+      return false;
+  
+  // Determine if node is obligated to store file, given the amount they currently backup and store
+  metadata::MetadataRecord nodeMetadata;
+  metadataInterface_->get(nodeID, nodeMetadata);
+  uint64_t storedSize = nodeMetadata.getTotalStoreSize();
+  uint64_t newStoredSize = filesize + storedSize;
+  uint64_t backedUpSize = nodeMetadata.getTotalBackupSize();
+  uint64_t obligatedStoreSize = TOTAL_REPLICA_COUNT * backedUpSize;
+  cout << "\tNode will be storing: " << to_string(newStoredSize) << endl
+       << "\tNode obligated to store: " << to_string(obligatedStoreSize) << endl
+       << "\t\t(" + to_string(TOTAL_REPLICA_COUNT) + " * " + to_string(backedUpSize) + ")"
+       << endl;
+  if (newStoredSize >= obligatedStoreSize && storedSize > MINIMUM_STORE_SIZE)
+    return false;
+  
+  // Ensure the node doesn't have too many blacklisters
+  int numBlacklisters = nodeMetadata.getNumberBlacklisters();
+  int numStoredFiles = nodeMetadata.getNumberStoredFiles();
+  if (numStoredFiles != 0) {
+    float blacklistToStoreRatio = numBlacklisters / numStoredFiles;
+    cout << "\tNode blacklist:store ratio: "
+	 << to_string(numBlacklisters) << "/" << to_string(numStoredFiles)
+	 << "(" << to_string(blacklistToStoreRatio) << ")" << endl;
+    if (blacklistToStoreRatio > MAX_BLACKLIST_STORE_RATIO)
+      return false;
+  }
+  
+  // Ask (tell) node to backup. Wait for ACK, or find other replicant node if they never ACK
+  cout << "Node qualifies! Asking to backup...";
+  std::string nodeIP = nodeMetadata.getNodeIP();
+  if (!askNodeToBackup(nodeIP, encryptionSecret))
+    return false;
+  cout << "success!" << endl;
+  
+  // Add file to metadata layer
+  cout << "Adding to metadata layer...";
+  try {
+    metadataInterface_->backupFile(peerID_, nodeID, fileID, filesize);
+  } catch (exception& e) {
+    cout << "Error adding file to metadata: " << e.what() << endl;
+    return false;
+  }
+  cout << "success!" << endl;
+  
+  // Tell BTSync how to find the node
+  Json::Value hosts = btSyncInterface_->getFolderHosts(rwSecret);
+  Json::FastWriter writer;
+  hosts["hosts"].append(nodeIP + ":" + to_string(DEFAULT_BTSYNC_PORT));
+  cout << "Predefined hosts: " << writer.write(hosts) << endl;
+  btSyncInterface_->setFolderHosts(rwSecret, hosts);
+  
+  // Store relevant data in JSON data structure and write to file
+  localBackupInfo_[fileID]["nodes"].append(nodeID);
+  if (!localBackupInfo_.dumpToDisk(btBackupDir_ + "/"+ LOCAL_BACKUP_INFO_FILE)) {
+    throw std::runtime_error("Error writing local backup info to disk");
+  }
+
+  cout << "Completed replication to the node. Good job!" << endl;
   return true;
 }
 
@@ -383,6 +392,17 @@ void Peer::synchronizeWithBTSync() {
       updateFileSize(currentFileID, btSyncFileSize);
     }
   }
+}
+
+void Peer::checkOnBackupNodes() {
+  // Get IP address of each node
+  // Ping each of them (which will be picked up by their Network Controllers).
+  //   Pinging them could consist of opening the socket connection and seeing
+  //   if they accept.
+  // Wait for a little while. If a node fails to respond within the time limit,
+  //   mark them as unreliable.
+  // If their unreliable count goes over a threashold, move the replica to a
+  //   different node and blacklist that node.
 }
 
 } // namespace peer

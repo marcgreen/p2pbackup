@@ -12,6 +12,7 @@
 namespace tracker { namespace server {
 
 std::string TrackerDatabase::findClosest(const std::string& id) {
+  std::unique_lock<std::mutex> accessLock(accessMutex_);
   // Start in the middle for binary search
   int min = 0, max = sortedIDs_.size() - 1;
   int currentPos;
@@ -48,6 +49,7 @@ std::string TrackerDatabase::findClosest(const std::string& id) {
 
 metadata::MetadataRecord&
 TrackerDatabase::getRecord(const std::string& nodeID) {
+  std::unique_lock<std::mutex> accessLock(accessMutex_);
   if (records_.count(nodeID) == 0)
     throw std::out_of_range("No record with ID " + nodeID);
   return records_[nodeID];
@@ -55,6 +57,7 @@ TrackerDatabase::getRecord(const std::string& nodeID) {
 
 bool TrackerDatabase::join(const std::string& nodeID,
 			   const std::string& ipAddress) {
+  std::unique_lock<std::mutex> accessLock(accessMutex_);
   records_.insert(std::make_pair
 		  (nodeID, metadata::MetadataRecord(ipAddress)));
   sortedIDs_.push_back(nodeID);
@@ -63,18 +66,19 @@ bool TrackerDatabase::join(const std::string& nodeID,
 }
 
 bool TrackerDatabase::blacklistNode(const std::string& nodeID,
-																		const std::string& blacklisterID) {
+				    const std::string& blacklisterID) {
+  std::unique_lock<std::mutex> accessLock(accessMutex_);
   bool result = false;
   if (records_.count(nodeID) == 1)
     result = records_[nodeID].addBlacklister(blacklisterID, std::time(NULL));
   return result;
 }
 
-// +
 bool TrackerDatabase::backupFile(const std::string& peerID,
 				 const std::string& nodeID,
 				 const std::string& fileID,
 				 uint64_t size) {
+  std::unique_lock<std::mutex> accessLock(accessMutex_);
   bool result = false;
   if (records_.count(peerID) == 1 && records_.count(nodeID) == 1) {
     if (!records_[peerID].addBackupFile(fileID, nodeID, size))
@@ -88,6 +92,7 @@ bool TrackerDatabase::backupFile(const std::string& peerID,
 bool TrackerDatabase::updateFileSize(const std::string& peerID,
 				     const std::string& fileID,
 				     uint64_t size) {
+  std::unique_lock<std::mutex> accessLock(accessMutex_);
   bool result = false;
   if (records_.count(peerID) == 1) {
     result = records_[peerID].updateBackupFileSize(fileID, size);

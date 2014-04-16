@@ -4,8 +4,9 @@
 
 #include "metadata/MetadataRecord.h"
 
-#include <unordered_map>
+#include <mutex>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace tracker { namespace server {
@@ -21,19 +22,20 @@ class TrackerDatabase {
   metadata::MetadataRecord& getRecord(const std::string& nodeID);
   bool join(const std::string& nodeID, const std::string& ipAddress);
   bool blacklistNode(const std::string& nodeID,
-										 const std::string& blacklisterID);
+		     const std::string& blacklisterID);
   bool backupFile(const std::string& peerID,
-									const std::string& noddeID,
-									const std::string& fileID,
-									uint64_t size);
-	bool updateFileSize(const std::string& peerID,
-											const std::string& fileID,
-											uint64_t size);
+		  const std::string& nodeID,
+		  const std::string& fileID,
+		  uint64_t size);
+  bool updateFileSize(const std::string& peerID,
+		      const std::string& fileID,
+		      uint64_t size);
  private:
   TrackerDatabase();
   
   std::unordered_map<std::string, metadata::MetadataRecord> records_;
   std::vector<std::string> sortedIDs_;
+  std::mutex accessMutex_;
 }; // class TrackerDatabase
 
 } } // namespace tracker::server
