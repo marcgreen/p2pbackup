@@ -1,8 +1,12 @@
 
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+
 #include "core/NetworkController.h"
 #include "peer/Peer.h"
 
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/bind.hpp>
 #include <unistd.h>
 #include <stdio.h>
 #include <exception>
@@ -25,13 +29,16 @@ const std::string Peer::LOCAL_BACKUP_INFO_FILE = "local_backup_info";
 const int Peer::BTSYNC_FOLDER_RESCAN_INTERVAL = 60; // seconds
 const int Peer::METADATA_RESCAN_INTERVAL = 60; // seconds
 const int Peer::DEFAULT_BTSYNC_PORT = 48247;
+const std::string Peer::DEFAULT_BTSYNC_PORT_STR = "48247";
 const uint64_t Peer::MINIMUM_STORE_SIZE = 2 << 31; // 2gb
+const uint32_t Peer::STARTING_NODE_RELIABILITY = 5;
 
 Peer& Peer::constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
 			      std::shared_ptr<btsync::BTSyncInterface> btSyncI,
-			      std::string btBackupDir) {
+			      std::string btBackupDir,
+			      std::string localBackupInfoLocation) {
   if (!instance_)
-    instance_ = std::shared_ptr<Peer>(new Peer(metadataI, btSyncI, btBackupDir));
+    instance_ = std::shared_ptr<Peer>(new Peer(metadataI, btSyncI, btBackupDir, localBackupInfoLocation));
   return *instance_;
 }
 
@@ -42,7 +49,8 @@ Peer& Peer::getInstance() {
 // private
 Peer::Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
 	   std::shared_ptr<btsync::BTSyncInterface> btSyncI,
-	   std::string btBackupDir) :
+	   std::string btBackupDir,
+	   std::string localBackupInfoLocation) :
   metadataInterface_(metadataI), btSyncInterface_(btSyncI), btBackupDir_(btBackupDir) { 
 
   // Create root backup directory, btBackupDir, if it's not already present
@@ -51,16 +59,36 @@ Peer::Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
   // Create backup and store subdirectories if not already present
   createDirIfNeeded(btBackupDir + "/" + BACKUP_DIR);
   createDirIfNeeded(btBackupDir + "/" + STORE_DIR);
-
+  
+  if (!localBackupInfoLocation.empty()) {
+    boost::filesystem::copy_file(localBackupInfoLocation,
+				 btBackupDir + "/" + LOCAL_BACKUP_INFO_FILE);
+  }
+  
   // Read in persistent localBackupInfo
   std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
   localBackupInfo_.readFromDisk(btBackupDir +"/"+ LOCAL_BACKUP_INFO_FILE);
-
+  
+  if (!localBackupInfoLocation.empty())
+    recreateAndRegisterBTSyncDirectories();
+  
   // Set BTSync preferences
   Json::Value prefs;
   prefs["folder_rescan_interval"] = BTSYNC_FOLDER_RESCAN_INTERVAL;
   prefs["listening_port"] = DEFAULT_BTSYNC_PORT;
   btSyncInterface_->setPreferences(prefs);
+}
+
+void Peer::recreateAndRegisterBTSyncDirectories() {
+  std::vector<std::string> fileIDs = localBackupInfo_["files"].getMemberNames();
+  for (std::string& fileID : fileIDs) {
+    std::stringstream ss;
+    ss << btBackupDir_ << "/" << BACKUP_DIR << "/" << fileID;
+    std::string directory(ss.str());
+    createDirIfNeeded(directory);
+    btSyncInterface_->addFolder(
+      directory, localBackupInfo_["files"][fileID]["rwSecret"].asString());
+  }
 }
 
 bool Peer::joinNetwork() {
@@ -139,7 +167,8 @@ bool Peer::backupFile(std::string path) {
   // method.
   std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
   // Keep track of filesize locally for synchronization between BTSync and Metadata Layer
-  localBackupInfo_[fileID]["size"] = static_cast<Json::UInt64>(filesize);
+  localBackupInfo_["files"][fileID]["size"] = static_cast<Json::UInt64>(filesize);
+  localBackupInfo_["files"][fileID]["rwSecret"] = rwSecret;
   if (!localBackupInfo_.dumpToDisk(btBackupDir_ +"/"+ LOCAL_BACKUP_INFO_FILE)) {
     cerr << "Error writing local backup info to disk" << endl;
     return false;
@@ -161,9 +190,14 @@ bool Peer::backupFile(std::string path) {
   int numberReplicas = 0;
   cout << "Finding replication nodes..." << endl;
   
-  while (numberReplicas < TOTAL_REPLICA_COUNT)
-    if (createReplica(fileID, rwSecret, encryptionSecret, filesize))
-      ++numberReplicas;
+  try {
+    while (numberReplicas < TOTAL_REPLICA_COUNT)
+      if (createReplica(fileID, rwSecret, encryptionSecret, filesize))
+	++numberReplicas;
+  } catch(std::runtime_error& error) {
+    std::cerr << "Backup failed. Reason: " << error.what() << std::endl;
+    return false;
+  }
 
   cout << "Completed file backup. Excellent!" << endl;
   return true;
@@ -182,9 +216,9 @@ bool Peer::createReplica(const std::string& fileID,
   cout << "\tPotential replicant node: " + nodeID << endl;
   
   // Are we already storing this file on the node?
-  Json::Value nodeArray = localBackupInfo_[fileID]["nodes"];
+  Json::Value nodeArray = localBackupInfo_["files"][fileID]["nodes"];
   for (Json::Value node : nodeArray)
-    if (nodeID == node.asString())
+    if (nodeID == node["ID"].asString())
       return false;
   
   // Determine if node is obligated to store file, given the amount they currently backup and store
@@ -238,8 +272,12 @@ bool Peer::createReplica(const std::string& fileID,
   btSyncInterface_->setFolderHosts(rwSecret, hosts);
   
   // Store relevant data in JSON data structure and write to file
-  localBackupInfo_[fileID]["nodes"].append(nodeID);
-  if (!localBackupInfo_.dumpToDisk(btBackupDir_ + "/"+ LOCAL_BACKUP_INFO_FILE)) {
+  Json::Value newNode;
+  newNode["ID"] = nodeID;
+  newNode["IP"] = nodeIP;
+  newNode["reliability"] = STARTING_NODE_RELIABILITY;
+  localBackupInfo_["files"][fileID]["nodes"].append(newNode);
+  if (!localBackupInfo_.dumpToDisk(btBackupDir_ + "/" + LOCAL_BACKUP_INFO_FILE)) {
     throw std::runtime_error("Error writing local backup info to disk");
   }
 
@@ -296,7 +334,7 @@ bool Peer::removeBackup(std::string fileID) {
 
 bool Peer::updateFileSize(std::string fileID, uint64_t size) {
   std::unique_lock<std::recursive_mutex> localInfoLock(localInfoMutex_);
-  Json::Value& backupNodeList = localBackupInfo_[fileID]["nodes"];
+  Json::Value& backupNodeList = localBackupInfo_["files"][fileID]["nodes"];
   localInfoLock.unlock();
 
   if (!backupNodeList.isArray())
@@ -304,8 +342,10 @@ bool Peer::updateFileSize(std::string fileID, uint64_t size) {
 			     "(expected an array)");
 
   for (int nodeIndex = 0; nodeIndex < backupNodeList.size(); ++nodeIndex)
-    metadataInterface_->updateFileSize(backupNodeList[nodeIndex].asString(), fileID, size);
-
+    metadataInterface_->updateFileSize(backupNodeList[nodeIndex]["ID"].asString(), fileID, size);
+  
+  localBackupInfo_["files"][fileID]["size"] = static_cast<Json::UInt64>(size);
+  
   // There isn't anything to indiciate that something went wrong, so just
   // return true
   return true;
@@ -378,7 +418,7 @@ void Peer::synchronizeWithBTSync() {
     std::string rwSecret = folder["secret"].asString();
     std::string currentFileID = btSyncInterface_->getSecrets(rwSecret, true)["encryption"].asString();
     uint64_t btSyncFileSize = folder["size"].asUInt64();
-    uint64_t localInfoFileSize = localBackupInfo_[currentFileID]["size"].asUInt64();
+    uint64_t localInfoFileSize = localBackupInfo_["files"][currentFileID]["size"].asUInt64();
     
     // If the sizes are different, then the file size has changed. Update
     // the LocalBackupInfo data structure and inform the Metadata Layer of the
@@ -388,10 +428,18 @@ void Peer::synchronizeWithBTSync() {
 		<< "File ID: " << currentFileID << std::endl
 		<< "LocalBackupInfo size: " << localInfoFileSize << std::endl
 		<< "BTSync size: " << btSyncFileSize << std::endl;
-      localBackupInfo_[currentFileID]["size"] = static_cast<Json::UInt64>(btSyncFileSize);
+      localBackupInfo_["files"][currentFileID]["size"] = static_cast<Json::UInt64>(btSyncFileSize);
       updateFileSize(currentFileID, btSyncFileSize);
     }
   }
+}
+
+void connectionHandler(bool *success, const boost::system::error_code& error) {
+  *success = true;
+}
+
+void timeoutHandler(const boost::system::error_code& error) {
+  // Do nothing; success is set to false by default
 }
 
 void Peer::checkOnBackupNodes() {
@@ -403,6 +451,51 @@ void Peer::checkOnBackupNodes() {
   //   mark them as unreliable.
   // If their unreliable count goes over a threashold, move the replica to a
   //   different node and blacklist that node.
+  
+  std::vector<std::string> fileIDs;
+  
+  {
+    std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
+    fileIDs = localBackupInfo_["files"].getMemberNames();
+  }
+  
+  for (std::string fileID : fileIDs) {
+    for (Json::Value& node : localBackupInfo_["files"][fileID]["nodes"]) {
+      bool success = false;
+      boost::asio::io_service ioService;
+      boost::asio::deadline_timer deadline(ioService,
+					   boost::posix_time::seconds(5));
+      
+      tcp::socket s(ioService);
+      tcp::endpoint end(boost::asio::ip::address::from_string(node["IP"].asString()),
+			DEFAULT_BTSYNC_PORT);
+      //boost::system::error_code error = boost::asio::error::host_not_found;
+      deadline.async_wait(timeoutHandler);
+      s.async_connect(end, boost::bind(connectionHandler, &success, _1));
+      ioService.run_one();
+      s.close();
+      
+      // If the connection handler wasn't called, then the timeout happened
+      // first. In this case, decrement their reliability counter.
+      if (!success) {
+	// This node dun goofed
+	// Consequences will never be the same
+	// (Blacklist the node)
+	if (node["reliability"].asUInt() == 0) {
+	  blacklistNode(node["ID"].asString());
+	  removeBackup(fileID);
+	  createReplica(fileID,
+			localBackupInfo_["files"][fileID]["rwSecret"].asString(),
+			fileID,
+			localBackupInfo_["files"][fileID]["size"].asUInt64());
+	} else {
+	  node["reliability"] = node["reliability"].asUInt() - 1;
+	}
+      } else {
+	node["reliability"] = STARTING_NODE_RELIABILITY;
+      }
+    }
+  }
 }
 
 } // namespace peer

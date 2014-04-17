@@ -23,6 +23,19 @@ class LocalBackupInfo {
   // - "size": self explanatory
   // - "ID": previous ID used by this peer
   // - "nodes": array of nodes storing this file
+  /*
+    {
+      "ID": "some_ID",
+      "files": {
+        "fileID1": {
+	  "size": the_size,
+	  "rwSecret": the_read_write_secret,
+	  "nodes": [{"ID":nodeID, "IP":nodeIP, "reliability"}, ...]
+	}
+	...
+      }
+    }
+  */
   Json::Value data_;
 };
 

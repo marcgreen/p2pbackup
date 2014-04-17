@@ -17,6 +17,7 @@ class ConsoleController : public Controller {
  public:
   ConsoleController();
   ConsoleController(std::shared_ptr<Dispatcher> dispatcher);
+  void start(const std::string& localBackupInfoLocation);
   void start();
   void stop() { }
  private:
@@ -26,7 +27,7 @@ class ConsoleController : public Controller {
   void createControllers();
   void startAllAsync();
   void stopAllAsync();
-	bool getTrackerInfo(Json::Value& configInfo);
+  bool getTrackerInfo(Json::Value& configInfo);
 }; // class ConsoleController
 
 } // namespace core

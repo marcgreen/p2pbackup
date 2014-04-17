@@ -30,7 +30,7 @@ ConsoleController::ConsoleController(std::shared_ptr<Dispatcher> dispatcher) :
   createControllers();
 }
 
-void ConsoleController::start() {
+void ConsoleController::start(const std::string& localBackupInfoLocation) {
   bool exitCommandUsed = false;
   Json::Value configInfo;
   bool configSuccessful = getTrackerInfo(configInfo);
@@ -56,7 +56,8 @@ void ConsoleController::start() {
        configInfo["BTSyncPassword"].asString(),
        configInfo["BTSyncIP"].asString(),
        configInfo["BTSyncPort"].asString())),
-     configInfo["BackupDirectory"].asString());
+     configInfo["BackupDirectory"].asString(),
+     localBackupInfoLocation);
   
   if (!peer.joinNetwork()) {
     std::cerr << "Fatal error: could not join network" << std::endl;
@@ -102,6 +103,10 @@ void ConsoleController::start() {
   }
   
   stopAllAsync();
+}
+
+void ConsoleController::start() {
+  start(std::string());
 }
 
 void ConsoleController::createControllers() {

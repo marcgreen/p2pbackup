@@ -6,10 +6,13 @@
 #include "metadata/MetadataInterface.h"
 #include "metadata/LocalBackupInfo.h"
 
+#include <boost/asio.hpp>
 #include <memory>
 #include <mutex>
 
 namespace peer {
+
+using boost::asio::ip::tcp;
 
 // Abstraction of what a "peer" is in our system. Used as glue between 
 //   the core system and BTSyncInterface/TrackerInterface.
@@ -19,7 +22,8 @@ class Peer {
   // We need the two interfaces and the directory where we'll create hardlinks to the backup files
   static Peer& constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
 				 std::shared_ptr<btsync::BTSyncInterface> btSyncI,
-				 std::string backupDir);
+				 std::string backupDir,
+				 std::string localBackupInfoLocation = std::string());
   
   static Peer& getInstance();
   
@@ -73,6 +77,7 @@ class Peer {
   
   static const int ENCRYPTION_SECRET_LENGTH;
   static const int DEFAULT_BTSYNC_PORT;
+  static const std::string DEFAULT_BTSYNC_PORT_STR;
   static const float MAX_BLACKLIST_STORE_RATIO;
   static const int TOTAL_REPLICA_COUNT; // TODO change when testing large scale
   static const std::string BACKUP_DIR;
@@ -81,13 +86,17 @@ class Peer {
   static const int BTSYNC_FOLDER_RESCAN_INTERVAL;
   static const int METADATA_RESCAN_INTERVAL;
   static const uint64_t MINIMUM_STORE_SIZE;
+  static const uint32_t STARTING_NODE_RELIABILITY;
  private:
   // Create necessary directories for backing up and storing data
   // Read in localBackupInfo from disk
   Peer(std::shared_ptr<metadata::MetadataInterface> metadataI,
        std::shared_ptr<btsync::BTSyncInterface> btSyncI,
-       std::string backupDir);
-
+       std::string backupDir,
+       std::string localBackupInfoLocation);
+  
+  void recreateAndRegisterBTSyncDirectories();
+  
   static std::shared_ptr<Peer> instance_;
 
   // Keep track of our own ID
