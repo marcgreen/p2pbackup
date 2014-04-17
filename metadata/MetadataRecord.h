@@ -4,6 +4,7 @@
 
 #include <list>
 #include <map>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -94,6 +95,8 @@ class MetadataRecord {
 	
   std::list<FileMetadata>::iterator backupNodeIteratorEnd
     (const std::string& fileID);
+  
+  std::set<std::string> getStoredFileIDs();
 
  private:
   // IP address of the node this record describes

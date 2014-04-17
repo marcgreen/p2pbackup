@@ -8,8 +8,14 @@ namespace core {
 
 void handlePeerSocketConnection(std::shared_ptr<tcp::socket> socket) {
   char secretBuffer[peer::Peer::ENCRYPTION_SECRET_LENGTH];
+  std::cout << "Got connection from " << socket->remote_endpoint().address().to_string() << std::endl;
+  uint8_t msgType;
   
   try {
+    boost::asio::read(*socket, boost::asio::buffer(&msgType, sizeof(msgType)));
+    // If the message is just a ping, don't try to read more.
+    if (msgType == 1)
+      return;
     // Get the peer::Peer::ENCRYPTION_SECRET_LENGTH byte secret from the network
     boost::asio::read(*socket, boost::asio::buffer(secretBuffer, peer::Peer::ENCRYPTION_SECRET_LENGTH));
     uint8_t ack = 1;

@@ -7,6 +7,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/bind.hpp>
+#include <boost/lambda/lambda.hpp>
 #include <unistd.h>
 #include <stdio.h>
 #include <exception>
@@ -121,7 +122,11 @@ bool Peer::joinNetwork() {
 
 bool Peer::blacklistNode(std::string nodeID) {
   std::cout << "Blacklisting " + nodeID << std::endl;
-  metadataInterface_->blacklistNode(peerID_, nodeID);
+  try {
+    metadataInterface_->blacklistNode(peerID_, nodeID);
+  } catch(std::exception& e) {
+    std::cerr << e.what() << std::endl;
+  }
   return true;
 }
 
@@ -212,18 +217,30 @@ bool Peer::createReplica(const std::string& fileID,
   cout << "\tRandomly generated id: " << id << endl;
   
   // Find potential replicant node
-  string nodeID = metadataInterface_->findClosestNode(id);
+  string nodeID; 
+  
+  try {
+    nodeID = metadataInterface_->findClosestNode(id);
+  } catch(std::exception& e) {
+    std::cerr << e.what() << std::endl;
+    return false;
+  }
   cout << "\tPotential replicant node: " + nodeID << endl;
   
   // Are we already storing this file on the node?
-  Json::Value nodeArray = localBackupInfo_["files"][fileID]["nodes"];
-  for (Json::Value node : nodeArray)
-    if (nodeID == node["ID"].asString())
+  Json::Value& nodeArray = localBackupInfo_["files"][fileID]["nodes"];
+  for (std::string& currNodeID : nodeArray.getMemberNames())
+    if (nodeID == currNodeID)
       return false;
   
   // Determine if node is obligated to store file, given the amount they currently backup and store
   metadata::MetadataRecord nodeMetadata;
-  metadataInterface_->get(nodeID, nodeMetadata);
+  try {
+    metadataInterface_->get(nodeID, nodeMetadata);
+  } catch(std::exception& e) {
+    std::cerr << e.what() << std::endl;
+    return false;
+  }
   uint64_t storedSize = nodeMetadata.getTotalStoreSize();
   uint64_t newStoredSize = filesize + storedSize;
   uint64_t backedUpSize = nodeMetadata.getTotalBackupSize();
@@ -273,10 +290,9 @@ bool Peer::createReplica(const std::string& fileID,
   
   // Store relevant data in JSON data structure and write to file
   Json::Value newNode;
-  newNode["ID"] = nodeID;
   newNode["IP"] = nodeIP;
   newNode["reliability"] = STARTING_NODE_RELIABILITY;
-  localBackupInfo_["files"][fileID]["nodes"].append(newNode);
+  localBackupInfo_["files"][fileID]["nodes"][nodeID] = newNode;
   if (!localBackupInfo_.dumpToDisk(btBackupDir_ + "/" + LOCAL_BACKUP_INFO_FILE)) {
     throw std::runtime_error("Error writing local backup info to disk");
   }
@@ -337,13 +353,20 @@ bool Peer::updateFileSize(std::string fileID, uint64_t size) {
   Json::Value& backupNodeList = localBackupInfo_["files"][fileID]["nodes"];
   localInfoLock.unlock();
 
-  if (!backupNodeList.isArray())
+  /*if (!backupNodeList.isArray())
     throw std::runtime_error("In Peer::updateFile: Malformed LocalBackupInfo "
-			     "(expected an array)");
+    "(expected an array)");*/
 
-  for (int nodeIndex = 0; nodeIndex < backupNodeList.size(); ++nodeIndex)
-    metadataInterface_->updateFileSize(backupNodeList[nodeIndex]["ID"].asString(), fileID, size);
-  
+  //for (int nodeIndex = 0; nodeIndex < backupNodeList.size(); ++nodeIndex) {
+  for (std::string& nodeID : backupNodeList.getMemberNames()) {
+    try {
+      metadataInterface_->updateFileSize(nodeID, fileID, size);
+    } catch(std::exception& e) {
+      std::cerr << e.what() << std::endl;
+      return false;
+    }
+  }
+    
   localBackupInfo_["files"][fileID]["size"] = static_cast<Json::UInt64>(size);
   
   // There isn't anything to indiciate that something went wrong, so just
@@ -378,6 +401,8 @@ bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
     throw boost::system::system_error(error);
 
   try {
+    uint8_t msgType = 0;
+    boost::asio::write(socket, boost::asio::buffer(&msgType, sizeof(msgType)));
     boost::asio::write(socket, boost::asio::buffer(secret.data(), secret.size()));
     uint8_t nodeAck = 0;
     boost::asio::read(socket, boost::asio::buffer(&nodeAck, sizeof(nodeAck)));
@@ -434,14 +459,6 @@ void Peer::synchronizeWithBTSync() {
   }
 }
 
-void connectionHandler(bool *success, const boost::system::error_code& error) {
-  *success = true;
-}
-
-void timeoutHandler(const boost::system::error_code& error) {
-  // Do nothing; success is set to false by default
-}
-
 void Peer::checkOnBackupNodes() {
   // Get IP address of each node
   // Ping each of them (which will be picked up by their Network Controllers).
@@ -449,51 +466,103 @@ void Peer::checkOnBackupNodes() {
   //   if they accept.
   // Wait for a little while. If a node fails to respond within the time limit,
   //   mark them as unreliable.
-  // If their unreliable count goes over a threashold, move the replica to a
+  // If their unreliable count goes over a threshold, move the replica to a
   //   different node and blacklist that node.
   
   std::vector<std::string> fileIDs;
   
-  {
-    std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
-    fileIDs = localBackupInfo_["files"].getMemberNames();
-  }
+  std::unique_lock<std::recursive_mutex> localBackupLock(localInfoMutex_);
+  fileIDs = localBackupInfo_["files"].getMemberNames();
   
   for (std::string fileID : fileIDs) {
-    for (Json::Value& node : localBackupInfo_["files"][fileID]["nodes"]) {
-      bool success = false;
+    std::list<std::string> toRemove;
+    std::vector<std::string> nodeIDs =
+      localBackupInfo_["files"][fileID]["nodes"].getMemberNames();
+    for (std::string nodeID : nodeIDs) {
+      Json::Value& current = localBackupInfo_["files"][fileID]["nodes"][nodeID];
+      int status = 0;
       boost::asio::io_service ioService;
       boost::asio::deadline_timer deadline(ioService,
 					   boost::posix_time::seconds(5));
       
+      std::cout << "checkOnBackupNode: Trying " << current["IP"].asString() << std::endl;
+      
+      tcp::resolver resolver(ioService);
+      tcp::resolver::query query(tcp::v4(),
+				 current["IP"].asString(),
+				 core::CLIENT_PORT_STR);
+      tcp::resolver::iterator iterator = resolver.resolve(query);
+      tcp::resolver::iterator end;
+      
       tcp::socket s(ioService);
-      tcp::endpoint end(boost::asio::ip::address::from_string(node["IP"].asString()),
-			DEFAULT_BTSYNC_PORT);
-      //boost::system::error_code error = boost::asio::error::host_not_found;
-      deadline.async_wait(timeoutHandler);
-      s.async_connect(end, boost::bind(connectionHandler, &success, _1));
-      ioService.run_one();
-      s.close();
+      boost::system::error_code error = boost::asio::error::host_not_found;
+      
+      while (error && iterator != end) {
+	s.close();
+	s.connect(*iterator++, error);
+      }
+      
+      std::cout << error.message() << " " << s.is_open() << std::endl;
       
       // If the connection handler wasn't called, then the timeout happened
       // first. In this case, decrement their reliability counter.
-      if (!success) {
+      //if (status == 2 || !s.is_open()) {
+      if (error || !s.is_open()) {
 	// This node dun goofed
 	// Consequences will never be the same
 	// (Blacklist the node)
-	if (node["reliability"].asUInt() == 0) {
-	  blacklistNode(node["ID"].asString());
+	if (current["reliability"].asUInt() == 0) {
+	  blacklistNode(nodeID);
 	  removeBackup(fileID);
 	  createReplica(fileID,
 			localBackupInfo_["files"][fileID]["rwSecret"].asString(),
 			fileID,
 			localBackupInfo_["files"][fileID]["size"].asUInt64());
+	  toRemove.push_back(nodeID);
+	  std::cout << "Removing backup on " << nodeID
+		    << std::endl;
 	} else {
-	  node["reliability"] = node["reliability"].asUInt() - 1;
+	  current["reliability"] = current["reliability"].asUInt() - 1;
+	  std::cout << "Reliability for " << nodeID
+		    << "decreased by 1, now set to "
+		    << current["reliability"].asUInt()
+		    << std::endl;
+	  localBackupInfo_.dumpToDisk(btBackupDir_ + "/" + LOCAL_BACKUP_INFO_FILE);
+	  std::cout << "checkOnBackupNodes: Done writing to disk" << std::endl;
 	}
       } else {
-	node["reliability"] = STARTING_NODE_RELIABILITY;
+	uint8_t msgType = 1;
+	// Send the message type. If that fails, just move on to the next node.
+	try {
+	  boost::asio::write(s, boost::asio::buffer(&msgType, sizeof(msgType)));
+	} catch(boost::system::system_error& error) {
+	  continue;
+	}
+	// Nothing else needs to be sent, so close the connection.
+	s.close();
+	current["reliability"] = STARTING_NODE_RELIABILITY;
+	std::cout << "Reliability for " << nodeID
+		  << " reset" << std::endl;
+	localBackupInfo_.dumpToDisk(btBackupDir_ + "/" + LOCAL_BACKUP_INFO_FILE);
+	std::cout << "checkOnBackupNodes: Done dumping to disk" << std::endl;
       }
+    }
+    for (std::string& nodeID : toRemove)
+      localBackupInfo_["files"][fileID]["nodes"].removeMember(nodeID);
+  }
+}
+
+void Peer::checkMetadataForStoreChanges() {
+  metadata::MetadataRecord selfRecord;
+  // Get our own Metadata Record.
+  metadataInterface_->get(peerID_, selfRecord);
+  std::set<std::string> storedFileIDs = selfRecord.getStoredFileIDs();
+  boost::filesystem::directory_iterator iterator(boost::filesystem::path(btBackupDir_ + "/" + STORE_DIR));
+  for(; iterator != boost::filesystem::directory_iterator(); ++iterator) {
+    std::string dirName = iterator->path().filename().string();
+    if (storedFileIDs.find(dirName) == storedFileIDs.end()) {
+      std::cout << "checkMetadataForStoreChange: pruning ID "
+		<< dirName << std::endl;
     }
   }
 }

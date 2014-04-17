@@ -18,7 +18,7 @@ bool recv(Json::Value& dataToReceive, tcp::socket& socket) {
     boost::asio::read(socket,
 		      boost::asio::buffer(&messageSize, sizeof(messageSize)));
     
-		std::cout << "Size of message read as " << messageSize << std::endl;
+    std::cout << "Size of message read as " << messageSize << std::endl;
 		
     // Allocate enough space for the JSON
     std::unique_ptr<char> jsonData(new char[messageSize]);

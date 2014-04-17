@@ -75,6 +75,9 @@ class Peer {
   // necessary. This is called by the MetadataController
   void checkOnBackupNodes();
   
+  // Check to see if any peers have removed you from their backup nodes.
+  void checkMetadataForStoreChanges();
+  
   static const int ENCRYPTION_SECRET_LENGTH;
   static const int DEFAULT_BTSYNC_PORT;
   static const std::string DEFAULT_BTSYNC_PORT_STR;

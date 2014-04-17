@@ -25,9 +25,9 @@ void BTSyncController::start() {
     // data structure and push the changes to the Metadata Layer.
     peer.synchronizeWithBTSync();
     
-    // Have the thread go to sleep so that it can check for updates in
-    // a little bit.
-    std::this_thread::sleep_for(std::chrono::seconds(60));
+    // A bit of a hack, but it will do for now.
+    for (int round = 0; round < 60 && !shouldStop_; ++round)
+      std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
 

@@ -67,7 +67,7 @@ void ConsoleController::start(const std::string& localBackupInfoLocation) {
   startAllAsync();
   
   while (!exitCommandUsed) {
-    std::cout << "> " << std::endl;
+    std::cout << "> ";
     std::string userInput;
     std::getline(std::cin, userInput);
     std::vector<std::string> splitInput;

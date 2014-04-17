@@ -89,7 +89,7 @@ std::string MetadataRecord::serialize() {
     if (PRUNE_AGE >= std::time(NULL) - el.second) {
       Json::Value node;
       node["nodeID"] = el.first;
-      node["timestamp"] = std::to_string(el.second);
+      node["timestamp"] = static_cast<Json::Int>(el.second);
 
       root["blacklisters"].append(node);
     } else {
@@ -171,6 +171,18 @@ std::list<FileMetadata>::iterator MetadataRecord::backupNodeIteratorBegin
 std::list<FileMetadata>::iterator MetadataRecord::backupNodeIteratorEnd
   (const std::string& fileID) {
   return backedUpFiles_[fileID].end();
+}
+
+std::set<std::string> MetadataRecord::getStoredFileIDs() {
+  std::map<std::string, FileMetadata>::iterator storedIt;
+  std::map<std::string, FileMetadata>::iterator storedEnd =
+    storedFiles_.end();
+  std::set<std::string> result;
+  
+  for (storedIt = storedFiles_.begin(); storedIt != storedEnd; storedIt++)
+    result.insert(storedIt->first);
+  
+  return result;
 }
 
 } // namespace metadata
