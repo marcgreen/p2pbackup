@@ -22,12 +22,10 @@ namespace core {
 ConsoleController::ConsoleController() :
   Controller(std::shared_ptr<Dispatcher>
 	     (new Dispatcher(DISPATCHER_POOL_SIZE))) {
-  createControllers();
 }
 
 ConsoleController::ConsoleController(std::shared_ptr<Dispatcher> dispatcher) :
   Controller(dispatcher) {
-  createControllers();
 }
 
 void ConsoleController::start(const std::string& localBackupInfoLocation) {
@@ -44,6 +42,8 @@ void ConsoleController::start(const std::string& localBackupInfoLocation) {
 	      << "configuration file." << std::endl;
     return;
   }
+  
+  createControllers(!localBackupInfoLocation.empty());
   
   peer::Peer& peer = peer::Peer::constructInstance
     (std::shared_ptr<metadata::MetadataInterface>
@@ -109,7 +109,7 @@ void ConsoleController::start() {
   start(std::string());
 }
 
-void ConsoleController::createControllers() {
+void ConsoleController::createControllers(bool deferChecking) {
   asyncControllers_.push_back(
     std::shared_ptr<Controller>(
       new NetworkController(
@@ -117,7 +117,7 @@ void ConsoleController::createControllers() {
 	NetworkHandlerFunction(handlePeerSocketConnection))));
   asyncControllers_.push_back(
     std::shared_ptr<Controller>(
-      new BTSyncController(dispatcher_)));
+      new BTSyncController(dispatcher_, deferChecking)));
   asyncControllers_.push_back(
     std::shared_ptr<Controller>(
       new MetadataController(dispatcher_)));

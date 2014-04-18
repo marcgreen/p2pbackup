@@ -14,13 +14,15 @@ class Dispatcher;
 
 class BTSyncController : public Controller {
  public:
-  BTSyncController(std::shared_ptr<Dispatcher> dispatcher);
+  BTSyncController(std::shared_ptr<Dispatcher> dispatcher,
+		   bool deferChecking_ = false);
   ~BTSyncController();
   void start();
   void startInBackground();
   void stop();
  private:
   bool shouldStop_;
+  bool deferChecking_;
 }; // class BTSyncController
 
 } // namespace core

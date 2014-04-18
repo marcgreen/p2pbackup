@@ -7,8 +7,9 @@
 
 namespace core {
 
-BTSyncController::BTSyncController(std::shared_ptr<Dispatcher> dispatcher) :
-  Controller(dispatcher), shouldStop_(false) {
+BTSyncController::BTSyncController(std::shared_ptr<Dispatcher> dispatcher,
+				   bool deferChecking) :
+  Controller(dispatcher), shouldStop_(false), deferChecking_(deferChecking) {
   
 }
 
@@ -18,6 +19,10 @@ BTSyncController::~BTSyncController() {
 
 void BTSyncController::start() {
   peer::Peer& peer = peer::Peer::getInstance();
+  if (deferChecking_) {
+    for (int round = 0; round < 60 && !shouldStop_; ++round)
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+  }
   while (!shouldStop_) {
     // Look at the file size for each backed up file.
     // Compare it to the LocalBackupInfo data structure in Peer

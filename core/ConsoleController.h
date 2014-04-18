@@ -24,7 +24,7 @@ class ConsoleController : public Controller {
   std::vector<std::shared_ptr<Controller>> asyncControllers_;
   std::vector<std::shared_ptr<std::thread>> asyncControllerThreads_;
   
-  void createControllers();
+  void createControllers(bool deferChecking = false);
   void startAllAsync();
   void stopAllAsync();
   bool getTrackerInfo(Json::Value& configInfo);
