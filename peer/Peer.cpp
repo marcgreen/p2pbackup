@@ -258,8 +258,8 @@ bool Peer::createReplica(const std::string& fileID,
   if (numStoredFiles != 0) {
     float blacklistToStoreRatio = numBlacklisters / numStoredFiles;
     cout << "\tNode blacklist:store ratio: "
-	 << to_string(numBlacklisters) << "/" << to_string(numStoredFiles)
-	 << "(" << to_string(blacklistToStoreRatio) << ")" << endl;
+	 << numBlacklisters << "/" << numStoredFiles
+	 << "(" << blacklistToStoreRatio << ")" << endl;
     if (blacklistToStoreRatio > MAX_BLACKLIST_STORE_RATIO)
       return false;
   }
@@ -420,6 +420,28 @@ bool Peer::askNodeToBackup(std::string nodeIP, std::string secret) {
   return result;
 }
 
+bool Peer::unregisterBackupNode(const std::string& nodeID,
+				const std::string& rwSecret) {
+  Json::Value currentHosts = btSyncInterface_->getFolderHosts(rwSecret);
+  Json::Value newHosts;
+  
+  for (Json::Value& host : currentHosts["hosts"]) {
+    std::string hostAndPort = host.asString();
+    std::size_t colonLoc = hostAndPort.find_first_of(':');
+    if (colonLoc == std::string::npos) {
+      std::cerr << "Peer::unregisterBackupNode - Malformed BTSync data"
+		<< std::endl;
+      return false; // Malformed data
+    }
+    std::string hostOnly = hostAndPort.substr(0, colonLoc);
+    if (nodeID != hostOnly) {
+      newHosts["hosts"].append(hostAndPort);
+    }
+  }
+  btSyncInterface_->setFolderHosts(rwSecret, newHosts);
+  return true;
+}
+
 void Peer::createDirIfNeeded(std::string path) {
   boost::filesystem::path dir(path);
 
@@ -513,11 +535,17 @@ void Peer::checkOnBackupNodes() {
 	// (Blacklist the node)
 	if (current["reliability"].asUInt() == 0) {
 	  blacklistNode(nodeID);
-	  removeBackup(fileID);
-	  createReplica(fileID,
-			localBackupInfo_["files"][fileID]["rwSecret"].asString(),
-			fileID,
-			localBackupInfo_["files"][fileID]["size"].asUInt64());
+	  try {
+	    metadataInterface_->removeBackup(peerID_, nodeID, fileID);
+	  } catch(std::runtime_error& error) {
+	    std::cerr << error.what() << std::endl;
+	  }
+	  std::string currRWSecret =
+	    localBackupInfo_["files"][fileID]["rwSecret"].asString();
+	  uint64_t currSize =
+	    localBackupInfo_["files"][fileID]["size"].asUInt64();
+	  unregisterBackupNode(nodeID, currRWSecret);
+	  createReplica(fileID, currRWSecret, fileID, currSize);
 	  toRemove.push_back(nodeID);
 	  std::cout << "Removing backup on " << nodeID
 		    << std::endl;
@@ -547,8 +575,9 @@ void Peer::checkOnBackupNodes() {
 	std::cout << "checkOnBackupNodes: Done dumping to disk" << std::endl;
       }
     }
-    for (std::string& nodeID : toRemove)
+    for (std::string& nodeID : toRemove) {
       localBackupInfo_["files"][fileID]["nodes"].removeMember(nodeID);
+    }
   }
 }
 
@@ -563,6 +592,12 @@ void Peer::checkMetadataForStoreChanges() {
     if (storedFileIDs.find(dirName) == storedFileIDs.end()) {
       std::cout << "checkMetadataForStoreChange: pruning ID "
 		<< dirName << std::endl;
+      Json::Value removeResult = btSyncInterface_->removeFolder(dirName);
+      // Remove the directory if there was no problem with removing it from
+      // BitTorrent Sync.
+      if (removeResult["error"].asInt() == 0) {
+	boost::filesystem::remove_all(boost::filesystem::path(btBackupDir_ + "/" + STORE_DIR + "/" + dirName));
+      }
     }
   }
 }

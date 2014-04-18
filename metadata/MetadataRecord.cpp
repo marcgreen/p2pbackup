@@ -30,6 +30,7 @@ uint64_t MetadataRecord::getTotalBackupSize() {
 
 bool MetadataRecord::addBackupFile(std::string fileID, std::string nodeID, uint64_t size) {
   if (backedUpFiles_.count(fileID) == 1) {
+    backedUpFiles_[fileID].push_back(FileMetadata(nodeID, size, std::time(NULL)));
     return false;
   } else {
     backedUpFiles_[fileID].push_back(FileMetadata(nodeID, size, std::time(NULL)));
@@ -48,6 +49,27 @@ bool MetadataRecord::updateBackupFileSize(std::string fileID, uint64_t size) {
       (*backupNodeIt).size = size;
     return true;
   }
+}
+
+bool MetadataRecord::removeBackup(const std::string& fileID,
+				  const std::string& nodeID) {
+  bool result = false;
+  if (backedUpFiles_.count(fileID)) {
+    int preOpSize = backedUpFiles_[fileID].size();
+    backedUpFiles_[fileID].remove_if(
+      [&nodeID](const FileMetadata& data) -> bool {
+	std::cout << "MetadataRecord::removeBackup compare: "
+		  << "data.nodeID = " << data.nodeID
+		  << ", nodeID = " << nodeID << std::endl;
+	return data.nodeID == nodeID;
+      });
+    int postOpSize = backedUpFiles_[fileID].size();
+    result = (preOpSize == (postOpSize + 1));
+    if (!result)
+      std::cerr << "in MetadataRecord::removeBackup: preOpSize = " << preOpSize
+		<< ", postOpSize = " << postOpSize << std::endl;
+  }
+  return result;
 }
 
 uint64_t MetadataRecord::getTotalStoreSize() {

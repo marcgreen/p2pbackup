@@ -30,6 +30,9 @@ class TrackerDatabase {
   bool updateFileSize(const std::string& peerID,
 		      const std::string& fileID,
 		      uint64_t size);
+  bool removeBackup(const std::string& peerID,
+		    const std::string& nodeID,
+		    const std::string& fileID);
  private:
   TrackerDatabase();
   

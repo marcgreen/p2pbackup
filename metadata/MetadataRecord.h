@@ -66,6 +66,10 @@ class MetadataRecord {
   // Update the size of a file already being backed up
   // If size is 0, this will delete all records of the file
   bool updateBackupFileSize(std::string fileID, uint64_t size);
+  
+  // Unregisters nodeID as a backup of fileID.
+  // Returns true if nodeID is actually removed and false otherwise.
+  bool removeBackup(const std::string& fileID, const std::string& nodeID);
 
   // Return the sum of all filesizes this peer is storing
   uint64_t getTotalStoreSize();

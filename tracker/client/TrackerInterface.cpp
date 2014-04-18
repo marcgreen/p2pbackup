@@ -83,7 +83,7 @@ void TrackerInterface::backupFile(std::string peerID, std::string nodeID, std::s
 
   Json::Value msg, reply;
   msg["command"] = tracker::BACKUP_FILE_CMD;
-	msg["peerID"] = peerID;
+  msg["peerID"] = peerID;
   msg["nodeID"] = nodeID;
   msg["fileID"] = fileID;
   msg["size"] = static_cast<Json::UInt64>(size);
@@ -110,6 +110,24 @@ void TrackerInterface::updateFileSize(std::string peerID, std::string fileID, ui
 
   if (reply["error"] == 1) throw std::runtime_error("Server says error updating file size");
 
+}
+
+void TrackerInterface::removeBackup(std::string peerID,
+				    std::string nodeID,
+				    std::string fileID) {
+  std::cout << "Removing backup of file ID " << fileID
+	    << "on node ID " << nodeID << std::endl;
+  
+  Json::Value msg, reply;
+  msg["command"] = tracker::REMOVE_BACKUP_CMD;
+  msg["peerID"] = peerID;
+  msg["nodeID"] = nodeID;
+  msg["fileID"] = fileID;
+
+  std::string error = executeCommand(msg, reply);
+  if (!error.empty()) throw std::runtime_error(error);
+
+  if (reply["error"] == 1) throw std::runtime_error("Failure to remove backup");
 }
 
 std::string TrackerInterface::executeCommand(const Json::Value &msg, Json::Value &reply) {

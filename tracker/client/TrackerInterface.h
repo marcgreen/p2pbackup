@@ -20,6 +20,7 @@ class TrackerInterface: public metadata::MetadataInterface {
   void blacklistNode(std::string peerID, std::string nodeID);
   void backupFile(std::string peerID, std::string nodeID, std::string fileID, uint64_t size);
   void updateFileSize(std::string peerID, std::string fileID, uint64_t size);
+  void removeBackup(std::string peerID, std::string nodeID, std::string fileID);
 
   private:
   std::string executeCommand(const Json::Value &msg, Json::Value &reply);

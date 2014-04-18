@@ -56,6 +56,10 @@ void handleTrackerSocketConnection(std::shared_ptr<tcp::socket> socket) {
     std::cout << "Handling update" << std::endl;
     handleUpdateFileSize(socket, value, trackerDatabase);
     break;
+  case REMOVE_BACKUP_CMD:
+    std::cout << "Handling remove backup" << std::endl;
+    handleRemoveBackup(socket, value, trackerDatabase);
+    break;
   default:
     std::cerr << "Unknown message type "
 	      << command << " received" << std::endl;
@@ -146,6 +150,20 @@ void handleUpdateFileSize(std::shared_ptr<tcp::socket> socket,
   Json::Value returnValue;
   returnValue["error"] = static_cast<int>(!commandResult);
   sendWrapper(returnValue, *socket, "handleUpdateFileSize");
+}
+
+void handleRemoveBackup(std::shared_ptr<tcp::socket> socket,
+			Json::Value& networkData,
+			TrackerDatabase& trackerDatabase) {
+  const std::string peerID = networkData["peerID"].asString();
+  const std::string nodeID = networkData["nodeID"].asString();
+  const std::string fileID = networkData["fileID"].asString();
+  bool commandResult =
+    trackerDatabase.removeBackup(peerID, nodeID, fileID);
+  
+  Json::Value returnValue;
+  returnValue["error"] = static_cast<int>(!commandResult);
+  sendWrapper(returnValue, *socket, "handleRemoveBackup");
 }
 
 } } // namespace tracker::server
