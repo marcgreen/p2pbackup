@@ -31,7 +31,7 @@ const int Peer::BTSYNC_FOLDER_RESCAN_INTERVAL = 60; // seconds
 const int Peer::METADATA_RESCAN_INTERVAL = 60; // seconds
 const int Peer::DEFAULT_BTSYNC_PORT = 48247;
 const std::string Peer::DEFAULT_BTSYNC_PORT_STR = "48247";
-const uint64_t Peer::MINIMUM_STORE_SIZE = 2 << 31; // 2gb
+const uint64_t Peer::MINIMUM_STORE_SIZE = (2 << 31) * 10; // 20gb
 const uint32_t Peer::STARTING_NODE_RELIABILITY = 5;
 
 Peer& Peer::constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,

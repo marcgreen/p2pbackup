@@ -22,7 +22,7 @@ void MetadataController::start() {
     peer.checkOnBackupNodes();
     peer.checkMetadataForStoreChanges();
     // A bit of a hack, but it will do for now.
-    for (int round = 0; round < 5 && !shouldStop_; ++round)
+    for (int round = 0; round < 60 && !shouldStop_; ++round)
       std::this_thread::sleep_for(std::chrono::seconds(1));
   }
 }
