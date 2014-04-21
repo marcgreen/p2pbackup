@@ -70,11 +70,11 @@ Acknowledgements
 
 \chapter{Introduction}
 
-As the capacity and performance of hard drives increases over time, people are able to store data in greater volumes. With this increase in capacity, there is a greater need for data to be backed up, in case one's data becomes irrecoverable. This can happen if one's computer crashes, the hard drive fails, or the computer is lost or stolen.
+As the capacity and performance of hard drives increase over time, people are able to store data in greater volumes. With this increase in capacity, there is a greater need for data to be backed up, in case one's data becomes irrecoverable. This can happen if one's computer crashes, the hard drive fails, or the computer is lost or stolen.
 
-Most backup systems that are in use today are centralized, meaning that 
+Most backup systems that are in use today are centralized, meaning that
 
-Although they have not gained much popularity, Peer-to-Peer file backup systems have been created by researchers for over a decade. These systems 
+Although they have not gained much popularity, Peer-to-Peer file backup systems have been created by researchers for over a decade. These systems
 
 \chapter{Background}
 \section{Centralized Backup Systems}
@@ -124,10 +124,10 @@ The purpose of peer to peer networks (and more broadly, networks in general) is 
 To join a structured overlay network, a peer must know at least one other peer already in the network. This peer is often called the \textit{bootstrap peer}. The joining peer will contact the bootstrap peer to find its proper place in the topology. We come back to this below in more detail in our explanation of how to find other peers.
 
 % TODO cite router.bittorrent.com as well known bootstrap node?
-%In BitTorrent's structured overlay network \footnote{To clarify, we are referring to BitTorrent's distributed hash table, not its unstructured network. The latter involves using centralized trackers, the former removes such dependency. We refraim from using the term \textit{distributed hash table} to keep the explanation simple without loss of generality. We discuss distributed hash tables in section \ref{sec:backgroundDHT}.}, a well known bootstrap node \footnote{The BitTorrent specification uses \textit{node} to refer to participants of its structured overlay network and \textit{peer} as a more general term \cite{bittorrentDHT}. We will adopt this convention when speaking about BitTorrent, and use them interchangeably otherwise.} is router.bittorrent.com. A BitTorrent node randomly chooses a 160 bit \textit{nodeID} to use as an address. To join the network, it will contact a bootstrap node to find the nodes it is closest to in the topology. Closeness, in BitTorrent's case, is determined by taking the $XOR$ of \textit{nodeID}s; smaller values are defined as closer \cite{bittorrentDHT}.
+%In BitTorrent's structured overlay network \footnote{To clarify, we are referring to BitTorrent's distributed hash table, not its unstructured network. The latter involves using centralized trackers, the former removes such dependency. We refrain from using the term \textit{distributed hash table} to keep the explanation simple without loss of generality. We discuss distributed hash tables in section \ref{sec:backgroundDHT}.}, a well known bootstrap node \footnote{The BitTorrent specification uses \textit{node} to refer to participants of its structured overlay network and \textit{peer} as a more general term \cite{bittorrentDHT}. We will adopt this convention when speaking about BitTorrent, and use them interchangeably otherwise.} is router.bittorrent.com. A BitTorrent node randomly chooses a 160 bit \textit{nodeID} to use as an address. To join the network, it will contact a bootstrap node to find the nodes it is closest to in the topology. Closeness, in BitTorrent's case, is determined by taking the $XOR$ of \textit{nodeID}s; smaller values are defined as closer \cite{bittorrentDHT}.
 % TODO define XOR?
 % TODO maybe remove this entire paragraph, since it doesn't really clarify anything. it just gives another example of picking an id and mysteriously finding nodes its closest to. if we end up remove it, we should reword end of previous paragraph
-% TODO maybe keep it in b/c we refer to closness in 3.1.1
+% TODO maybe keep it in b/c we refer to closeness in 3.1.1
 
 Leaving a structured overlay network can be as simple as not responding to any messages. Our system, like many others, leaves this functionality undefined. Node failures due to hard shutdowns will not follow the protocol to leave the network, so it is easiest to treat all node departures as node failures.
 
@@ -215,7 +215,7 @@ DHTs play a major role in many P2P systems. They serve as the means through whic
 BitTorrent is a peer to peer protocol designed for fast file sharing. A peer who wishes to share a file creates a .torrent file containing metadata about the file to be shared. This peer is known as the file's initial \textit{seeder}, or uploader, and through the use of a BitTorrent client, starts \textit{seeding}, or uploading, the file. When a peer acts as a seeder, its sole purpose is to share the file that it is seeding with other peers. Peers who wish to download the file must acquire its .torrent file through an out-of-band channel, which is often a torrent indexer. Peers use the .torrent file to locate the initial seeder through either a centralized tracker or a DHT. These peers then connect to the initial seeder and start downloading the file. These peers are known as \textit{leechers} until they possess a full copy of the file, which is when they, themselves, become seeders.
 
 % TODO: add citation and more information about how much better BitTorrent is vs. direct download. Actually, add a lot of citations to this paragraph
-While this is more complex than hosting a file on a server and having users download it, with enough peers there is a huge performance gain with respect to download speeds. The reason this works is due to the differences in upload and download speeds on the Internet; with most Internet connections offered to consumers, the upload bandwidth is much smaller than the download bandwidth. This means that, in the scenario where one machine is tranferring data over the Internet to another machine, download speeds would be severely limited by the upload bandwidth of the uploader. If multiple machines are trying to download from the same uploader, the download speeds will be even worse, as the upload bandwidth is being shared.
+While this is more complex than hosting a file on a server and having users download it, with enough peers there is a huge performance gain with respect to download speeds. The reason this works is due to the differences in upload and download speeds on the Internet; with most Internet connections offered to consumers, the upload bandwidth is much smaller than the download bandwidth. This means that, in the scenario where one machine is transferring data over the Internet to another machine, download speeds would be severely limited by the upload bandwidth of the uploader. If multiple machines are trying to download from the same uploader, the download speeds will be even worse, as the upload bandwidth is being shared.
 
 % TODO: finish this paragraph
 The BitTorrent Protocol takes advantage of this by having leechers download content from multiple peers who are a part of the torrent. A file is partitioned into several \textit{chunks}, or file blocks, and a file download is performed by requesting these chunks from multiple peers. % Use combined upload bandwidth, etc.
@@ -227,7 +227,7 @@ BitTorrent Sync is a new application developed by BitTorrent, Inc. It is a P2P s
 
 Users of BitTorrent Sync have several options for having their synced devices locate each other. The following list is taken from the BitTorrent Sync technology page \cite{btsynctech} and describes each method of peer discovery:
 
-% TODO why do we discuss the different ways to find peers? We only need to talk about predfined hosts
+% TODO why do we discuss the different ways to find peers? We only need to talk about predefined hosts
 \begin{quote}
 \begin{itemize}
 \item Local peer discovery. All peers inside local network are discovered by sending broadcast packets. If there are peers with the same secret they respond to the broadcast message and connect.
@@ -262,7 +262,7 @@ This terminology is used to give context. It is very likely that every participa
 
 Note the emphasis of the action taken by each: a peer is said to \textit{back up} data, and a node is said to \textit{store} a replica of the peer's data.
 
-PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unneccessary to immediately find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the low possibility of not being able to recover data that is backed up. Note that this situation is unavoidable in \textbf{all} backup systems. By relaxing the aforementioned requirement like PeerStore, we leverage this fact by sacrificing theoretical availability for performance and usability. See Section \ref{subsec:TheMetadataLayer_sec:SystemDesign} for the discussion of the parameterization of these variables in our implementation. See Section \ref{} for our methodology of testing the parameter. Finally, see Section \ref{} for a comparison of the results of different values for the parameter.}
+PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unnecessary to immediately find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the low possibility of not being able to recover data that is backed up. Note that this situation is unavoidable in \textbf{all} backup systems. By relaxing the aforementioned requirement like PeerStore, we leverage this fact by sacrificing theoretical availability for performance and usability. See Section \ref{subsec:TheMetadataLayer_sec:SystemDesign} for the discussion of the parameterization of these variables in our implementation. See Section \ref{} for our methodology of testing the parameter. Finally, see Section \ref{} for a comparison of the results of different values for the parameter.}
 % TODO add references once we know section names
 
 Our system separates the two layers as well: the metadata layer is responsible for storing information about each data layer exchange (among other information), and the data layer is responsible for the actual exchange of the data.
@@ -430,15 +430,15 @@ The Metadata Controller also queries the metadata layer to determine if any peer
 
 \chapter{Methodology} \label{chap:Methodology}
 
-In order to thoroughly evaluate our system, we identified several variables that could lead to differences in performance. These variables are:
+In order to thoroughly evaluate our system, we first identified several variables that could lead to differences in performance. These variables are:
 
 \begin{itemize}
-\item The size of each file
-\item Number of replicas to maintain
+\item Size of each file being backed up
+\item Number of replicas to maintain per file
 \item Churn rate
 \item Number of nodes present in the system
-\item The rate at which nodes are challenged (ping test)
-\item The number of malicious nodes
+\item Rate at which nodes are challenged (ping test)
+\item Number of malicious nodes
 \end{itemize}
 
 From these variables, we derived a set of test scenarios which allowed us to see how each of them affect the performance of the system. While they are specific to our system, they allow us to evaluate the strengths and weaknesses of BitTorrent Sync (and, by extension, BitTorrent) as the data transport mechanism in a peer-to-peer backup system.
@@ -458,7 +458,7 @@ Each virtual machine was a headless GNU/Linux machine running Ubuntu 12.04, 64-b
 
 Each machine is connected to each other via a virtual network that has a 10Gbit link capacity. As this capacity is unrealistic for several of our tests, where the network is supposed to model users spread across the Internet, we used a bandwidth-limiting program called \textit{wondershaper}. \textit{wondershaper} is a command line utility that allows a user to set specific upload and download bandwidth limits on a per-interface basis. This is achieved by creating packet queues. When wondershaper is invoked to limit the bandwidth on a particular interface, it captures all of the packets going through that interface going in either direction. It can then remove them through the queue and send them in the appropriate direction, either towards the network or to a process on the same machine, at a rate specified by the user. The use of this utility allowed us to easily simulate realistic network delays for the tests that needed them.
 
-In order to collect data, we used a logging server, running \textit{syslog-ng}, an open source implementation of the syslog protocol \cite{syslogRFC1,syslogRFC2}. In any syslog implementation, messages are sent and categorized using a facility code, which defines where the message came from and its severity. \cite{syslogRFC1} and \cite{syslogRFC2} specify that there are eight "local use" facilities to be used by processes that have not been assigned a facility. We used one of these for out testing, via the command line \textit{logger} utility that was installed with syslog-ng. All entities that are a part of a test sent log messages to the local use facility. When a test finished, we were able to download the log file and clear it for the next test.
+In order to collect data, we used a logging server, running \textit{syslog-ng}, an open source implementation of the syslog protocol \cite{syslogRFC1,syslogRFC2}. In any syslog implementation, messages are sent and categorized using a facility code, which defines where the message came from and its severity. \cite{syslogRFC1} and \cite{syslogRFC2} specify that there are eight "local use" facilities to be used by processes that have not been assigned a facility. We used one of these for our testing, via the command line \textit{logger} utility that was installed with syslog-ng. All entities that are a part of a test sent log messages to the local use facility. When a test finished, we were able to download the log file and clear it for the next test.
 
 \section{Test Scenarios} \label{sec:TestScenatios_chap:Methodology}
 
@@ -466,7 +466,7 @@ The following sections describes each test scenario, as well as how we performed
 
 \subsection{File Size versus Number of Files} \label{subsec:FileSizeversusNumberofFiles_sec:TestScenarios_chap:Methodology}
 
-In this scenario, we tested how our system handles a constant amount of data spread out across a varying number of files. The goal of this test is twofold. First, it allows us to test the capabilities of BitTorrent Sync in handling a large number of backups. From the data gathered here, it is possible to determine how well BitTorrent Sync would scale for use in a production system, where thousands of users could each be backing up thousands of files of varying sizes. Second, it allows us to measure the performance of BitTorrent as file size changes. Since the use case for BitTorrent is typically downloading large files, it is important to determine whether or not our system will perform well when users try to backup many small files, should it be used in a production environment.
+In this scenario, we tested how our system handles a constant amount of data spread out across a varying number of files. The goal of this test is twofold. First, it allows us to test the capabilities of BitTorrent Sync in handling a large number of backups. From the data gathered here, it is possible to determine how well BitTorrent Sync would scale for use in a production system, where thousands of users could each be backing up thousands of files of varying sizes. Second, it allows us to measure the performance of BitTorrent against different file sizes. Since the use case for BitTorrent is typically downloading large files, it is important to determine whether or not our system will perform well when users try to backup many small files, should it be used in a production environment.
 
 % TODO: Maybe we should not mention the 1MB test at all.
 Our tests for this scenario used 8 virtual machines in SZTAKI Cloud: 1 peer, 5 nodes, 1 tracker, and 1 syslog-ng server. To have a wide range of file sizes, we tested with 1MB, 10MB, 100MB, and 1GB files. In each test instance, the total amount of data backed up was 1GB, so 1000 files, 100 files, 10 files, and 1 file were backed up, respectively. The procedure for each test instance is as follows:
@@ -475,12 +475,12 @@ Our tests for this scenario used 8 virtual machines in SZTAKI Cloud: 1 peer, 5 n
   \item Clear the log file on the syslog-ng server. This is to remove the data of previous test instances.
   \item Clear all existing items from BitTorrent Sync on the peer and all nodes. This also removes data from previous test instances.
   \item Start the tracker server and all nodes. Both of these entity types do not do anything until the peer joins the network.
-  \item Start the peer. When the peer is started, it backs up as many files as necessary to back up 1GB. This is sent through our program's standard input.
+  \item Start the peer. When the peer is started, it backs up as many files as the particular instance demands. These backup commands are sent through our program's standard input.
   \item Wait for the peer to find all nodes and create replicas on them.
   \item Stop the nodes and the peer.
   \item Save the log file and reset it.
   \item Restart the nodes.
-  \item Remove all backups from the peer. This is done to simulate the peer losing all of its data. The only information that is not removed is a single file generated by our program, which contains all of the information needed to retrieve each file.
+  \item Remove all backups from the peer. This is done to simulate the peer losing all of its data. The only information that is not removed is a single file generated by our program, which contains all of the information needed to retrieve each backup file.
   \item Start the peer again. The information file is loaded on program startup, which signals BitTorrent Sync to add the backup folders again and contact the appropriate nodes.
   \item Wait for all backups to be restored.
 \end{enumerate}
@@ -494,17 +494,17 @@ sar -n DEV 1 1 | grep eth0 | grep -v Average | awk '{print $1, $2, $6, $7, "\n";
 
 \subsection{Effects of Churn} \label{subsec:EffectsofChurn_sec:TestScenarios_chap:Methodology}
 
-As we have already discussed, churn is important to consider when designing a realistic P2P backup system. In this test scenario, we measured how well our system handles different levels of churn. To do this, we created a network of 100 peer, in addition to the tracker and the log server. Each peer had a single 1GB file that it tried to back up. This means that, with five replicas per file, there was 600GB of data in the network.
+As we have already discussed, churn is important to consider when designing a realistic P2P backup system. In this test scenario, we measured how well our system handles different levels of churn. To do this, we created a network of 100 peers, in addition to the tracker and the log server. Each peer had a single 1GB file that it tried to back up. This means that, with five replicas per file, there was 600GB of data in the network.
 
 % TODO: When we pick the actual distribution functions, write them in this paragraph.
-To create churn, peers enter and leave the network at varying intervals. Running our program signifies when a peer enters the network, while exiting our program signifies leaving the network. Both of these were controlled by a script that we wrote. To determine each duration of time to be in or out of the network, the script picked a timeout from one of two exponential distributions. The distribution to pick from depends on whether or not the peer is entering or leaving the network. This strategy used in the experimental results of PeerStore \cite{PeerStore}. By using an exponential distribution, there will be a greater chance of peers going offline for a short amount of time. This is useful, since in a production environment, many nodes will go offline for a short amount of time (i.e. users shutting their machine down at night), but fewer will stay offline for a long period of time or permanently leave the network.
+To create churn, we have peers enter and leave the network at varying time intervals. Running our program signifies when a peer enters the network, while exiting our program signifies leaving the network. Both of these were controlled by a script that we wrote. To determine the duration of time, the script picked a timeout from one of two exponential distributions, depending on whether the peer was entering or leaving the network. This is the strategy used in the experimental results of PeerStore \cite{PeerStore}. By using an exponential distribution, there will be a greater chance of peers going offline for a short amount of time. This is useful, since in a production environment, many nodes will go offline for a short amount of time (i.e. users shutting their machine down at night), but fewer will stay offline for a long period of time or permanently leave the network.
 
 % TODO: Talk about what we actually do, including the control group of no churn.
 
 \subsection{Number of Replicas} \label{subsec:NumberofReplicas_sec:TestScenarios_chap:Methodology}
 
 % TODO: Talk about the exact distributions used for the constant churn in this scenario.
-This test scenario produced data so that we could determine how the number of replicas influences the recoverability of backed up files, as well as the speed of backup recovery. This is done in the presence of some churn, in order to make the tests more realistic. Our testing procedure was very similar to the previous scenario: we created a network with 100 peers that backed up 1GB each. Instead of changing the churn rate between test instances, however, we changed the number of replicas that each peer attempts to find when creating a backup of its file. We started with 3 replicas per file in the first test instance and increased that number to 10 in the last instance. By having this much variation, we were able to see how much of a gain or loss in performance existed when replicas were added or removed. From this, we were able to see which replica counts do not offer enough of a performance gain to warrant the creation of that many replicas. This is especially important to our system, because as a peer creates more replicas, it is required to store more data from other peers.
+This test scenario produced data so that we could determine how the number of replicas influences the recoverability of backed up files, as well as the speed of backup recovery. This is done in the presence of some constant amount of churn, in order to make the tests more realistic. Our testing procedure was very similar to the previous scenario: we created a network with 100 peers that backed up 1GB each. Instead of changing the churn rate between test instances, however, we changed the number of replicas that each peer attempts to find when creating a backup of its file. We started with 3 replicas per file in the first test instance and increased that number to 10 in the last instance. By having this much variation, we were able to see how much of a gain or loss in performance existed when replicas were added or removed. From this, we were able to see which replica counts do not offer enough of a performance gain to warrant the creation of that many replicas. This is especially important to our system, because as a peer creates more replicas, it is required to store more data from other peers.
 
 \chapter{Results} \label{chap:Results}
 
