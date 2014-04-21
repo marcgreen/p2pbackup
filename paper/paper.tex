@@ -70,8 +70,11 @@ Acknowledgements
 
 \chapter{Introduction}
 
-Introduction
+As the capacity and performance of hard drives increases over time, people are able to store data in greater volumes. With this increase in capacity, there is a greater need for data to be backed up, in case one's data becomes irrecoverable. This can happen if one's computer crashes, the hard drive fails, or the computer is lost or stolen.
 
+Most backup systems that are in use today are centralized, meaning that 
+
+Although they have not gained much popularity, Peer-to-Peer file backup systems have been created by researchers for over a decade. These systems 
 
 \chapter{Background}
 \section{Centralized Backup Systems}
@@ -476,10 +479,22 @@ At the end of this sequence, the peer has successfully used our system to backup
 
 % TODO: This line goes off the right side of the page in the PDF.
 \begin{verbatim}
-sar -n DEV 1 1 | grep eth0 | grep -v Average | awk '{print $1, $2, $6, $7, \"\\n\";}'
+sar -n DEV 1 1 | grep eth0 | grep -v Average | awk '{print $1, $2, $6, $7, "\n";}'
 \end{verbatim}
 
 \subsection{Effects of Churn} \label{subsec:EffectsofChurn_sec:TestScenarios_chap:Methodology}
+
+As we have already discussed, churn is important to consider when designing a realistic P2P backup system. In this test scenario, we measured how well our system handles different levels of churn. To do this, we created a network of 100 peer, in addition to the tracker and the log server. Each peer had a single 1GB file that it tried to back up. This means that, with five replicas per file, there was 600GB of data in the network.
+
+% TODO: When we pick the actual distribution functions, write them in this paragraph.
+To create churn, peers enter and leave the network at varying intervals. Running our program signifies when a peer enters the network, while exiting our program signifies leaving the network. Both of these were controlled by a script that we wrote. To determine each duration of time to be in or out of the network, the script picked a timeout from one of two exponential distributions. The distribution to pick from depends on whether or not the peer is entering or leaving the network. This strategy used in the experimental results of PeerStore \cite{PeerStore}. By using an exponential distribution, there will be a greater chance of peers going offline for a short amount of time. This is useful, since in a production environment, many nodes will go offline for a short amount of time (i.e. users shutting their machine down at night), but fewer will stay offline for a long period of time or permanently leave the network.
+
+% TODO: Talk about what we actually do, including the control group of no churn.
+
+\subsection{Number of Replicas} \label{subsec:NumberofReplicas_sec:TestScenarios_chap:Methodology}
+
+% TODO: Talk about the exact distributions used for the constant churn in this scenario.
+This test scenario produced data so that we could determine how the number of replicas influences the recoverability of backed up files, as well as the speed of backup recovery. This is done in the presence of some churn, in order to make the tests more realistic. Our testing procedure was very similar to the previous scenario: we created a network with 100 peers that backed up 1GB each. Instead of changing the churn rate between test instances, however, we changed the number of replicas that each peer attempts to find when creating a backup of its file. We started with 3 replicas per file in the first test instance and increased that number to 10 in the last instance. By having this much variation, we were able to see how much of a gain or loss in performance existed when replicas were added or removed. From this, we were able to see which replica counts do not offer enough of a performance gain to warrant the creation of that many replicas. This is especially important to our system, because as a peer creates more replicas, it is required to store more data from other peers.
 
 \chapter{Results} \label{chap:Results}
 
