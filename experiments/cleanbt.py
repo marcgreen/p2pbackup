@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-import getpass
 import httplib2
+import getpass
 import json
 import shutil
 
@@ -9,8 +9,8 @@ def get_secrets():
     h = httplib2.Http()	
     h.add_credentials('mqp', 'btsync')
     resp, content = h.request("http://127.0.0.1:8888/api?method=get_folders", 
-    	  "GET", 
-    	  headers={'content-type':'text/plain'})
+                              "GET", 
+                              headers={'content-type':'text/plain'})
     parsed = json.loads(content)
     folders = []
     for f in parsed:
@@ -25,7 +25,14 @@ def remove_folder(secret):
     	  headers={'content-type':'text/plain'})
     return content
 
-for secret in get_secrets():
-    remove_folder(secret)
+def clean(backup_location):
+    for secret in get_secrets():
+        remove_folder(secret)
+    try:
+        shutil.rmtree(backup_location)
+    except:
+        return
 
-shutil.rmtree('/home/' + getpass.getuser() + '/.btbackup')
+if __name__ == '__main__':
+    #clean('/home/' + getpass.getuser() + '/.btbackup')
+    clean('/media/64g/.btbackup')
