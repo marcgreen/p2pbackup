@@ -66,15 +66,19 @@ Acknowledgements
 \end{abstract}
 
 \tableofcontents
-\listofs
+\listoffigures
 
 \chapter{Introduction}
 
-As the capacity and performance of hard drives increases over time, people are able to store data in greater volumes. With this increase in capacity, there is a greater need for data to be backed up, in case one's data becomes irrecoverable. This can happen if one's computer crashes, the hard drive fails, or the computer is lost or stolen.
+As the capacity and performance of hard drives increases over time, people are able to store data in greater volumes. With this increase in capacity, there is a greater need for data to be backed up, in case one's hard drive becomes inaccessible. This can happen if one's computer crashes, the hard drive fails, or the computer is lost or stolen.
 
-Most backup systems that are in use today are centralized, meaning that 
+Most backup systems that are in use today are centralized, meaning that they rely on some central entity to store their data. This entity is typically a company who offers data backup as a service, such as Dropbox or Google. While these solutions are somewhat convenient, since the service is guaranteed to almost always be online, there are several problems with this approach. The amount of data that users can backup is severely limited, and obtaining more space costs money. In addition to this, users must trust the entity that they send their data to, which is not always possible.
 
-Although they have not gained much popularity, Peer-to-Peer file backup systems have been created by researchers for over a decade. These systems 
+%Although they have not gained much popularity, Peer-to-Peer file backup systems have been created by researchers for over a decade. These systems
+
+We have designed and implemented a new P2P system that allows users to backup data without the use of a central entity as storage. In this system, peers offer space on their hard drive that is proportional to the amount that they wish to back up. To account for the fact that peers will not always be online, peers create several replicas of each file on different nodes.
+
+Our main contribution is the way in which we handle data transfer: BitTorrent Sync, a new synchronization application created by BitTorrent, Inc. BitTorrent Sync uses a modified version of the BitTorrent protocol in order to quickly synchronize files between groups of peers. This protocol is especially effective at transferring large files, which makes its use perfect for the domain of P2P file backup.
 
 \chapter{Background}
 \section{Centralized Backup Systems}
