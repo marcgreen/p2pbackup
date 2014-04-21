@@ -23,7 +23,7 @@ namespace peer {
 std::shared_ptr<Peer> Peer::instance_ = std::shared_ptr<Peer>(0);
 const int Peer::ENCRYPTION_SECRET_LENGTH = 33;
 const float Peer::MAX_BLACKLIST_STORE_RATIO = .25;
-const int Peer::TOTAL_REPLICA_COUNT = 2; // TODO change when testing large scale
+const int Peer::TOTAL_REPLICA_COUNT = 5; // TODO change when testing large scale
 const std::string Peer::BACKUP_DIR = "backup";
 const std::string Peer::STORE_DIR = "store";
 const std::string Peer::LOCAL_BACKUP_INFO_FILE = "local_backup_info";
@@ -31,7 +31,7 @@ const int Peer::BTSYNC_FOLDER_RESCAN_INTERVAL = 60; // seconds
 const int Peer::METADATA_RESCAN_INTERVAL = 60; // seconds
 const int Peer::DEFAULT_BTSYNC_PORT = 48247;
 const std::string Peer::DEFAULT_BTSYNC_PORT_STR = "48247";
-const uint64_t Peer::MINIMUM_STORE_SIZE = (2 << 31) * 10; // 20gb
+const uint64_t Peer::MINIMUM_STORE_SIZE = 20ull * 1024ull * 1024ull * 1024ull;
 const uint32_t Peer::STARTING_NODE_RELIABILITY = 5;
 
 Peer& Peer::constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
@@ -213,14 +213,18 @@ bool Peer::createReplica(const std::string& fileID,
 			 const std::string& encryptionSecret,
 			 uint64_t filesize) {
   using namespace std;
-  string id = btSyncInterface_->getSecrets(true)["encryption"].asString();
-  cout << "\tRandomly generated id: " << id << endl;
+  string id;
   
   // Find potential replicant node
   string nodeID; 
   
   try {
-    nodeID = metadataInterface_->findClosestNode(id);
+    // Get a node ID that is not ours.
+    do {
+      id = btSyncInterface_->getSecrets(true)["encryption"].asString();
+      cout << "\tRandomly generated id: " << id << endl;
+      nodeID = metadataInterface_->findClosestNode(id);
+    } while (nodeID == peerID_);
   } catch(std::exception& e) {
     std::cerr << e.what() << std::endl;
     return false;
@@ -230,8 +234,10 @@ bool Peer::createReplica(const std::string& fileID,
   // Are we already storing this file on the node?
   Json::Value& nodeArray = localBackupInfo_["files"][fileID]["nodes"];
   for (std::string& currNodeID : nodeArray.getMemberNames())
-    if (nodeID == currNodeID)
+    if (nodeID == currNodeID) {
+      std::cerr << "Node is already being used" << std::endl;
       return false;
+    }
   
   // Determine if node is obligated to store file, given the amount they currently backup and store
   metadata::MetadataRecord nodeMetadata;

@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <ctime>
 #include <iostream>
 #include <stdexcept>
@@ -13,7 +14,12 @@ namespace tracker { namespace server {
 
 std::string TrackerDatabase::findClosest(const std::string& id) {
   std::unique_lock<std::mutex> accessLock(accessMutex_);
-  // Start in the middle for binary search
+  // TODO: This is a hack, since peers are only finding 3 out of 5
+  // nodes on a small scale.
+  int numNodes = sortedIDs_.size();
+  int chosenNode = rand() % numNodes;
+  return sortedIDs_[chosenNode];
+  /*// Start in the middle for binary search
   int min = 0, max = sortedIDs_.size() - 1;
   int currentPos;
   bool found = false, done = false;
@@ -42,9 +48,9 @@ std::string TrackerDatabase::findClosest(const std::string& id) {
   }
   
   std::cout << "Found closest " << currentPos << " "
-	    << sortedIDs_[currentPos] << std::endl;
+  << sortedIDs_[currentPos] << std::endl;
   
-  return sortedIDs_[currentPos];
+  return sortedIDs_[currentPos];*/
 }
 
 metadata::MetadataRecord&

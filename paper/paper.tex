@@ -424,21 +424,73 @@ In our implementation, the Metadata Controller periodically attempts to ping the
 
 The Metadata Controller also queries the metadata layer to determine if any peer has stopped backing up to the node it is running on. In this case, it initiates the removal of the stored data.
 
-\chapter{Methodology}
+\chapter{Methodology} \label{chap:Methodology}
 
-% Explain virtual machines if need be
+In order to thoroughly evaluate our system, we identified several variables that could lead to differences in performance. These variables are:
 
-\section{Environment}
+\begin{itemize}
+\item The size of each file
+\item Number of replicas to maintain
+\item Churn rate
+\item Number of nodes present in the system
+\item The rate at which nodes are challenged (ping test)
+\item The number of malicious nodes
+\end{itemize}
+
+From these variables, we derived a set of test scenarios which allowed us to see how each of them affect the performance of the system. While they are specific to our system, they allow us to evaluate the strengths and weaknesses of BitTorrent Sync (and, by extension, BitTorrent) as the data transport mechanism in a peer-to-peer backup system.
+
+The following sections describe how we performed our testing. For the results of each test scenario, see section \ref{chap:Results}.
+
+\section{Environment} \label{sec:Environment_chap:Methodology}
 
 % Ubuntu 12.04 x64 in VM in kvm
 % Using SZTAKICloud at MTA SZTAKI in Budapest
 % (how much are we allowed to talk about it? ask Mihaly)
 
-\section{Test Scenarios}
+% TODO: Is it actually called SZTAKI Cloud? I've looked through my emails, and Mihaly never calls it exactly that. If we could put as much as we want, it might be nice to put a screenshot of the web interface.
+In order to test our system, we needed an environment that would allow us to create and populate our network with as many nodes as we needed for each test scenario. We used SZTAKI Cloud, a virtualization platform that runs on the enterprise cloud computing system \textit{OpenNebula}. SZTAKI Cloud allowed us to create and clone virtual machines for each test scenario. This is done via the web interface. % TODO: Elaborate more here, depending on how much Mihaly wants us to talk about it.
 
+Each virtual machine was a headless GNU/Linux machine running Ubuntu 12.04, 64-bit. Each machine had a 2.1GB hard drive for the operating system, 1 virtual CPU, and 1GB of RAM. Depending on the test, we also attached another virtual hard drive to each virtual machine, as more storage was needed in order to backup large files.
 
+Each machine is connected to each other via a virtual network that has a 10Gbit link capacity. As this capacity is unrealistic for several of our tests, where the network is supposed to model users spread across the Internet, we used a bandwidth-limiting program called \textit{wondershaper}. \textit{wondershaper} is a command line utility that allows a user to set specific upload and download bandwidth limits on a per-interface basis. This is achieved by creating packet queues. When wondershaper is invoked to limit the bandwidth on a particular interface, it captures all of the packets going through that interface going in either direction. It can then remove them through the queue and send them in the appropriate direction, either towards the network or to a process on the same machine, at a rate specified by the user. The use of this utility allowed us to easily simulate realistic network delays for the tests that needed them.
 
-\chapter{Results}
+In order to collect data, we used a logging server, running \textit{syslog-ng}, an open source implementation of the syslog protocol \cite{syslogRFC1,syslogRFC2}. In any syslog implementation, messages are sent and categorized using a facility code, which defines where the message came from and its severity. \cite{syslogRFC1} and \cite{syslogRFC2} specify that there are eight "local use" facilities to be used by processes that have not been assigned a facility. We used one of these for out testing, via the command line \textit{logger} utility that was installed with syslog-ng. All entities that are a part of a test sent log messages to the local use facility. When a test finished, we were able to download the log file and clear it for the next test.
+
+\section{Test Scenarios} \label{sec:TestScenatios_chap:Methodology}
+
+The following sections describes each test scenario, as well as how we performed each test and what variables each scenario tests in particular.
+
+\subsection{File Size versus Number of Files} \label{subsec:FileSizeversusNumberofFiles_sec:TestScenarios_chap:Methodology}
+
+In this scenario, we tested how our system handles a constant amount of data spread out across a varying number of files. The goal of this test is twofold. First, it allows us to test the capabilities of BitTorrent Sync in handling a large number of backups. From the data gathered here, it is possible to determine how well BitTorrent Sync would scale for use in a production system, where thousands of users could each be backing up thousands of files of varying sizes. Second, it allows us to measure the performance of BitTorrent as file size changes. Since the use case for BitTorrent is typically downloading large files, it is important to determine whether or not our system will perform well when users try to backup many small files, should it be used in a production environment.
+
+% TODO: Maybe we should not mention the 1MB test at all.
+Our tests for this scenario used 8 virtual machines in SZTAKI Cloud: 1 peer, 5 nodes, 1 tracker, and 1 syslog-ng server. To have a wide range of file sizes, we tested with 1MB, 10MB, 100MB, and 1GB files. In each test instance, the total amount of data backed up was 1GB, so 1000 files, 100 files, 10 files, and 1 file were backed up, respectively. The procedure for each test instance is as follows:
+
+\begin{enumerate}
+  \item Clear the log file on the syslog-ng server. This is to remove the data of previous test instances.
+  \item Clear all existing items from BitTorrent Sync on the peer and all nodes. This also removes data from previous test instances.
+  \item Start the tracker server and all nodes. Both of these entity types do not do anything until the peer joins the network.
+  \item Start the peer. When the peer is started, it backs up as many files as necessary to back up 1GB. This is sent through our program's standard input.
+  \item Wait for the peer to find all nodes and create replicas on them.
+  \item Stop the nodes and the peer.
+  \item Save the log file and reset it.
+  \item Restart the nodes.
+  \item Remove all backups from the peer. This is done to simulate the peer losing all of its data. The only information that is not removed is a single file generated by our program, which contains all of the information needed to retrieve each file.
+  \item Start the peer again. The information file is loaded on program startup, which signals BitTorrent Sync to add the backup folders again and contact the appropriate nodes.
+  \item Wait for all backups to be restored.
+\end{enumerate}
+
+At the end of this sequence, the peer has successfully used our system to backup its files and retrieve them when needed. On the peer and the nodes, the process was orchestrated by a script. Logging occurs during backup creation and retrieval. During both of these phases, the number of bytes being downloaded and uploaded was sampled once per second. This is the data that is sent to the log server. Sampling was achieved by using a series of shell commands to obtain the information and to put it in the useful format. The exact command is as follows:
+
+% TODO: This line goes off the right side of the page in the PDF.
+\begin{verbatim}
+sar -n DEV 1 1 | grep eth0 | grep -v Average | awk '{print $1, $2, $6, $7, \"\\n\";}'
+\end{verbatim}
+
+\subsection{Effects of Churn} \label{subsec:EffectsofChurn_sec:TestScenarios_chap:Methodology}
+
+\chapter{Results} \label{chap:Results}
 
 \chapter{Conclusion}
 
@@ -462,6 +514,8 @@ The Metadata Controller also queries the metadata layer to determine if any peer
 \bibitem{btsyncapi} http://www.bittorrent.com/sync/developers/api
 \bibitem{bittorrentProtocol} http://www.bittorrent.org/beps/bep\_0003.html
 \bibitem{cryptoDef} Rivest, Ronald L. (1990). "Cryptology". In J. Van Leeuwen. Handbook of Theoretical Computer Science 1. Elsevier.
+\bibitem{syslogRFC1} C. Lonvick, "The BSD syslog Protocol". https://tools.ietf.org/html/rfc3164, August 2001.
+\bibitem{syslogRFC2} R. Gerhards, "The syslog Protocol". https://tools.ietf.org/html/rfc5424, March 2009.
 
 \end{thebibliography}
 
