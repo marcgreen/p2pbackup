@@ -8,6 +8,11 @@
 *.toc
 *.gz
 *.out
+*.bbl
+*.blg
+*.bak
+*.sav
+*.synctex
 .SyncIgnore
 
 # Config file

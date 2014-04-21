@@ -9,13 +9,13 @@
 \usepackage{mathrsfs}
 \usepackage{alltt}
 \usepackage{color}
-\usepackage{fancyvrb} 
+\usepackage{fancyvrb}
 \usepackage{graphicx}
 \usepackage{epstopdf}
 \usepackage{url}
 \usepackage{verbatim}
 \usepackage{hyperref}
-%\usepackage[autostyle]{csquotes} 
+%\usepackage[autostyle]{csquotes}
 %\usepackage[toc,page]{appendix}
 
 \usepackage[top=1in, bottom=1.5in, left=1.5in,right=1.5in]{geometry} % setting the page alignment with this package
@@ -87,7 +87,7 @@ Another problem with centralized systems is a matter of trust: when a user store
 % TODO: reliable sources for data caps and monthly/yearly fees
 Finally, there are often restrictions on what can be stored using centralized backup systems. This includes both the size of individual files and the amount of total data. More space is gained by paying a monthly or yearly fee, but even then the amount of space is capped at a specific size. For users who need to back up a large amount of large files, these systems are not very useful.
 
-Peer to peer backup systems, on the other hand, provide an equivalent service and suffer from none of these drawbacks. 
+Peer to peer backup systems, on the other hand, provide an equivalent service and suffer from none of these drawbacks.
 
 \section{Peer to Peer Backup Systems}
 
@@ -107,7 +107,7 @@ An overlay network is any network built on top of another network. That is, an o
 
 Peer to peer applications use overlay networks as their foundation.\footnote{Overlay networks are used for many purposes, not just P2P applications. Note, however, in discussing overlay networks, we will still refer to their participants as \textit{peers}.}  The P2P overlay network provides structure for the application that uses it, allowing peers to find each other.
 
-There are three categories of overlay networks that can be used as the network abstraction on which a P2P network is built. \textit{Structured} overlay networks organize peers according to some geometry, e.g., a ring. This structure is strictly maintained as nodes join and leave the network. \textit{Unstructured} overlay networks, on the other hand, do not organize peers, but instead allow the network to grow into any shape, determined only by the routing table of each peer. \textit{Hierarchical} overlay networks are composed of multiple groups of peers each forming their own overlay network. A representative peer from each group joins a top-level overlay network, connecting the distinct groups \cite{p2pSurvey}. 
+There are three categories of overlay networks that can be used as the network abstraction on which a P2P network is built. \textit{Structured} overlay networks organize peers according to some geometry, e.g., a ring. This structure is strictly maintained as nodes join and leave the network. \textit{Unstructured} overlay networks, on the other hand, do not organize peers, but instead allow the network to grow into any shape, determined only by the routing table of each peer. \textit{Hierarchical} overlay networks are composed of multiple groups of peers each forming their own overlay network. A representative peer from each group joins a top-level overlay network, connecting the distinct groups \cite{p2pSurvey}.
 
 We discuss structured overlay networks in more detail below, as that is the type of overlay network our P2P backup system uses.
 
@@ -126,7 +126,7 @@ To join a structured overlay network, a peer must know at least one other peer a
 % TODO maybe remove this entire paragraph, since it doesn't really clarify anything. it just gives another example of picking an id and mysteriously finding nodes its closest to. if we end up remove it, we should reword end of previous paragraph
 % TODO maybe keep it in b/c we refer to closness in 3.1.1
 
-Leaving a structured overlay network can be as simple as not responding to any messages. Our system, like many others, leaves this functionality undefined. Node failures due to hard shutdowns will not follow the protocol to leave the network, so it is easiest to treat all node departures as node failures. 
+Leaving a structured overlay network can be as simple as not responding to any messages. Our system, like many others, leaves this functionality undefined. Node failures due to hard shutdowns will not follow the protocol to leave the network, so it is easiest to treat all node departures as node failures.
 
 To find other peers, a peer in a structured overlay network will consult its routing table. This table is initially populated upon joining the network, and is kept up to date as peers join and leave. When a joining peer first contacts a bootstrap peer, it is unlikely that the bootstrap peer has the joining peer's direct neighbors in its routing table. This is because the routing table is designed to include many peers that are close, and only a few peers that are far\footnote{This is to provide an efficient, $O(\log n)$ time complexity. This means that given n nodes, it will take less than $c \times \log n$ steps (for some $c$), which is good performance.} A joining peer, by asking the bootstrap node, will learn of the peers in the bootstrap peer's routing table that the joining node is close to. The joining peer will then contact these peers, ask for the same information, and learn of peers it is even closer to. This process repeats until the joining node learns its direct neighbors \cite{p2pSurvey}.
 
@@ -160,7 +160,7 @@ While this ensures that peers will agree to take data in proportion to the amoun
 \subsection{Churn and Data Migration} \label{sec:churn}
 With each storage node being regular users, it is often the case that nodes can be offline. Recall that churn refers to the fact that peers will continuously enter and leave the P2P network. The designer of a P2P backup system must take this into consideration if the system is to provide reliable access to backed up data. This has been accomplished via data migration \cite{pStore,PeerStore}, where the availability of files is periodically checked and replicas are made when the peers being used for backup are not reliably available. Other data migration algorithms have been designed specifically to work in high churn networks \cite{StorageSearchP2PNetworks}. In this case, data replicas are periodically redistributed to different groups of nodes, which means that newer nodes have a chance to store data. This is beneficial because data stays evenly distributed throughout the overlay network, preventing any single node from being responsible for too much data, regardless of when they joined.\footnote{It is important to note this strategy is designed to work in an unstructured overlay network, not a structured one. Structured networks need not redistribute like this because the evenly distributed address assignment provides the even data distribution.}
 
-The number of replicas to maintain will have an impact on the performance of the system. If the replica count is too low, the probability of recovering the  file is lowered. If the replica count is too high, then storage space and bandwidth will be needlessly used. Furthermore, if the system requires a peer to offer a proportional amount of storage space to the amount that it is using on others, the peer will also have to offer a lot more space than what it is using locally for its own data. % TODO this last sentence might go better in the fairness section 
+The number of replicas to maintain will have an impact on the performance of the system. If the replica count is too low, the probability of recovering the  file is lowered. If the replica count is too high, then storage space and bandwidth will be needlessly used. Furthermore, if the system requires a peer to offer a proportional amount of storage space to the amount that it is using on others, the peer will also have to offer a lot more space than what it is using locally for its own data. % TODO this last sentence might go better in the fairness section
 
 \subsection{Cryptography} \label{sec:crypto}
 Crytography is the study of techniques for secure communication in the presence of third parties \cite{cryptoDef}. It is heavily relied upon in the computer world to protect secrets, verify identities, and ensure data hasn't been tampered with. Our system uses cryptography to \textit{encrypt} users' data before replicating it to stranger's computers. Encryption is the process of obfuscating text into a state such that it cannot be understood without reversing the process. There are several types of encryption proccesses, each with its respective \textit{decryption} process. Decryption refers to reversing the encryption so that encrypted message becomes readable again.
@@ -243,11 +243,11 @@ This section discusses the infrastructure and the protocols of our system that a
   \item[Peer:] A particpant who is sending replicas of their data into the network for safekeeping. We refer to this process as \textit{backing up} data.
   \item[Node:] A participant who is storing a replica for a peer. We refer to this process as \textit{storing} data.
 \end{description}
-  
-This terminology is used to give context. It is very likely that every participant in the system will eventually serve both roles (perhaps even simultaneously), but we refer to them as \textit{peer} or \textit{node} depending on what role they are playing in a given situation. A peer plays the role of the client, whereas a node plays the role of a server.\footnote{We may qualify each term to help give context. For example, we may say "\ldots a \textit{replication} node \ldots" to emphasize the fact that the node is storing a replica.} When there is no context, we use the terms interchangeably. 
+
+This terminology is used to give context. It is very likely that every participant in the system will eventually serve both roles (perhaps even simultaneously), but we refer to them as \textit{peer} or \textit{node} depending on what role they are playing in a given situation. A peer plays the role of the client, whereas a node plays the role of a server.\footnote{We may qualify each term to help give context. For example, we may say "\ldots a \textit{replication} node \ldots" to emphasize the fact that the node is storing a replica.} When there is no context, we use the terms interchangeably.
 % TODO find/replace all uses of replicant node with replication node or vice versa
 
-Note the emphasis of the action taken by each: a peer is said to \textit{back up} data, and a node is said to \textit{store} a replica of the peer's data. 
+Note the emphasis of the action taken by each: a peer is said to \textit{back up} data, and a node is said to \textit{store} a replica of the peer's data.
 
 PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unneccessary to immediately find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the low possibility of not being able to recover data that is backed up. Note that this situation is unavoidable in \textbf{all} backup systems. By relaxing the aforementioned requirement like PeerStore, we leverage this fact by sacrificing theoretical availability for performance and usability. See section \ref{subsec:TheMetadataLayer_sec:SystemDesign} for the discussion of the parameterization of these variables in our implementation. See section \ref{} for our methodology of testing the parameter. Finally, see section \ref{} for a comparison of the results of different values for the parameter.}
 % TODO add references once we know section names
@@ -267,7 +267,7 @@ A \textit{metadata record} is used for three purposes:
 
 \begin{enumerate}
   \item Find the IP address of the node it describes
-  \item Determine if the node it describes should be used to store one's data 
+  \item Determine if the node it describes should be used to store one's data
   \item Find the nodes to which the peer it describes is backing up\footnote{To clarify: each metadata record belongs to single entity. In the first two use cases, a peer looking to back up data queries for the node's metadata record. In the last use case, a peer starts the data recovery process by querying for its own metadata record. The entity requesting the metadata record (and the reason for doing so) changes based on the context.}
 \end{enumerate}
 
@@ -282,7 +282,7 @@ A metadata record stores the following information for each node in the system: 
 
 \begin{table}
 \begin{center}
-    \begin{tabular}{| l | l |} 
+    \begin{tabular}{| l | l |}
     \hline
     Node IP & The most recent IP address used by this node\\ \hline
     Blacklisters & List of peers who consider this node unreliable\\ \hline
@@ -358,7 +358,7 @@ We have designed our system to be modular. We realize that future work on our sy
   \caption{The design of our system}
 \end{figure}
 
-A high-level overview of our system is offered in figure \ref{fig:SystemDesign}. We explain each of these components in the following sections. 
+A high-level overview of our system is offered in figure \ref{fig:SystemDesign}. We explain each of these components in the following sections.
 
 \subsection{The Data Layer}
 % TODO: find out how many unique secret prefixes there are, factoring that into the calculation of how many unique addresses there are.
@@ -417,7 +417,17 @@ The Metadata Controller also queries the metadata layer to determine if any peer
 
 \chapter{Methodology}
 
-% Explain virtual machines if need be
+In order to thoroughly evaluate our system, we identified several variables that could lead to differences in performance. These variables are:
+
+\begin{itemize}
+\item Number of replicas to maintain
+\item Churn rate
+\item Number of nodes present in the system
+\item The rate at which nodes are challenged (ping test)
+\item The number of malicious nodes
+\end{itemize}
+
+From these variables, we derived a set of test scenarios which allowed us to see how each of them affect the performance of the system. While they are specific to our system, they allow us to evaluate the strengths and weaknesses of BitTorrent Sync (and, by extension, BitTorrent) as the data transport mechanism in a peer-to-peer backup system.
 
 \section{Environment}
 
@@ -425,7 +435,12 @@ The Metadata Controller also queries the metadata layer to determine if any peer
 % Using SZTAKICloud at MTA SZTAKI in Budapest
 % (how much are we allowed to talk about it? ask Mihaly)
 
-\section{Test Scenarios}
+% TODO: Is it actually called SZTAKI Cloud? I've looked through my emails, and Mihaly never calls it exactly that.
+In order to test our system, we needed an environment that would allow us to create and populate our network with as many nodes as we needed for each test scenario. We used SZTAKI Cloud, a virtualization platform that runs on the enterprise cloud computing system \textit{OpenNebula}. SZTAKI Cloud allowed us to create and clone virtual machines for each test scenario. % TODO: More elaboration here, depending on how much Mihaly wants us to talk about it.
+
+Each virtual machine was a headless GNU/Linux machine running Ubuntu 12.04, 64-bit. Each machine had a 2.1GB hard drive for the operating system, 1 virtual CPU, and 1GB of RAM.
+
+\section{Test Scenarios} \label{sec:TestScenatios_chap:Methodology}
 
 
 
@@ -456,4 +471,4 @@ The Metadata Controller also queries the metadata layer to determine if any peer
 
 \end{thebibliography}
 
-\end{document}
+\end{document} 
