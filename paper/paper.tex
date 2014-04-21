@@ -9,13 +9,13 @@
 \usepackage{mathrsfs}
 \usepackage{alltt}
 \usepackage{color}
-\usepackage{fancyvrb} 
+\usepackage{fancyvrb}
 \usepackage{graphicx}
 \usepackage{epstopdf}
 \usepackage{url}
 \usepackage{verbatim}
 \usepackage{hyperref}
-%\usepackage[autostyle]{csquotes} 
+%\usepackage[autostyle]{csquotes}
 %\usepackage[toc,page]{appendix}
 
 \usepackage[top=1in, bottom=1.5in, left=1.5in,right=1.5in]{geometry} % setting the page alignment with this package
@@ -66,7 +66,7 @@ Acknowledgements
 \end{abstract}
 
 \tableofcontents
-\listoffigures
+\listofs
 
 \chapter{Introduction}
 
@@ -87,7 +87,7 @@ Another problem with centralized systems is a matter of trust: when a user store
 % TODO: reliable sources for data caps and monthly/yearly fees
 Finally, there are often restrictions on what can be stored using centralized backup systems. This includes both the size of individual files and the amount of total data. More space is gained by paying a monthly or yearly fee, but even then the amount of space is capped at a specific size. For users who need to back up a large amount of large files, these systems are not very useful.
 
-Peer to peer backup systems, on the other hand, provide an equivalent service and suffer from none of these drawbacks. 
+Peer to peer backup systems, on the other hand, provide an equivalent service and suffer from none of these drawbacks.
 
 \section{Peer to Peer Backup Systems}
 
@@ -107,7 +107,7 @@ An overlay network is any network built on top of another network. That is, an o
 
 Peer to peer applications use overlay networks as their foundation.\footnote{Overlay networks are used for many purposes, not just P2P applications. Note, however, in discussing overlay networks, we will still refer to their participants as \textit{peers}.}  The P2P overlay network provides structure for the application that uses it, allowing peers to find each other.
 
-There are three categories of overlay networks that can be used as the network abstraction on which a P2P network is built. \textit{Structured} overlay networks organize peers according to some geometry, e.g., a ring. This structure is strictly maintained as nodes join and leave the network. \textit{Unstructured} overlay networks, on the other hand, do not organize peers, but instead allow the network to grow into any shape, determined only by the routing table of each peer. \textit{Hierarchical} overlay networks are composed of multiple groups of peers each forming their own overlay network. A representative peer from each group joins a top-level overlay network, connecting the distinct groups \cite{p2pSurvey}. 
+There are three categories of overlay networks that can be used as the network abstraction on which a P2P network is built. \textit{Structured} overlay networks organize peers according to some geometry, e.g., a ring. This structure is strictly maintained as nodes join and leave the network. \textit{Unstructured} overlay networks, on the other hand, do not organize peers, but instead allow the network to grow into any shape, determined only by the routing table of each peer. \textit{Hierarchical} overlay networks are composed of multiple groups of peers each forming their own overlay network. A representative peer from each group joins a top-level overlay network, connecting the distinct groups \cite{p2pSurvey}.
 
 We discuss structured overlay networks in more detail below, as that is the type of overlay network our P2P backup system uses.
 
@@ -116,7 +116,7 @@ We discuss structured overlay networks in more detail below, as that is the type
 Structured overlay networks are defined by a topology and a virtual address space. For example, in our system, peers are organized in a ring and addressed by 20 byte numbers---our address space is the set of all 20 byte numbers. In other systems, peers could be organized in a 3D cube and addressed by their (x,y,z) coordinates. The topology defines the set of neighbors each peer has in the overlay. The address space serves as a way to uniquely identify peers.
 % TODO maybe insert figure of chord ring topology (or our own!)
 
-The purpose of peer to peer networks (and more broadly, networks in general) is to share data. In the P2P networks that focus not just on sharing data, but also storing, locating, and possibly retrieving data (like ours), the data shares the same virtual address space as the peers. That is, these structured overlay networks give the data themselves valid addresses. For example, in our system, the data being backed up is also given a 20 byte "address". This is done to determine which peer is responsible for a given piece of data. Specifically, a peer is responsible for all data in the address space that the peer is closest to. It is for this reason that peer address assignment should be evenly distributed, to keep the distribution of work equal. Aside: the average size of the address space for which a peer is responsible decreases as more peers join the network, which allows these types of networks to easily scale in size.
+The purpose of peer to peer networks (and more broadly, networks in general) is to share data. In the P2P networks that focus not just on sharing data, but also storing, locating, and possibly retrieving data (like ours), the data shares the same virtual address space as the peers. That is, these structured overlay networks give the data themselves valid addresses. For example, in our system, the data being backed up is also given a 20 byte "address". This is done to determine which peer is responsible for a given piece of data. Specifically, a peer is responsible for all data in the address space that the peer is closest to. It is for this reason that peer address assignment should be evenly distributed, to keep the distribution of work equal.\footnote{The average size of the address space for which a peer is responsible decreases as more peers join the network, which allows these types of networks to easily scale in size.}
 
 To join a structured overlay network, a peer must know at least one other peer already in the network. This peer is often called the \textit{bootstrap peer}. The joining peer will contact the bootstrap peer to find its proper place in the topology. We come back to this below in more detail in our explanation of how to find other peers.
 
@@ -126,9 +126,9 @@ To join a structured overlay network, a peer must know at least one other peer a
 % TODO maybe remove this entire paragraph, since it doesn't really clarify anything. it just gives another example of picking an id and mysteriously finding nodes its closest to. if we end up remove it, we should reword end of previous paragraph
 % TODO maybe keep it in b/c we refer to closness in 3.1.1
 
-Leaving a structured overlay network can be as simple as not responding to any messages. Our system, like many others, leaves this functionality undefined. Node failures due to hard shutdowns will not follow the protocol to leave the network, so it is easiest to treat all node departures as node failures. 
+Leaving a structured overlay network can be as simple as not responding to any messages. Our system, like many others, leaves this functionality undefined. Node failures due to hard shutdowns will not follow the protocol to leave the network, so it is easiest to treat all node departures as node failures.
 
-To find other peers, a peer in a structured overlay network will consult its routing table. This table is initially populated upon joining the network, and is kept up to date as peers join and leave. When a joining peer first contacts a bootstrap peer, it is unlikely that the bootstrap peer has the joining peer's direct neighbors in its routing table. This is because the routing table is designed to include many peers that are close, and only a few peers that are far\footnote{This is to provide an efficient, $O(\log n)$ time complexity. This means that given n nodes, it will take less than $c \times \log n$ steps (for some $c$), which is good performance.} A joining peer, by asking the bootstrap node, will learn of the peers in the bootstrap peer's routing table that the joining node is close to. The joining peer will then contact these peers, ask for the same information, and learn of peers it is even closer to. This process repeats until the joining node learns its direct neighbors \cite{p2pSurvey}.
+To find other peers, a peer in a structured overlay network will consult its routing table. This table is initially populated upon joining the network, and is kept up to date as peers join and leave. When a joining peer first contacts a bootstrap peer, it is unlikely that the bootstrap peer has the joining peer's direct neighbors in its routing table. This is because the routing table is designed to include many peers that are close, and only a few peers that are far. A joining peer, by asking the bootstrap node, will learn of the peers in the bootstrap peer's routing table that the joining node is close to. The joining peer will then contact these peers, ask for the same information, and learn of peers it is even closer to. This process repeats until the joining node learns its direct neighbors \cite{p2pSurvey}.
 
 Overlay networks are the abstraction that connects all the users of a P2P system. It is the foundation on which a P2P application can be built, and is responsible for providing methods for peers to join and leave the network, and find other peers in the network. Furthermore, structured overlay networks allow the P2P application to locate specific information very quickly because their virtual address space provides full accountability of any piece of data. It is for this reason we chose a structured overlay network as the substrate of our P2P application; it is easy to determine which peer is responsible for a given backup because we know it will be the one closest in the address space.\footnote{However, churn complicates this. For example, a peer with an even closer address may join the network between storing and retrieving the data.}
 
@@ -136,7 +136,15 @@ Overlay networks are the abstraction that connects all the users of a P2P system
 
 % TODO: Ask Sarkozy/Mihaly if they think keeping this section in is worth it.
 \subsection{File Chunking} \label{sec:filechunking}
-The format in which files are stored can have an effect on the efficiency of the P2P backup system. At first, backing up each file as a whole might seem like the obvious choice, since files are only useful in their entirety. However, the creators of the P2P backup systems pStore \cite{pStore} and PeerStore \cite{PeerStore} have shown that there are benefits to splitting files up into chunks, rather than distributing complete files to peers. In these systems, this is accomplished by creating two types of files: a "file block", which contains a section of the original file, and a "file block list", which contains information on which file blocks compose the original file and how to order them. This has the benefit of having data units be a fixed size that will be easy to store for any node. For example, if a peer needs to store a 10GB file, it does not need to find a peer capable of storing 10GB (which might be rare); rather, it needs to find $file\_size/chunk\_size \times number\_of\_replicas$ peers. Although lowering the chunk size will increase the chances of finding a peer to store on, it is important to choose a reasonable chunk size, as using more nodes for storage will add more overhead in finding those nodes.
+The format in which files are stored can have an effect on the efficiency of the P2P backup system. At first, backing up each file as a whole might seem like the obvious choice, since files are only useful in their entirety. However, the creators of the P2P backup systems pStore \cite{pStore} and PeerStore \cite{PeerStore} have shown that there are benefits to splitting files up into fixed-sized chunks, rather than distributing complete files to peers. In these systems, this is accomplished by creating two types of files: a "file block", which contains a section (chunk) of the original file, and a "file block list", which contains information on which file blocks compose the original file and how to order them. This allows for peer heterogeneity in terms of storage capacity. For example, if a peer needs to store a 10GB file, it does not need to find an individual peer capable of storing 10GB (which might be rare); rather, it needs to find a number of peers, each capable of storing the size of a chunk (which is magnitudes smaller in size than the original file).
+
+Equation \ref{equ:file_chunk_peers} shows how many peers are needed to store a file $F$ for a given chunk size $c$, the number of desired replications of the file $r$, and the size of the file $F_{size}$.
+
+\begin{equation} \label{equ:file_chunk_peers}
+\text{Number of peers} = \frac{F_{size}}{c} \times r
+\end{equation}
+
+Although lowering the chunk size will increase the chances of finding a peer to store on, it is important to choose a reasonable chunk size, as using more nodes for storage will add more overhead in finding those nodes.
 
 File chunking also gives the benefit of easy versioning and updating of files. When a newer version of a file is backed up, the only chunks that need to be reinserted into the network are the ones that differ from the previous version. Old versions of file chunks stay in the network, so that any full version of the file can be reconstructed by requesting the appropriate file chunks. Backup systems can also reduce the amount of storage space used by sharing identical file chunks between peers.
 
@@ -145,7 +153,7 @@ Our system does not use file chunking. Instead, by using BitTorrent as the data 
 \subsection{Fairness} \label{sec:BackgroundFairness}
 Another aspect of P2P backup systems is fairness between peers. Peers need to be storing an amount of data proportional to the amount that they are backing up to other peers. This can be challenging to enforce, because untrustworthy peers can attempt to game the system to obtain free backup storage. For example, consider a simple system where each peer must offer to store the same amount of data that they back up on other peers. A peer could claim that all of the storage space that it should be offering is being used by other peers, while in reality the peer has not taken in any other peer's data. It is clear that a mechanism needs to be built into the system that ensures that peers store the data of each other.
 
-PeerStore handles this via a combined trading and challenge system. When a peer wants to create a backup of its data, it finds a peer to trade data with. In its request to back up data, the peer will also advertise that it is willing to store a certain amount of data for its trading partner. The peer that receives the request will then need to accept or reject it, and if the request is accepted, the acceptor will also need to request a certain amount of storage in return. If the original requestor accepts this offer, then the two become trading partners and will send each other data. This process is illustrated in figure \ref{fig:peerStoreTrading} \cite{PeerStore}.
+PeerStore handles this via a combined trading and challenge system. When a peer wants to create a backup of its data, it finds a peer to trade data with. In its request to back up data, the peer will also advertise that it is willing to store a certain amount of data for its trading partner. The peer that receives the request will then need to accept or reject it, and if the request is accepted, the acceptor will also need to request a certain amount of storage in return. If the original requestor accepts this offer, then the two become trading partners and will send each other data. This process is illustrated in Figure \ref{fig:peerStoreTrading} \cite{PeerStore}.
 
 \begin{figure}
   \centering
@@ -154,24 +162,22 @@ PeerStore handles this via a combined trading and challenge system. When a peer 
   \label{fig:peerStoreTrading}
 \end{figure}
 
-While this ensures that peers will agree to take data in proportion to the amount that they want to back up, it still does not guarantee that peers hold onto that data. For example, a peer could form a trading agreement with another peer, exchange data, and promptly discard the received data. To combat this, peers can periodically challenge each other to prove that they are actually storing data. This is the approach that we, like PeerStore, propose. We provide peers the ability to ask each other to prove they are storing the data that they are supposed to be storing. A peer proves itself by replying with a value that could only be derived if they were, indeed, safekeeping the data. See \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}
+While this ensures that peers will agree to take data in proportion to the amount that they want to back up, it still does not guarantee that peers hold onto that data. For example, a peer could form a trading agreement with another peer, exchange data, and promptly discard the received data. To combat this, peers can periodically challenge each other to prove that they are actually storing data. This is the approach that we, like PeerStore, propose. We provide peers the ability to ask each other to prove they are storing the data that they are supposed to be storing. A peer proves itself by replying with a value that could only be derived if they were, indeed, safekeeping the data. See Section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}
  for more details about our proposed challenge mechanism.
 
 \subsection{Churn and Data Migration} \label{sec:churn}
 With each storage node being regular users, it is often the case that nodes can be offline. Recall that churn refers to the fact that peers will continuously enter and leave the P2P network. The designer of a P2P backup system must take this into consideration if the system is to provide reliable access to backed up data. This has been accomplished via data migration \cite{pStore,PeerStore}, where the availability of files is periodically checked and replicas are made when the peers being used for backup are not reliably available. Other data migration algorithms have been designed specifically to work in high churn networks \cite{StorageSearchP2PNetworks}. In this case, data replicas are periodically redistributed to different groups of nodes, which means that newer nodes have a chance to store data. This is beneficial because data stays evenly distributed throughout the overlay network, preventing any single node from being responsible for too much data, regardless of when they joined.\footnote{It is important to note this strategy is designed to work in an unstructured overlay network, not a structured one. Structured networks need not redistribute like this because the evenly distributed address assignment provides the even data distribution.}
 
-The number of replicas to maintain will have an impact on the performance of the system. If the replica count is too low, the probability of recovering the  file is lowered. If the replica count is too high, then storage space and bandwidth will be needlessly used. Furthermore, if the system requires a peer to offer a proportional amount of storage space to the amount that it is using on others, the peer will also have to offer a lot more space than what it is using locally for its own data. % TODO this last sentence might go better in the fairness section 
+The number of replicas to maintain will have an impact on the performance of the system. If the replica count is too low, the probability of recovering the  file is lowered. If the replica count is too high, then storage space and bandwidth will be needlessly used. Furthermore, if the system requires a peer to offer a proportional amount of storage space to the amount that it is using on others, the peer will also have to offer a lot more space than what it is using locally for its own data. % TODO this last sentence might go better in the fairness section
 
 \subsection{Cryptography} \label{sec:crypto}
-Crytography is the study of techniques for secure communication in the presence of third parties \cite{cryptoDef}. It is heavily relied upon in the computer world to protect secrets, verify identities, and ensure data hasn't been tampered with. Our system uses cryptography to \textit{encrypt} users' data before replicating it to stranger's computers. Encryption is the process of obfuscating text into a state such that it cannot be understood without reversing the process. There are several types of encryption proccesses, each with its respective \textit{decryption} process. Decryption refers to reversing the encryption so that encrypted message becomes readable again.
+Cryptography is the study of techniques for secure communication in the presence of third parties \cite{cryptoDef}. It is heavily relied upon in the computer world to protect secrets, verify identities, and ensure data hasn't been tampered with. Our system uses cryptography to \textit{encrypt} users' data before replicating it to stranger's computers. Encryption is the process of obfuscating text into a state such that it cannot be understood without \textit{decryption}, or reversing the process. Secret \textit{keys} are used to parameterize encryption algorithms so that, although the specific process for encryption is public, the message it encrypts remains a secret.
 
-In \textit{symmetric key cryptography}, the encryption and decryption processes use identical \textit{keys}. The key is the secret parameter to the mathematical functions that prevents anyone else from decrypting the data. Anyone who has the key for a given message can decrypt it. Using a different key to encrypt the same data will result in a different output.
-
-Encryption in P2P backup systems is necessary to prevent the peers who are storing backups of data from reading it. A system in which backups were unencrypted would be much less popular with users, because they would lose privacy by using it. The terminology associated with this is \textit{confidentiality}, meaning that data that is supposed to be confidential, remains confidential.
+Encryption in P2P backup systems is necessary to prevent the peers who are storing backups of data from reading it. A system in which backups were unencrypted would be much less popular with users, because they would lose privacy by using it. The terminology associated with this is \textit{confidentiality}, meaning that data that is supposed to be confidential, remains confidential. Our P2P backup system leverages BitTorrent Sync, which uses the AES encryption algorithm to encrypt backups before replicating them. % TODO not sure if we should describe AES here... AES is a \textit{symmetric-key} encryption algorithm, which means the same key is used to both encrypt and decrypt.
 
 \textit{Hashing} is the process of applying a \textit{hash function}, which uses a mathematical function, to some arbitrary-length message, resulting in a fixed sized \textit{hash}. Regardless of the input, the hash will usually look like a random string of characters because the mathematical function manipulates the underlying data. This manipulation greatly changes the bits originally used to represent the input data. A good hash function will uniformly distribute the hashes it produces to minimize \textit{collisions}. Collisions are when two inputs hash to the same value, and are often undesired, especially in \textit{cryptographic hash functions}. Cryptographic hash functions are hash functions that are suitable for use in cryptography. They possess mathematical properties that allow for confidentiality to be provided, among other properties.
 
-To strengthen hashing algorithms, a \textit{salt} can be utilized. A salt is essentially a randomly picked string of bytes that is concatenated to data to be hashed. The use of different salts with the same sequence of data creates a different hash (since the total input the hash function is different). The same hash will be calculated if the same salt is used with the same sequence of data. Using salts is a useful technique in preventing \textit{dictionary attacks}, where an attacker compares a precomputed list of inputs and their hashes with a target hash of some unknown data in an attempt to find out what the unknown data is. Dictionary attacks are common on password hashes, because, upon success, the attacker will discover the password used to generate the password hash. With a salt, the precomputed hash for the data wll not match. The list of hashes cannot be easily recomputed with the salt, since hashing is designed to be an expensive and lengthy operation.
+To strengthen hashing algorithms, a \textit{salt} can be utilized. A salt is essentially a randomly picked string of bytes that is concatenated to data to be hashed. The use of different salts with the same sequence of data creates a different hash (since the total input the hash function is different). The same hash will be calculated if the same salt is used with the same sequence of data. Using salts is a useful technique in preventing \textit{dictionary attacks}, where an attacker compares a precomputed list of inputs and their hashes with a target hash of some unknown data in an attempt to find out what the unknown data is. Dictionary attacks are common on password hashes, because, upon success, the attacker will discover the password used to generate the password hash. With a salt, the precomputed hash for the data will not match. The list of hashes cannot be easily recomputed with the salt, since hashing is designed to be an expensive and lengthy operation.
 
 \textit{Convergent encryption} is a technique used in pStore and PeerStore to ensure confidentiality \cite{pStore, PeerStore}. Convergent encryption involves taking the hash of the unencrypted data, and then using the hash as the symmetric key to encrypt the data. The main benefit of using convergent encryption is that the same data will be encrypted the same way each time, so identical blocks in the network can be shared between peers in their encrypted form, without the need for a complicated key exchange protocol. Convergent encryption is illustrated in figure \ref{fig:convergent}.
 
@@ -243,11 +249,11 @@ This section discusses the infrastructure and the protocols of our system that a
   \item[Peer:] A particpant who is sending replicas of their data into the network for safekeeping. We refer to this process as \textit{backing up} data.
   \item[Node:] A participant who is storing a replica for a peer. We refer to this process as \textit{storing} data.
 \end{description}
-  
-This terminology is used to give context. It is very likely that every participant in the system will eventually serve both roles (perhaps even simultaneously), but we refer to them as \textit{peer} or \textit{node} depending on what role they are playing in a given situation. A peer plays the role of the client, whereas a node plays the role of a server.\footnote{We may qualify each term to help give context. For example, we may say "\ldots a \textit{replication} node \ldots" to emphasize the fact that the node is storing a replica.} When there is no context, we use the terms interchangeably. 
+
+This terminology is used to give context. It is very likely that every participant in the system will eventually serve both roles (perhaps even simultaneously), but we refer to them as \textit{peer} or \textit{node} depending on what role they are playing in a given situation. A peer plays the role of the client, whereas a node plays the role of a server.\footnote{We may qualify each term to help give context. For example, we may say "\ldots a \textit{replication} node \ldots" to emphasize the fact that the node is storing a replica.} When there is no context, we use the terms interchangeably.
 % TODO find/replace all uses of replicant node with replication node or vice versa
 
-Note the emphasis of the action taken by each: a peer is said to \textit{back up} data, and a node is said to \textit{store} a replica of the peer's data. 
+Note the emphasis of the action taken by each: a peer is said to \textit{back up} data, and a node is said to \textit{store} a replica of the peer's data.
 
 PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unneccessary to immediately find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the low possibility of not being able to recover data that is backed up. Note that this situation is unavoidable in \textbf{all} backup systems. By relaxing the aforementioned requirement like PeerStore, we leverage this fact by sacrificing theoretical availability for performance and usability. See section \ref{subsec:TheMetadataLayer_sec:SystemDesign} for the discussion of the parameterization of these variables in our implementation. See section \ref{} for our methodology of testing the parameter. Finally, see section \ref{} for a comparison of the results of different values for the parameter.}
 % TODO add references once we know section names
@@ -267,7 +273,7 @@ A \textit{metadata record} is used for three purposes:
 
 \begin{enumerate}
   \item Find the IP address of the node it describes
-  \item Determine if the node it describes should be used to store one's data 
+  \item Determine if the node it describes should be used to store one's data
   \item Find the nodes to which the peer it describes is backing up\footnote{To clarify: each metadata record belongs to single entity. In the first two use cases, a peer looking to back up data queries for the node's metadata record. In the last use case, a peer starts the data recovery process by querying for its own metadata record. The entity requesting the metadata record (and the reason for doing so) changes based on the context.}
 \end{enumerate}
 
@@ -282,7 +288,7 @@ A metadata record stores the following information for each node in the system: 
 
 \begin{table}
 \begin{center}
-    \begin{tabular}{| l | l |} 
+    \begin{tabular}{| l | l |}
     \hline
     Node IP & The most recent IP address used by this node\\ \hline
     Blacklisters & List of peers who consider this node unreliable\\ \hline
@@ -358,7 +364,7 @@ We have designed our system to be modular. We realize that future work on our sy
   \caption{The design of our system}
 \end{figure}
 
-A high-level overview of our system is offered in figure \ref{fig:SystemDesign}. We explain each of these components in the following sections. 
+A high-level overview of our system is offered in figure \ref{fig:SystemDesign}. We explain each of these components in the following sections.
 
 \subsection{The Data Layer}
 % TODO: find out how many unique secret prefixes there are, factoring that into the calculation of how many unique addresses there are.
@@ -456,4 +462,4 @@ The Metadata Controller also queries the metadata layer to determine if any peer
 
 \end{thebibliography}
 
-\end{document}
+\end{document} 
