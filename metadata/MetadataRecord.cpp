@@ -30,6 +30,7 @@ uint64_t MetadataRecord::getTotalBackupSize() {
 
 bool MetadataRecord::addBackupFile(std::string fileID, std::string nodeID, uint64_t size) {
   if (backedUpFiles_.count(fileID) == 1) {
+    backedUpFiles_[fileID].push_back(FileMetadata(nodeID, size, std::time(NULL)));
     return false;
   } else {
     backedUpFiles_[fileID].push_back(FileMetadata(nodeID, size, std::time(NULL)));
@@ -48,6 +49,27 @@ bool MetadataRecord::updateBackupFileSize(std::string fileID, uint64_t size) {
       (*backupNodeIt).size = size;
     return true;
   }
+}
+
+bool MetadataRecord::removeBackup(const std::string& fileID,
+				  const std::string& nodeID) {
+  bool result = false;
+  if (backedUpFiles_.count(fileID)) {
+    int preOpSize = backedUpFiles_[fileID].size();
+    backedUpFiles_[fileID].remove_if(
+      [&nodeID](const FileMetadata& data) -> bool {
+	std::cout << "MetadataRecord::removeBackup compare: "
+		  << "data.nodeID = " << data.nodeID
+		  << ", nodeID = " << nodeID << std::endl;
+	return data.nodeID == nodeID;
+      });
+    int postOpSize = backedUpFiles_[fileID].size();
+    result = (preOpSize == (postOpSize + 1));
+    if (!result)
+      std::cerr << "in MetadataRecord::removeBackup: preOpSize = " << preOpSize
+		<< ", postOpSize = " << postOpSize << std::endl;
+  }
+  return result;
 }
 
 uint64_t MetadataRecord::getTotalStoreSize() {
@@ -89,7 +111,7 @@ std::string MetadataRecord::serialize() {
     if (PRUNE_AGE >= std::time(NULL) - el.second) {
       Json::Value node;
       node["nodeID"] = el.first;
-      node["timestamp"] = std::to_string(el.second);
+      node["timestamp"] = static_cast<Json::Int>(el.second);
 
       root["blacklisters"].append(node);
     } else {
@@ -171,6 +193,18 @@ std::list<FileMetadata>::iterator MetadataRecord::backupNodeIteratorBegin
 std::list<FileMetadata>::iterator MetadataRecord::backupNodeIteratorEnd
   (const std::string& fileID) {
   return backedUpFiles_[fileID].end();
+}
+
+std::set<std::string> MetadataRecord::getStoredFileIDs() {
+  std::map<std::string, FileMetadata>::iterator storedIt;
+  std::map<std::string, FileMetadata>::iterator storedEnd =
+    storedFiles_.end();
+  std::set<std::string> result;
+  
+  for (storedIt = storedFiles_.begin(); storedIt != storedEnd; storedIt++)
+    result.insert(storedIt->first);
+  
+  return result;
 }
 
 } // namespace metadata

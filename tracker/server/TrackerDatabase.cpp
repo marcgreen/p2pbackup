@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <cstdlib>
 #include <ctime>
 #include <iostream>
 #include <stdexcept>
@@ -13,7 +14,12 @@ namespace tracker { namespace server {
 
 std::string TrackerDatabase::findClosest(const std::string& id) {
   std::unique_lock<std::mutex> accessLock(accessMutex_);
-  // Start in the middle for binary search
+  // TODO: This is a hack, since peers are only finding 3 out of 5
+  // nodes on a small scale.
+  int numNodes = sortedIDs_.size();
+  int chosenNode = rand() % numNodes;
+  return sortedIDs_[chosenNode];
+  /*// Start in the middle for binary search
   int min = 0, max = sortedIDs_.size() - 1;
   int currentPos;
   bool found = false, done = false;
@@ -42,9 +48,9 @@ std::string TrackerDatabase::findClosest(const std::string& id) {
   }
   
   std::cout << "Found closest " << currentPos << " "
-	    << sortedIDs_[currentPos] << std::endl;
+  << sortedIDs_[currentPos] << std::endl;
   
-  return sortedIDs_[currentPos];
+  return sortedIDs_[currentPos];*/
 }
 
 metadata::MetadataRecord&
@@ -84,7 +90,7 @@ bool TrackerDatabase::backupFile(const std::string& peerID,
     if (!records_[peerID].addBackupFile(fileID, nodeID, size))
       std::cout << "This is not the first time that fileID " << fileID
 		<< " has been backed up" << std::endl;
-		result = records_[nodeID].addStoreFile(fileID, peerID, size);
+    result = records_[nodeID].addStoreFile(fileID, peerID, size);
   }
   return result;
 }
@@ -107,7 +113,28 @@ bool TrackerDatabase::updateFileSize(const std::string& peerID,
       std::cout << "result = " << result << std::endl;
     }
   } else {
-    std::cout << "Hey" << std::endl;
+    std::cerr << "updateFileSize: invalid peer ID" << std::endl;
+  }
+  return result;
+}
+
+bool TrackerDatabase::removeBackup(const std::string& peerID,
+				   const std::string& nodeID,
+				   const std::string& fileID) {
+  std::unique_lock<std::mutex> accessLock(accessMutex_);
+  bool result = false;
+  if (records_.count(peerID) == 1 && records_.count(nodeID) == 1) {
+    result = true;
+    if (!records_[peerID].removeBackup(fileID, nodeID)) {
+      result = false;
+      std::cerr << "MetadataRecord::removeBackup failed" << std::endl;
+    }
+    if (!records_[nodeID].updateStoreFileSize(fileID, 0)) {
+      result = false;
+      std::cerr << "MetadataRecord::updateStoreFileSize failed" << std::endl;
+    }
+  } else {
+    std::cerr << "Invalid peer ID or node ID" << std::endl;
   }
   return result;
 }

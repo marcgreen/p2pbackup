@@ -63,7 +63,12 @@ class Peer {
   // Give potential replicant node at nodeIP the secret to store.
   // Return whether or not they ACK
   bool askNodeToBackup(std::string nodeIP, std::string secret);
-
+  
+  // Unregisters nodeID as a backup for the file with read/write secret
+  // rwSecret.
+  bool unregisterBackupNode(const std::string& nodeID,
+			    const std::string& rwSecret);
+  
   // Create the given directory if it's not already created
   void createDirIfNeeded(std::string path);
   
@@ -74,6 +79,9 @@ class Peer {
   // Check on all nodes that this peer uses to backup, and move any backups if
   // necessary. This is called by the MetadataController
   void checkOnBackupNodes();
+  
+  // Check to see if any peers have removed you from their backup nodes.
+  void checkMetadataForStoreChanges();
   
   static const int ENCRYPTION_SECRET_LENGTH;
   static const int DEFAULT_BTSYNC_PORT;

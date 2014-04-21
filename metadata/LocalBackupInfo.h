@@ -30,7 +30,7 @@ class LocalBackupInfo {
         "fileID1": {
 	  "size": the_size,
 	  "rwSecret": the_read_write_secret,
-	  "nodes": [{"ID":nodeID, "IP":nodeIP, "reliability"}, ...]
+	  "nodes": {nodeID:{"IP":nodeIP, "reliability":reliability}, ...]
 	}
 	...
       }

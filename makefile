@@ -1,9 +1,19 @@
 
 # -lcurl -lcurlpp -Wl,-Bsymbolic-functions -Wl,-z,relro
 
+# /usr/lib/x86_64-linux-gnu/libcurl.a -Wl,-Bsymbolic-functions -Wl,-z,relro -lidn -lssl -lcrypto -llber -lldap -lrt -lgssapi_krb5 -lssl -lcrypto -lz -lrtmp -lz -lgnutls
+
+CURLPP_LDFLAGS = -L/usr/local/lib -lcurlpp -lstdc++ -L/usr/lib/x86_64-linux-gnu -lcurl -Wl,-Bsymbolic-functions -Wl,-z,relro /usr/lib/x86_64-linux-gnu/libcurl.a -Wl,-Bsymbolic-functions -Wl,-z,relro -lidn -lssl -lcrypto -llber -lldap -lrt -lgssapi_krb5 -lssl -lcrypto -lz -lrtmp -lz -lgnutls
+JSONCPP_LDFLAGS = /usr/local/lib/libjsoncpp.a
+BOOST_LDFLAGS = /usr/lib/x86_64-linux-gnu/libboost_system.a
+BOOSTFS_LDFLAGS = /usr/lib/x86_64-linux-gnu/libboost_filesystem.a
+
 CFLAGS = -c -std=c++11 -I.
-CLIENT_LDFLAGS = -pthread -Lcore -lbtcore -Ltracker -ltrackerclient -L/usr/local/lib /usr/local/lib/libjsoncpp.a peer/peer.o -Lmetadata -lmeta btsync/BTSyncInterface.o -lcurl -lcurlpp /usr/lib/x86_64-linux-gnu/libboost_system.a /usr/lib/x86_64-linux-gnu/libboost_filesystem.a
-TRACKER_LDFLAGS = -pthread -Ltracker -ltrackerserver -Lcore -lbtcore /usr/local/lib/libjsoncpp.a -Lmetadata -lmeta /usr/lib/x86_64-linux-gnu/libboost_system.a
+
+CLIENT_LDFLAGS = -pthread -Lcore -lbtcore -Ltracker -ltrackerclient $(JSONCPP_LDFLAGS) peer/peer.o -Lmetadata -lmeta btsync/BTSyncInterface.o $(CURLPP_LDFLAGS) $(BOOST_LDFLAGS) $(BOOSTFS_LDFLAGS)
+
+TRACKER_LDFLAGS = -pthread -Ltracker -ltrackerserver -Lcore -lbtcore $(JSONCPP_LDFLAGS) -Lmetadata -lmeta $(BOOST_LDFLAGS)
+
 CC = g++
 LD = $(CC)
 CLIENT_TARGET = btbackup

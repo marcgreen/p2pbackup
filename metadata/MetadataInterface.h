@@ -45,6 +45,10 @@ class MetadataInterface {
   // This will happen when a user backs up a file and modifies it in the future. This is
   //   used to reflect deletions, too.
   virtual void updateFileSize(std::string peerID, std::string fileID, uint64_t size) = 0;
+  
+  // Unregisters the node with ID nodeID as a storage location for the node
+  // with ID peerID's file with fileID.
+  virtual void removeBackup(std::string peerID, std::string nodeID, std::string fileID) = 0;
 
  private:
 
