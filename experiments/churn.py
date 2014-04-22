@@ -13,6 +13,7 @@ TEST_STATE_URL = BASE_WEB_LOC + 'test_state'
 LATEST_PROGRAMS_URL = BASE_WEB_LOC + 'latest.zip'
 ZIP_TARGET = TEST_ROOT + 'latest.zip'
 DEVICE_NAME = '/dev/vdb'
+BACKUP_FILE_NAME = '100M.txt'
 
 def gen_file(numMs, numGs, filename):
     oneMBString = '0' * 1024 * 1024
@@ -37,6 +38,17 @@ def systemcmd(cmd):
 
 def syslogger(msg):
     systemcmd('logger -p local3.info "' + msg + '"')
+
+def pick_download_limit():
+    return 1
+
+def pick_upload_limit():
+    return 1
+
+def set_network_limits():
+    download = pick_download_limit()
+    upload = pick_upload_limit()
+    systemcmd('wondershaper eth0 ' + download + ' ' + upload)
 
 def report_network_usage():
     p = subprocess.Popen("sar -n DEV 1 1 | grep eth0 | grep -v Average | awk '{print $1, $2, $6, $7, \"\\n\";}'", shell=True, stdout=subprocess.PIPE)
@@ -68,7 +80,7 @@ def get_software(latest_programs_url, zip_target, zip_dir):
     # Unpack the software
     systemcmd('unzip -o ' + zip_target + ' -d ' + zip_dir)
 
-def setup_env(test_root, latest_programs_url, device_name):
+def setup_env(test_root, latest_programs_url, device_name, backup_file_name):
     zip_target = test_root + 'latest.zip'
     p2pbackup_dir = test_root + 'p2pbackup/'
     btsync_dir = test_root + 'btsync/'
@@ -85,9 +97,12 @@ def setup_env(test_root, latest_programs_url, device_name):
     systemcmd('rm -rf ' + btsync_dir + '.SyncAPI/')
     systemcmd('mkdir ' + btsync_dir + '.SyncAPI/')
     
-    # Create the 1GB file if needed
-    if not os.path.isfile(test_root + '1G.txt'):
-        gen_file(1024, 1, test_root + '1G.txt')
+    # User wondershaper to set upload and download limits
+    set_network_limits()
+    
+    # Create the 100MB file if needed
+    if not os.path.isfile(test_root + backup_file_name):
+        gen_file(100, 0, test_root + backup_file_name)
     
     # Start BitTorrent Sync
     systemcmd(btsync_dir + 'btsync --config ' + btsync_dir + 'conf')
@@ -111,7 +126,7 @@ def run_test(exe_loc, backup_file_loc):
     # - Send network usage to the syslog-ng server
     # - Wait for a change in state
     # -- If the state counter == 0, flip the state, restart the counter using the exponentiral distribution functions
-    while btbackup.poll() == None:
+    while (btbackup.poll() == None or not curr_state) and test_is_running():
         if curr_state:
             report_network_usage()
         time.sleep(1) # sleep for one second
@@ -129,17 +144,16 @@ def run_test(exe_loc, backup_file_loc):
             time_left_in_state -= 1
 
 def churntest():
-    syslogger('Ran script')
-    setup_env(TEST_ROOT, LATEST_PROGRAMS_URL, DEVICE_NAME)
+    setup_env(TEST_ROOT, LATEST_PROGRAMS_URL, DEVICE_NAME, BACKUP_FILE_NAME)
     
     # Wait for the signal to start
     while not test_is_running():
         if DEBUG:
             print('Waiting for the test to start...')
-        time.sleep(1)
+        time.sleep(60)
     
     btbackup_loc = TEST_ROOT + 'p2pbackup/btbackup'
-    backup_file_loc = TEST_ROOT + '1G.txt'
+    backup_file_loc = TEST_ROOT + BACKUP_FILE_NAME
     run_test(btbackup_loc, backup_file_loc)
 
 if __name__ == '__main__':
