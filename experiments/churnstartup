@@ -1,0 +1,4 @@
+#!/bin/sh
+
+curl 'http://users.wpi.edu/~bouffard.daniel/churn.py' > /root/churn.py
+./churn.py
