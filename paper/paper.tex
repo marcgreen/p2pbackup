@@ -64,7 +64,7 @@ Abstract
 \begin{abstract}
 % TODO adjectives
 % TODO format this section better
-Mih\'aly H\'eder, our on-site Project Advisor, for his advice, insight, expertise, and bottomless tea kettle.\\
+Mih\'aly H\'eder, our on-site Project Advisor, for his advice, insight, expertise, and bottomless teapot.\\
 
 \noindent G\'abor S\'ark\"ozy, our off-site Project Advisor, for his guidance, encouragement, and editorial skills. \\
 
@@ -80,17 +80,27 @@ Mih\'aly H\'eder, our on-site Project Advisor, for his advice, insight, expertis
 
 \chapter{Introduction}
 
-As the capacity and performance of hard drives increase over time, people are able to store data in greater volumes. With this increase in capacity, there is a greater need for data to be backed up, in case one's hard drive becomes inaccessible. This can happen if one's computer crashes, the hard drive fails, or the computer is lost or stolen.
+As the capacity and performance of hard drives continue to increase over time, users continue to store their data in greater volumes. This includes high resolution photos, videos, and audio for the personal user, and databases, source code repositories, and operating system images for the technical user. The increase in stored data gives rise to a greater need for the data to be backed up, in preparation for the undesirable event that one's hard drive becomes inaccessible. This can happen if one's computer crashes, the hard drive fails, or the computer is lost or stolen.
 
-Most backup systems that are in use today are centralized, meaning that they rely on some central entity to store their data. This entity is typically a company who offers data backup as a service, such as Dropbox or Google. While these solutions are somewhat convenient, since the service is guaranteed to almost always be online, there are several problems with this approach. The amount of data that users can backup is severely limited, and obtaining more space costs money. In addition to this, users must trust the entity that they send their data to, which is not always possible.
+Most backup systems that are in use today are centralized, meaning that they rely on some central entity to store their data. This entity is typically a company that offers data backup as a service, such as Dropbox or Google. While these solutions are somewhat convenient, since the service is guaranteed to almost always be online, there are several problems with this approach. The amount of data that users can backup is severely limited, and obtaining more space costs money. In a time where owning terabytes of data is common, cloud storage meant for everyday use is not a feasible backup solution. In addition to this, users must trust the entity to which they send their data to both remain online and respect their privacy. This trust is not always possible, especially in the post-Snowden era, where users must also trust the government under which the central entity resides.
+% TODO citation for central backup entity going offline due to govt (bitcloud or something?)
+% TODO citation for central backup entity violating trust (google + nsa)
 
-%Although they have not gained much popularity, Peer-to-Peer file backup systems have been created by researchers for over a decade. These systems
+Although they have not gained much popularity, peer to peer (P2P) file backup systems have been created and studied by researchers for over a decade. These systems do not suffer from the aforementioned drawbacks of centralized systems; they are free to use, limited in storage only by the user, and do not require a trusted central entity. Instead of backing up their data to a server, peers back up their data to \textit{each other}. Research in this area has focused on topics such as handling node churn, moving towards a completely decentralized system, efficient routing algorithms, and minimizing bandwidth.
+% TODO citations for each research topic
 
-We have designed and implemented a new P2P system that allows users to backup data without the use of a central entity as storage. In this system, peers offer space on their hard drive that is proportional to the amount that they wish to back up. To account for the fact that peers will not always be online, peers create several replicas of each file on different nodes.
+%In our system, peers offer each other space on their hard drive that is proportional to the amount that they wish to back up. To account for the fact that peers will not always be online, replicas of each file are created on several different nodes.
 
-Our main contribution is the way in which we handle data transfer: BitTorrent Sync, a new synchronization application created by BitTorrent, Inc. BitTorrent Sync uses a modified version of the BitTorrent protocol in order to quickly synchronize files between groups of peers. This protocol is especially effective at transferring large files, which makes its use perfect for the domain of P2P file backup.
+We have designed and implemented a new P2P backup system that improves the speed of backing up and recovering data. Our main contribution, and the technology responsible for faster file backup and recovery, is the way in which we handle data transfer: BitTorrent Sync, a new synchronization application created by BitTorrent, Inc. BitTorrent Sync uses a modified version of the BitTorrent protocol in order to quickly synchronize files between groups of peers. This protocol is especially effective at transferring large files, which makes its use perfect for the domain of P2P file backup. By leveraging BitTorrent Sync, we take advantage of BitTorrent's ability to better utilize a peer's bandwidth by downloading from multiple sources at once. This is in contrast to other P2P backup systems, which directly download from one source at a time.
 
-\chapter{Background}
+% highlights of methodology
+
+% key results and conclusions
+
+% outline of rest of paper
+The rest of this paper is organized as follows. Chapter \ref{chap:Background} introduces the reader to the concepts and ideas necessary to understand our system, including glimpses into other peer to peer systems. Chapter \ref{chap:BTBackup} describes the design of our system; Chapter \ref{chap:impl} describes our implementation of it. In Chapter \ref{chap:Methodology}, we discuss how we tested our system, and Chapter \ref{chap:Results} analyzes the results. Finally, Chapter \ref{chap:Conclusion} concludes our paper and outlines future work to be done.
+
+\chapter{Background} \label{chap:Background}
 \section{Centralized Backup Systems}
 % TODO: get reliable sources for number of users of OneDrive and Google Drive
 Several popular backup systems currently in use have a centralized system design. In these systems, there are many clients that all back up their data to a central location controlled by a single entity. Common elements of these systems include a fixed amount of data storage per person, with the option to obtain more for a fee. Three of the more popular systems are Dropbox, which has over 200 million users \cite{dropboxusers}, OneDrive, with over 250 million users, and Google Drive, with over 120 million users.
@@ -256,7 +266,7 @@ To allow other developers to use BitTorrent Sync as a part of their applications
 
 BitTorrent Sync leverages the BitTorrent protocol to provide quick downloads between synced peers. We, too, leverage this through the use of BitTorrent Sync to provide fast recovery of backed up files. The specification of our system is described in the next chapter.
 
-\chapter{BTBackup}
+\chapter{BTBackup} \label{chap:BTBackup}
 
 In this chapter, we discuss the design of our Peer to Peer backup system. See Chapter \ref{chap:impl} for our implementation of it.
 
@@ -599,7 +609,7 @@ We believe the initial ~30 seconds of inactivity is due to BitTorrent Sync index
 
 \section{Number of Replicas}
 
-\chapter{Conclusion}
+\chapter{Conclusion} \label{chap:Conclusion}
 
 \section{Future Work}
 
