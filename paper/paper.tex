@@ -164,7 +164,7 @@ PeerStore handles this via a combined trading and challenge system. When a peer 
 
 \begin{figure}
   \centering
-  \includegraphics[scale=0.75]{PeerStoreTrading}
+  \includegraphics[scale=0.75]{figures/PeerStoreTrading}
   \caption{Trading protocol of PeerStore \cite{PeerStore} \label{fig:peerStoreTrading}}
 \end{figure}
 
@@ -192,7 +192,7 @@ To strengthen hashing algorithms, a \textit{salt} can be utilized. A salt is ess
 
 \begin{figure} \label{fig:convergent}
   \centering
-  \includegraphics[scale=0.75]{ConvergentEncryption}
+  \includegraphics[scale=0.75]{figures/ConvergentEncryption}
   \caption{Convergent Encryption from PeerStore}
 \end{figure}
 
@@ -216,7 +216,7 @@ The cost of routing is acceptable because the usefulness of distributing the sto
 DHTs play a major role in many P2P systems. They serve as the means through which peers can find either data or other peers, depending on the system; our system uses a DHT for the latter. In conjunction with the structured overlay network, the DHT allows for peers to discover each other. This is primarily done when looking for peers to send backups to. We discuss how we use a DHT in more detail in Section \ref{sec:DataExchange}.
 
 \section{The BitTorrent Protocol} \label{sec:TheBitTorrentProtocol}
-BitTorrent is a peer to peer protocol designed for fast file sharing. A peer who wishes to share a file creates a .torrent file containing metadata about the file to be shared. This peer is known as the file's initial \textit{seeder}, or uploader, and through the use of a BitTorrent client, starts \textit{seeding}, or uploading, the file. When a peer acts as a seeder, its sole purpose is to share the file that it is seeding with other peers. Peers who wish to download the file must acquire its .torrent file through an out-of-band channel, which is often a torrent indexer. Peers use the .torrent file to locate the initial seeder through either a centralized tracker or a DHT. These peers then connect to the initial seeder and start downloading the file. These peers are known as \textit{leechers} until they possess a full copy of the file, which is when they, themselves, become seeders.
+BitTorrent is a peer to peer protocol designed for fast file sharing. A peer who wishes to share a file creates a .torrent file containing metadata about the file to be shared. This peer is known as the file's initial \textit{seeder}, or uploader, and through the use of a BitTorrent client, starts \textit{seeding}, or uploading, the file. When a peer acts as a seeder, its sole purpose is to share the file that it is seeding with other peers. Peers who wish to download the file must acquire its .torrent file through an out-of-band channel, which is often a torrent indexer. Peers use the .torrent file to locate the initial seeder through either a centralized tracker or a DHT. These peers then connect to the initial seeder and start downloading the file. These peers are known as \textit{leechers} until they possess a full copy of the file, which is when they, themselves, become seeders. A \textit{swarm} refers to all entities, seeders and leechers, participating in a given torrent.
 
 % TODO: add citation and more information about how much better BitTorrent is vs. direct download. Actually, add a lot of citations to this paragraph
 While this is more complex than hosting a file on a server and having users download it, with enough peers there is a huge performance gain with respect to download speeds. The reason this works is due to the differences in upload and download speeds on the Internet; with most Internet connections offered to consumers, the upload bandwidth is much smaller than the download bandwidth. This means that, in the scenario where one machine is transferring data over the Internet to another machine, download speeds would be severely limited by the upload bandwidth of the uploader. If multiple machines are trying to download from the same uploader, the download speeds will be even worse, as the upload bandwidth is being shared.
@@ -371,7 +371,7 @@ We have designed our system to be modular. We realize that future work on our sy
 
 \begin{figure}
   \centering
-  \includegraphics[scale=0.4]{SystemDesign}
+  \includegraphics[scale=0.4]{figures/SystemDesign}
   \caption{The design of our system \label{fig:SystemDesign}}
 \end{figure}
 
@@ -434,7 +434,7 @@ The Metadata Controller also queries the metadata layer to determine if any peer
 
 \chapter{Methodology} \label{chap:Methodology}
 
-In order to thoroughly evaluate our system, we first identified several variables that could lead to differences in performance. These variables are:
+In order to thoroughly evaluate our system, we identified several variables that could lead to differences in performance. These variables are:
 
 \begin{itemize}
 \item Size of each file being backed up
@@ -445,7 +445,7 @@ In order to thoroughly evaluate our system, we first identified several variable
 \item Number of malicious nodes
 \end{itemize}
 
-From these variables, we derived a set of test scenarios which allowed us to see how each of them affect the performance of the system. While they are specific to our system, they allow us to evaluate the strengths and weaknesses of BitTorrent Sync (and, by extension, BitTorrent) as the data transport mechanism in a peer-to-peer backup system.
+From these variables, we derived a set of test scenarios which allowed us to see how each of them affects the performance of the system. While they are specific to our system, they allow us to evaluate the strengths and weaknesses of BitTorrent Sync (and, by extension, BitTorrent) as the data transport mechanism in a peer-to-peer backup system.
 
 The following sections describe how we performed our testing. For the results of each test scenario, see Section \ref{chap:Results}.
 
@@ -473,7 +473,7 @@ The following sections describes each test scenario, as well as how we performed
 In this scenario, we tested how our system handles a constant amount of data spread out across a varying number of files. The goal of this test is twofold. First, it allows us to test the capabilities of BitTorrent Sync in handling a large number of backups. From the data gathered here, it is possible to determine how well BitTorrent Sync would scale for use in a production system, where thousands of users could each be backing up thousands of files of varying sizes. Second, it allows us to measure the performance of BitTorrent against different file sizes. Since the use case for BitTorrent is typically downloading large files, it is important to determine whether or not our system will perform well when users try to backup many small files, should it be used in a production environment.
 
 % TODO: Maybe we should not mention the 1MB test at all.
-Our tests for this scenario used 8 virtual machines in SZTAKI Cloud: 1 peer, 5 nodes, 1 tracker, and 1 syslog-ng server. To have a wide range of file sizes, we tested with 1MB, 10MB, 100MB, and 1GB files. In each test instance, the total amount of data backed up was 1GB, so 1000 files, 100 files, 10 files, and 1 file were backed up, respectively. The procedure for each test instance is as follows:
+Our tests for this scenario used 8 virtual machines in SZTAKI Cloud: 1 peer, 5 nodes, 1 tracker, and 1 syslog-ng server. To have a wide range of file sizes, we tested with 10MB, 100MB, and 1GB files. In each test instance, the total amount of data backed up was 1GB, so 100 files, 10 files, and 1 file were backed up, respectively. The procedure for each test instance is as follows:
 
 \begin{enumerate}
   \item Clear the log file on the syslog-ng server. This is to remove the data of previous test instances.
@@ -491,10 +491,12 @@ Our tests for this scenario used 8 virtual machines in SZTAKI Cloud: 1 peer, 5 n
 
 At the end of this sequence, the peer has successfully used our system to backup its files and retrieve them when needed. On the peer and the nodes, the process was orchestrated by a script. Logging occurs during backup creation and retrieval. During both of these phases, the number of bytes being downloaded and uploaded was sampled once per second. This is the data that is sent to the log server. Sampling was achieved by using a series of shell commands to obtain the information and to put it in the useful format. The exact command is as follows:
 
-% TODO: This line goes off the right side of the page in the PDF.
 \begin{verbatim}
-sar -n DEV 1 1 | grep eth0 | grep -v Average | awk '{print $1, $2, $6, $7, "\n";}'
+sar -n DEV 1 1 | grep eth0 | grep -v Average | \
+  awk '{print $1, $2, $6, $7, "\n";}'
 \end{verbatim}
+
+The \textit{sar} command retrieves the desired network statistics, from which the other commands extract the specific data we are interested in.
 
 \subsection{Effects of Churn} \label{subsec:EffectsofChurn_sec:TestScenarios_chap:Methodology}
 
@@ -511,6 +513,81 @@ To create churn, we have peers enter and leave the network at varying time inter
 This test scenario produced data so that we could determine how the number of replicas influences the recoverability of backed up files, as well as the speed of backup recovery. This is done in the presence of some constant amount of churn, in order to make the tests more realistic. Our testing procedure was very similar to the previous scenario: we created a network with 100 peers that backed up 1GB each. Instead of changing the churn rate between test instances, however, we changed the number of replicas that each peer attempts to find when creating a backup of its file. We started with 3 replicas per file in the first test instance and increased that number to 10 in the last instance. By having this much variation, we were able to see how much of a gain or loss in performance existed when replicas were added or removed. From this, we were able to see which replica counts do not offer enough of a performance gain to warrant the creation of that many replicas. This is especially important to our system, because as a peer creates more replicas, it is required to store more data from other peers.
 
 \chapter{Results} \label{chap:Results}
+
+In this chapter, we present the reader with the results of the test scenarios outlined in Section \ref{sec:TestScenatios_chap:Methodology} and their analyses.
+
+\section{File Size versus Number of Files} \label{sec:FileSizeversusNumberofFiles_chap:Results}
+
+\subsection{Data Recovery Speed from Peer's Perspective} \label{subsec:DataRecoverySpeedfromPeersPerspective}
+
+Figure \ref{fig:PeerRecoverySpeed} shows the speed of a peer recovering 1 GB of data in three different situations. Each situation differs in how many files comprise the 1 GB payload: one 1 GB file, ten 100 MB files, and one hundred 10 MB files. The moving average of each data series is shown instead of the raw data to reduce visual clutter; the trends are analogous.
+
+\begin{figure}
+  \centerline{\includegraphics[scale=.8]{figures/PeerRecoverySpeed}}
+  \caption{The speed at which a peer recovered 1 GB worth of data. \label{fig:PeerRecoverySpeed}}
+\end{figure}
+
+It is clear that the peer downloaded its data faster when the data was comprised of fewer files. The peer downloaded the fastest when there was only one file to recover, and the slowest when there were one hundred files to recover. This aligns with the theory behind the BitTorrent protocol, which is designed to transfer larger files quicker.
+
+\begin{table}
+\begin{center}
+    \begin{tabular}{| l | l | l | l |}
+    \hline
+    & One 1 GB File & Ten 100 MB files & Hundred 10 MB files \\ \hline
+    Mean & 8318.52 & 7210.29 & 5405.28 \\ \hline
+    Standard Deviation & 3009.26 & 3444.88 & 1738.38 \\ \hline
+    Median & 9470.31 & 8599.82 & 5923.23\\ \hline
+    Max & 11691.1 & 10926.5 & 8290.26\\ \hline
+    \end{tabular}
+    \caption{Statistics on Peer Data Recovery Speed (in kB/s)}
+    \label{tab:PeerRecoverySpeed}
+\end{center}
+\end{table}
+
+It is worth noting that the increase in speed does not scale linearly with the size of the file. Although the size of the files increased by the same order of magnitude between the trials, the increase in recovery speed seems to have diminishing returns. Table \ref{tab:PeerRecoverySpeed} provides relevant statistics. The mean recovery speed increased by 33\% between the "Hundred 10 MB Files" trial and the "Ten 100 MB Files" trial. Compare this to an increase of 15\% between the "Ten 100 MB Files" trial and the "One 1 GB File" trial. Furthermore, the total time it took to recover the file between the former trials improves by 60 seconds, whereas the recovery time between the latter trials improves by only 3 seconds.
+
+\subsection{Data Recovery Speed from Nodes' Perspective}
+
+Figure \ref{fig:NodeRecoverySpeed} shows the combined speed at which the nodes are uploading a 1 GB file to a peer. A moving average is used to reduce visual clutter. We can see a significant improvement between the combined upload speed achieved by all nodes compared to the individual upload speeds of each node.
+
+\begin{figure}
+  \centerline{\includegraphics[scale=.8]{figures/NodeRecoverySpeed}}
+  \caption{The combined speed of nodes uploading 1 GB worth of data to a peer. \label{fig:NodeRecoverySpeed}}
+\end{figure}
+
+If the peer was restricted to recovering its data from only one node, its download speed would be limited by the node's upload speed. Table \ref{tab:NodeRecoverySpeed} lists the relevant upload speed statistics of the nodes. At best, the peer could download at an average of 2813 kB/s. However, by using BitTorrent as a data transfer protocol instead of a direct download, the peer's download speed is limited by the \textit{sum} of each node's upload speed: 7981 kB/s. This means, on average, the peer can theoretically download 280\% faster!\footnote{This number is based on the mean. The median suggests that the peer can theoretically download 207\% faster.}
+
+\begin{table}
+\begin{center}
+    \begin{tabular}{| l | l | l | l | l | l |}
+    \hline
+    & Node 1 & Node 2 & Node 3 & Node 4 & Node 5 \\ \hline
+    Mean & 2813.57 & 1441.16 & 1780.92 & 1417.63 & 530.91 \\ \hline
+    Standard Deviation & 2316.67 & 1765.76 & 1758.64 & 1837.77 & 913.80 \\ \hline
+    Median & 2281.84 & 703.98 & 1169.43 & 384.91 & 195.90 \\ \hline
+    Max & 9000.08 & 7516.42 & 7600.65 & 7071.78 & 5147.33 \\ \hline
+    \end{tabular}
+    \caption{Statistics on Node Upload Speed (in kB/s)}
+    \label{tab:NodeRecoverySpeed}
+\end{center}
+\end{table}
+
+\subsection{Entities Backing Up a 1 GB File}
+
+Figure \ref{fig:EntityBackupSpeed} shows the speeds at which each participating entity is backing up a 1 GB file.  We use a 20 period moving average to reduce the visual clutter while keeping the overall trends the same.\footnote{The use of a 20 period moving average significantly alters the peaks and valleys of each line. This is acceptable for our purposes because we are only concerned with their existence and relative placements, not their individual details.}
+
+\begin{figure}
+  \centerline{\includegraphics[scale=.8]{figures/EntityBackupSpeed}}
+  \caption{The speed at which each entity backs up a 1 GB file. \label{fig:EntityBackupSpeed}}
+\end{figure}
+
+We confirm that the nodes, in addition to the peer, are actively backing up the peer's file. This is the expected behavior of the BitTorrent protocol, which allows all users in a swarm to share data with each other. BitTorrent Sync, which uses a modified BitTorrent protocol, also seems to leverage this feature. % TODO why is the peer consistently uploading faster than nodes? seeder vs leecher maybe?
+
+We believe the initial ~30 seconds of inactivity is due to BitTorrent Sync indexing the 1 GB file before it can transfer it.
+
+\section{Effects of Churn}
+
+\section{Number of Replicas}
 
 \chapter{Conclusion}
 
