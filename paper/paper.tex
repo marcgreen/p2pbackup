@@ -568,7 +568,7 @@ It is clear that the peer downloaded its data faster when the data was comprised
 
 It is worth noting that the increase in speed does not scale linearly with the size of the file. Although the size of the files increased by the same order of magnitude between the trials, the increase in recovery speed seems to have diminishing returns. Table \ref{tab:PeerRecoverySpeed} provides relevant statistics. The mean recovery speed increased by 41.65\% between the "Hundred 10 MB Files" trial and the "Ten 100 MB Files" trial. Compare this to an increase of 3.43\% between the "Ten 100 MB Files" trial and the "One 1 GB File" trial. Looking at it another way, the total time it took to recover the file between the former trials improves by 40\%, whereas the recovery time between the latter trials improves by only 4.76\%.
 
-\subsection{Data Recovery Speed from Nodes' Perspective}
+\subsection{Data Recovery Speed from Nodes' Perspective} \label{subsec:DataRecoverySpeedfromNodesPerspective}
 
 Figure \ref{fig:NodeRecoverySpeed} shows the combined speed at which the nodes are uploading a 1 GB file to a peer during the file recovery process. A moving average is used to reduce visual clutter. We can see a significant improvement between the combined upload speed achieved by all nodes compared to the individual upload speeds of each node.
 
@@ -596,7 +596,7 @@ If the peer was restricted to recovering its data from only one node, its downlo
 \end{center}
 \end{table}
 
-\subsection{Entities Backing Up a 1 GB File}
+\subsection{Entities Backing Up a 1 GB File} \label{subsec:EntitiesBackingUpa1GBFile}
 
 Figure \ref{fig:EntityBackupSpeed} shows the speeds at which each participating entity is backing up a 1 GB file.  We use a 20 period moving average to reduce the visual clutter while keeping the overall trends the same.\footnote{The use of a 20 period moving average significantly alters the peaks and valleys of each line. This is acceptable for our purposes because we are only concerned with each line's existence and relative placement, not its individual details.}
 
@@ -615,10 +615,14 @@ We believe the initial ~40 seconds of inactivity is due to BitTorrent Sync index
 
 \subsection{Conclusion}
 
-We have seen BitTorrent Sync handle 
+% TODO - do we actually test this now that we aren't doing the 1000x1mb test? may need to remove goal from methodology.
 % 1. how well does btsync handle large number backups? how well will it scale?
-% 2. measure performance of bittorrent against diff file sizes
-% 3. bittorrent faster than direct download?
+
+Section \ref{subsec:DataRecoverySpeedfromPeersPerspective} compared how our system performs when recovering many small files versus few large files. We concluded that there is a large performance gain by recovering fewer, larger files, but the returns diminish between files of size 100 MB and 1 GB.
+
+Section \ref{subsec:DataRecoverySpeedfromNodesPerspective} verified our hypothesis that our system would recover data faster than an equivalent one using a direct download data transfer protocol. Our data estimates that the speed increase could be upwards of 200\%.
+
+Section \ref{subsec:EntitiesBackingUpa1GBFile} showed that our system lessens the Peer's load of backing up a file by distributing the task to the nodes as well. This has the side effect of speeding up the backup process, because nodes upload the data they have at a given time to each other, better utilizing their download bandwidth.
 
 \section{Effects of Churn}
 
