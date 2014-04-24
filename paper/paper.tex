@@ -531,10 +531,13 @@ To create churn, we have peers enter and leave the network at varying time inter
 
 % TODO: Talk about what we actually do, including the control group of no churn.
 
-\subsection{Number of Replicas} \label{subsec:NumberofReplicas_sec:TestScenarios_chap:Methodology}
+% TODO discuss what we want to get out of this scenario, like the first paragraph in other scenario
+
+% Commenting this out b/c we don't do this test
+%\subsection{Number of Replicas} \label{subsec:NumberofReplicas_sec:TestScenarios_chap:Methodology}
 
 % TODO: Talk about the exact distributions used for the constant churn in this scenario.
-This test scenario produced data so that we could determine how the number of replicas influences the recoverability of backed up files, as well as the speed of backup recovery. This is done in the presence of some constant amount of churn, in order to make the tests more realistic. Our testing procedure was very similar to the previous scenario: we created a network with 100 peers that backed up 1GB each. Instead of changing the churn rate between test instances, however, we changed the number of replicas that each peer attempts to find when creating a backup of its file. We started with 3 replicas per file in the first test instance and increased that number to 10 in the last instance. By having this much variation, we were able to see how much of a gain or loss in performance existed when replicas were added or removed. From this, we were able to see which replica counts do not offer enough of a performance gain to warrant the creation of that many replicas. This is especially important to our system, because as a peer creates more replicas, it is required to store more data from other peers.
+%This test scenario produced data so that we could determine how the number of replicas influences the recoverability of backed up files, as well as the speed of backup recovery. This is done in the presence of some constant amount of churn, in order to make the tests more realistic. Our testing procedure was very similar to the previous scenario: we created a network with 100 peers that backed up 1GB each. Instead of changing the churn rate between test instances, however, we changed the number of replicas that each peer attempts to find when creating a backup of its file. We started with 3 replicas per file in the first test instance and increased that number to 10 in the last instance. By having this much variation, we were able to see how much of a gain or loss in performance existed when replicas were added or removed. From this, we were able to see which replica counts do not offer enough of a performance gain to warrant the creation of that many replicas. This is especially important to our system, because as a peer creates more replicas, it is required to store more data from other peers.
 
 \chapter{Results} \label{chap:Results}
 
@@ -558,13 +561,13 @@ It is clear that the peer downloaded its data faster when the data was comprised
     \begin{tabular}{| l | l | l | l |}
     \hline
     & One 1 GB File & Ten 100 MB files & Hundred 10 MB files \\ \hline
-    Mean & 8144.84 & 7874.69 & 5559.32 \\ \hline
-    Standard Deviation & 2564.97 & 1899.86 & 1649.70 \\ \hline
-    Median & 9121.41 & 8379.84 & 5874.48 \\ \hline
-    Max & 11478.79 & 10948.98 & 8242.56 \\ \hline
+    Mean Speed (kB/s)& 8144.84 & 7874.69 & 5559.32 \\ \hline
+    Standard Deviation of Speed (kB/s) & 2564.97 & 1899.86 & 1649.70 \\ \hline
+    Median Speed (kB/s)& 9121.41 & 8379.84 & 5874.48 \\ \hline
+    Max Speed (kB/s) & 11478.79 & 10948.98 & 8242.56 \\ \hline
     Duration (sec) & 162 & 165 & 231 \\ \hline
     \end{tabular}
-    \caption{Statistics on Peer Data Recovery Speed (in kB/s)}
+    \caption{Statistics on Peer Data Recovery}
     \label{tab:PeerRecoverySpeed}
 \end{center}
 \end{table}
@@ -616,20 +619,41 @@ The peer generally uploads the fastest for the first 9 minutes; the nodes are al
 
 We believe the initial ~40 seconds of inactivity is due to BitTorrent Sync indexing the 1 GB file before it can transfer it.
 
-\subsection{Conclusion}
+\section{Effects of Churn} \label{sec:EffectsofChurn}
+
+This scenario was comprised of 100 peers each replicating a 100mb file 5 times, meaning there was theoretically a total of 50 GB of data in the network, ignoring the effects of churn. Table \ref{tab:ChurnBandwidth} summarizes the actual amount of data in the network, with and without churn.
+
+\begin{table}
+\begin{center}
+    \begin{tabular}{| l | l |}
+    \hline
+    Without Churn & With Churn \\ \hline
+    58.00 GB & 72.27 GB\\ \hline
+    \end{tabular}
+    \caption{Amount of data transferred in a 100 node network over 1 hour}
+    \label{tab:ChurnBandwidth}
+\end{center}
+\end{table}
+
+First, notice that the actual amount of data sent in the network without churn was 58 GB, 8 GB more than the calculated theoretical value. Distributed over 100 machines, this means each peer sent an additional 80 MB of data on average into the network throughout the duration of the test. Extra network traffic produced by our system could have contributed to this discrepancy, including communications with the tracker and each other. BitTorrent Sync could also be responsible, since there is overhead associated with both the metadata it maintains to stay synchronized, and the BitTorrent protocol it uses (e.g., requesting chunks of data from ). Communications between the script that instrumented the test and the log server may also have generated a nontrivial amount of traffic.
+
+We designed this scenario to simulate an average level of churn over 16 days. The difference in data sent between the instance with churn and the one without is 14.27 GB. This means, on average, each peer sent an additional 142.7 MB of data in the presence of churn. In other words, with our system, the average peer can expect to create an additional replica every $\dfrac{16 \text{ days}}{142.7 \text{ MB}} \times 100 \text{ MB per replica} = 11.21 \text{ days}$.
+% TODO not sure what to do with this number. is this a lot? it may be if the user is backing up terabytes of data
+
+\section{Conclusion}
+% TODO this is more of a summary than conclusion, need to change that
 
 % TODO - do we actually test this now that we aren't doing the 1000x1mb test? may need to remove goal from methodology.
 % 1. how well does btsync handle large number backups? how well will it scale?
 
 Section \ref{subsec:DataRecoverySpeedfromPeersPerspective} compared how our system performs when recovering many small files versus few large files. We concluded that there is a large performance gain by recovering fewer, larger files, but the returns diminish between files of size 100 MB and 1 GB.
 
-Section \ref{subsec:DataRecoverySpeedfromNodesPerspective} verified our hypothesis that our system would recover data faster than an equivalent one using a direct download data transfer protocol. Our data estimates that the speed increase could be upwards of 200\%.
+Section \ref{subsec:DataRecoverySpeedfromNodesPerspective} verified our hypothesis that our system would recover data faster than an equivalent one using a direct download data transfer protocol. Our data suggests that the speed increase could be upwards of 200\%.
 
 Section \ref{subsec:EntitiesBackingUpa1GBFile} showed that our system lessens the Peer's load of backing up a file by distributing the task to the nodes as well. This has the side effect of speeding up the backup process, because nodes upload the data they have at a given time to each other, better utilizing their download bandwidth.
 
-\section{Effects of Churn}
+Section \ref{sec:EffectsofChurn} explained that, in the presence of an average amount of churn, 
 
-\section{Number of Replicas}
 
 \chapter{Conclusion} \label{chap:Conclusion}
 
@@ -655,6 +679,8 @@ As it stands now, our system is unusable by a majority of Internet users, since 
 % TODO explain what NAT is why and it makes P2P hard?
 
 \subsection{Finding the optimal number of replications}
+
+% TODO two reasons to find # reps: ensure availability in presence of different churn, and what is written below
 
 In order to minimize storage overhead, we would like to find the optimal number of data replicas to create before their provided speed enhancement is outweighed by their storage cost.
 
