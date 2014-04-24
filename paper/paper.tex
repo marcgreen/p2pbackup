@@ -519,10 +519,23 @@ The \textit{sar} command retrieves the desired network statistics, from which th
 
 \subsection{Effects of Churn} \label{subsec:EffectsofChurn_sec:TestScenarios_chap:Methodology}
 
-As we have already discussed, churn is important to consider when designing a realistic P2P backup system. In this test scenario, we measured how well our system handles different levels of churn. To do this, we created a network of 100 peers, in addition to the tracker and the log server. Each peer had a single 1GB file that it tried to back up. This means that, with five replicas per file, there was 600GB of data in the network.
+As we have already discussed, churn is important to consider when designing a realistic P2P backup system. In this test scenario, we measured how well our system handles different levels of churn. To do this, we created a network of 100 peers, in addition to the tracker and the log server. Each peer had a single 100MB file that it tried to back up. This means that, with five replicas per file, there was 6GB of data in the network.
 
 % TODO: When we pick the actual distribution functions, write them in this paragraph.
-To create churn, we have peers enter and leave the network at varying time intervals. Running our program signifies when a peer enters the network, while exiting our program signifies leaving the network. Both of these were controlled by a script that we wrote. To determine the duration of time, the script picked a timeout from one of two exponential distributions, depending on whether the peer was entering or leaving the network. This is the strategy used in the experimental results of PeerStore \cite{PeerStore}. By using an exponential distribution, there will be a greater chance of peers going offline for a short amount of time. This is useful, since in a production environment, many nodes will go offline for a short amount of time (i.e. users shutting their machine down at night), but fewer will stay offline for a long period of time or permanently leave the network.
+To create churn, we have peers enter and leave the network at varying time intervals. Running our program signifies when a peer enters the network, while exiting our program signifies leaving the network. Both of these were controlled by a script that we wrote. To determine the duration of time, the script picked a timeout from one of two distributions, depending on whether the peer was entering or leaving the network. This is the strategy used in the experimental results of PeerStore \cite{PeerStore}.
+
+Our distributions are a combination of three functions over the range $[0,1)$. In order to choose an uptime or downtime, a node chooses a random number in this range, and applies it to the follow function:
+
+$$
+f(x)=
+\begin{cases}
+10xc & \mbox{ if $0 \leq x < 0.2$ } \\
+(4(x-0.2)+2)c & \mbox{ if $0.2 \leq x < 0.8$ } \\
+(e^{21(x-0.84)}+3.5)c & \mbox{ if $0.8 \leq x < 1$ }
+\end{cases}
+$$
+
+%By using an exponential distribution, there will be a greater chance of peers going offline for a short amount of time. This is useful, since in a production environment, many nodes will go offline for a short amount of time (i.e. users shutting their machine down at night), but fewer will stay offline for a long period of time or permanently leave the network.
 
 % TODO: Talk about what we actually do, including the control group of no churn.
 
@@ -613,7 +626,7 @@ We believe the initial ~40 seconds of inactivity is due to BitTorrent Sync index
 
 \subsection{Conclusion}
 
-We have seen BitTorrent Sync handle 
+We have seen BitTorrent Sync handle
 % 1. how well does btsync handle large number backups? how well will it scale?
 % 2. measure performance of bittorrent against diff file sizes
 % 3. bittorrent faster than direct download?
