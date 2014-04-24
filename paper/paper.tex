@@ -373,6 +373,7 @@ t=max(s,n\sum\limits_{i=1}^{|\mathcal{F}|} size(F_i))
 Let $a$ be the amount of data a node is currently storing, and $z$ be the size of a file a peer is trying to back up. When the peer finds a candidate node with $t - a > z$, it can choose that node as a replication site, knowing that it is obligated to accept the data.
 
 \subsection{Challenge Mechanism} \label{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}
+% TODO: Fix this section so that it talks about the new challenge mechanism.
 Even though the technique described above allows peers to find nodes with a sufficient amount of storage space, it does not guarantee that the node will keep its promise and actually store the data. For instance, a node can accept a peer's data, only to discard it immediately. A peer will only find out that its data has been discarded when it needs to retrieve backups, at which point it is too late.
 
 To combat this, we have designed a challenge system that forces nodes to prove that they are actually storing the data that they are claiming to store. This system is based on the mechanism used in PeerStore \cite{PeerStore}. A challenge in our system consists of a randomly-generated salt followed by a specified range of bytes in the file being backed up. The node holding the peer's data must take the bytes in the specified range, hash it using the provided salt, and return the result to the peer. The peer is able to test whether the answer is correct by encrypting the file in the same way as it is stored on the node and hashing the byte range + salt accordingly. If the correct answer is returned, then the node has passed the challenge. If the node does not respond or gives the wrong answer, the challenge has been failed. By choosing a random subset of bytes and by using a salt, the node cannot calculate the hash ahead of time and only store that; the whole file must be stored in order to be able to successfully complete all possible challenges.
@@ -521,21 +522,37 @@ The \textit{sar} command retrieves the desired network statistics, from which th
 
 \subsection{Effects of Churn} \label{subsec:EffectsofChurn_sec:TestScenarios_chap:Methodology}
 
-As we have already discussed, churn is important to consider when designing a realistic P2P backup system. In this test scenario, we measured how well our system handles different levels of churn. To do this, we created a network of 100 peers, in addition to the tracker and the log server. Each peer had a single 100MB file that it tried to back up. This means that, with five replicas per file, there was 6GB of data in the network.
+As we have already discussed, churn is important to consider when designing a realistic P2P backup system. The goal of this test scenario is to determine how well our system handles churn. To do this, we created a network of 100 peers, in addition to the tracker and the log server. Each peer had a single 100MB file that it tried to back up. This means that, with five replicas per file, there was 6GB of data in the network, 5GB of which were replica files.
 
-% TODO: When we pick the actual distribution functions, write them in this paragraph.
-To create churn, we have peers enter and leave the network at varying time intervals. Running our program signifies when a peer enters the network, while exiting our program signifies leaving the network. Both of these were controlled by a script that we wrote. To determine the duration of time, the script picked a timeout from one of two distributions, depending on whether the peer was entering or leaving the network. This is the strategy used in the experimental results of PeerStore \cite{PeerStore}.
+We measure the effects of churn by logging the number of bytes sent over the network throughout each instance. We gathered this data by using the \textit{ifconfig} command, which reports the total number of bytes that have been sent and received on each interface. For this scenario, we only collected the number of bytes sent by each peer, as the number of bytes received does not take packets lost in the network into consideration. The exact command used is as follows:
 
-Our distributions are a combination of three functions over the range $[0,1)$. In order to choose an uptime or downtime, a node chooses a random number in this range, and applies it to the follow function:
+\begin{verbatim}
+ifconfig eth0 | grep 'TX bytes' | awk -F : '{print $3}' | \
+  awk '{print $1}'
+\end{verbatim}
+
+where \textit{eth0} is the name of the network interface. With the ability to query this at any time, we were able to determine the number of bytes sent each second by calling the above command once every second. The output is then sent to a logging server, which collects the data from every peer into one log file.
+
+There are two instances within this test scenario. The first is our control, where all peers joined the network at the start and did not leave until the end of the instance. Running this test allowed us to see how much data is transferred without any churn. In the second instance, nodes enter and leave the network at a rate specified by the distribution function described below. % Pickup here
+
+% TODO: Make sure this is very understandable.
+In our tests, we modeled a network where each peer had an average uptime of 150 seconds (2.5 minutes) and an average downtime of 75 seconds (1.25 minutes). We chose these numbers based on the amount of time a typical user might be online in a given day. We reasoned that, if a typical user keeps his or her computer on during the day and shuts it off when he or she sleeps (for 8 hours), then the uptime in the average day will be 16 hours. As explained in section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}, our challenging mechanism sends a challenge message to backup nodes every 6 hours and blacklists them upon 50\% challenge failure over 4 days, meaning that a node is blacklisted if they fail 8 or more tests. We scaled these numbers down so that we would have a 1 hour test (a factor of 360): a 6 hour challenge becomes a 60 second challenge, and the challenge period becomes 16 minutes. To make the challenge period evenly fit into the 1 hour test, we rounded the challenge period down to 15 minutes, making the scaling a factor of 384. From this factor, we scale 16 hours and 8 hours down to 2.5 minutes and 1.25 minutes, respectively.
+
+To create churn, we have peers enter and leave the network at varying time intervals. The tests were controlled by a Python script that initialized the test environment and ran the test upon machine boot. The script start and stops BTBackup to simulate the node entering and leaving the network, respectively. To determine the duration of time, the script picked a timeout from one of two distributions, depending on whether the peer was entering or leaving the network. This is the strategy used in the experimental results of PeerStore \cite{PeerStore}.
+
+Our distributions are a combination of three functions over the range $[0,1)$. In order to choose an uptime or downtime, a node chooses a random number in this range, and applies it to the following multipart function:
 
 $$
 f(x)=
 \begin{cases}
 10xc & \mbox{ if $0 \leq x < 0.2$ } \\
-(4(x-0.2)+2)c & \mbox{ if $0.2 \leq x < 0.8$ } \\
-(e^{21(x-0.84)}+3.5)c & \mbox{ if $0.8 \leq x < 1$ }
+[4(x-0.2)+2]c & \mbox{ if $0.2 \leq x < 0.8$ } \\
+[e^{21(x-0.84)}+3.5]c & \mbox{ if $0.8 \leq x < 1$ }
 \end{cases}
 $$
+
+% TODO: Is it accurate to say that the multipart function is continuous?
+The value of $c$ is what differentiates between choosing an uptime or a downtime. In order to obtain the average uptime and downtime stated above, we used $c=50$ for uptime and $c=25$ for downtime. Since the middle equation is our biggest range, we modeled it so that its average values for each value of $c$ approximately corresponds to the average uptime and downtime. We used a steeper linear equation from 0 to 0.2 so that very short uptimes and downtimes are represented, but very few nodes will ever choose values using this function. The steepness also makes the transition to the middle equation quick but continuous. For the top range, we chose an exponential function so very long uptimes and downtimes are represented. For example, the upper bound for uptime is 3509.32 seconds, or 58.49 minutes for $c=50$, which is almost the entire length of the test. Nodes who pick these values represent computers that are almost always online, such as servers or NAS units.
 
 %By using an exponential distribution, there will be a greater chance of peers going offline for a short amount of time. This is useful, since in a production environment, many nodes will go offline for a short amount of time (i.e. users shutting their machine down at night), but fewer will stay offline for a long period of time or permanently leave the network.
 
