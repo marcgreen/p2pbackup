@@ -33,6 +33,8 @@ const int Peer::DEFAULT_BTSYNC_PORT = 48247;
 const std::string Peer::DEFAULT_BTSYNC_PORT_STR = "48247";
 const uint64_t Peer::MINIMUM_STORE_SIZE = 20ull * 1024ull * 1024ull * 1024ull;
 const uint32_t Peer::STARTING_NODE_RELIABILITY = 5;
+const int Peer::MAX_TESTS_UNTIL_CHECK = 15;
+const int Peer::NUM_PASSED_TO_KEEP = 8;
 
 Peer& Peer::constructInstance(std::shared_ptr<metadata::MetadataInterface> metadataI,
 			      std::shared_ptr<btsync::BTSyncInterface> btSyncI,
@@ -273,8 +275,12 @@ bool Peer::createReplica(const std::string& fileID,
   // Ask (tell) node to backup. Wait for ACK, or find other replicant node if they never ACK
   cout << "Node qualifies! Asking to backup...";
   std::string nodeIP = nodeMetadata.getNodeIP();
-  if (!askNodeToBackup(nodeIP, encryptionSecret))
+  try {
+    if (!askNodeToBackup(nodeIP, encryptionSecret))
+      return false;
+  } catch(exception& e) {
     return false;
+  }
   cout << "success!" << endl;
   
   // Add file to metadata layer
@@ -297,7 +303,9 @@ bool Peer::createReplica(const std::string& fileID,
   // Store relevant data in JSON data structure and write to file
   Json::Value newNode;
   newNode["IP"] = nodeIP;
-  newNode["reliability"] = STARTING_NODE_RELIABILITY;
+  //newNode["reliability"] = STARTING_NODE_RELIABILITY;
+  newNode["passedTests"] = 0;
+  newNode["numTests"] = 0;
   localBackupInfo_["files"][fileID]["nodes"][nodeID] = newNode;
   if (!localBackupInfo_.dumpToDisk(btBackupDir_ + "/" + LOCAL_BACKUP_INFO_FILE)) {
     throw std::runtime_error("Error writing local backup info to disk");
@@ -344,12 +352,16 @@ bool Peer::removeBackup(std::string fileID) {
     return false;
   // TODO Peer functions return bools and throw exceptions. we should make that consistent. we should
   //   also actually check return values and catch exceptions
-
-  // Delete hardlink and containing directory
-  boost::filesystem::path fileDir(btBackupDir_ +"/"+ BACKUP_DIR +"/"+ fileID);
-  cout << "Deleting " << fileDir.string() << " to finish backup removal" << endl;
-  boost::filesystem::remove_all(fileDir);
-  // TODO error check remove_all
+  
+  try {
+    // Delete hardlink and containing directory
+    boost::filesystem::path fileDir(btBackupDir_ +"/"+ BACKUP_DIR +"/"+ fileID);
+    cout << "Deleting " << fileDir.string() << " to finish backup removal" << endl;
+    boost::filesystem::remove_all(fileDir);
+    // TODO error check remove_all
+  } catch(std::exception e) {
+    return false;
+  }
 
   return true;
 }
@@ -532,10 +544,10 @@ void Peer::checkOnBackupNodes() {
       
       std::cout << error.message() << " " << s.is_open() << std::endl;
       
-      // If the connection handler wasn't called, then the timeout happened
-      // first. In this case, decrement their reliability counter.
-      //if (status == 2 || !s.is_open()) {
-      if (error || !s.is_open()) {
+      current["numTests"] = current["numTests"].asInt() + 1; // +
+      
+      // If the connection was not opened, decrement their reliability counter.
+      /*if (error || !s.is_open()) {
 	// This node dun goofed
 	// Consequences will never be the same
 	// (Blacklist the node)
@@ -564,7 +576,8 @@ void Peer::checkOnBackupNodes() {
 	  localBackupInfo_.dumpToDisk(btBackupDir_ + "/" + LOCAL_BACKUP_INFO_FILE);
 	  std::cout << "checkOnBackupNodes: Done writing to disk" << std::endl;
 	}
-      } else {
+	} else {*/
+      if (!error && s.is_open()) {
 	uint8_t msgType = 1;
 	// Send the message type. If that fails, just move on to the next node.
 	try {
@@ -574,17 +587,49 @@ void Peer::checkOnBackupNodes() {
 	}
 	// Nothing else needs to be sent, so close the connection.
 	s.close();
-	current["reliability"] = STARTING_NODE_RELIABILITY;
-	std::cout << "Reliability for " << nodeID
-		  << " reset" << std::endl;
-	localBackupInfo_.dumpToDisk(btBackupDir_ + "/" + LOCAL_BACKUP_INFO_FILE);
+	current["passedTests"] = current["passedTests"].asInt() + 1; // +
+	//current["reliability"] = STARTING_NODE_RELIABILITY;
+	//std::cout << "Reliability for " << nodeID
+	//	  << " reset" << std::endl;
+	//localBackupInfo_.dumpToDisk(btBackupDir_ + "/" + LOCAL_BACKUP_INFO_FILE);
 	std::cout << "checkOnBackupNodes: Done dumping to disk" << std::endl;
+      }
+      if (current["numTests"].asInt() >= MAX_TESTS_UNTIL_CHECK) {
+	if (current["passedTests"].asInt() >= NUM_PASSED_TO_KEEP) {
+	  // The node passed enough tests, so reset its counters.
+	  current["numTests"] = 0;
+	  current["passedTests"] = 0;
+	} else {
+	  // The node did not pass enough tests, so remove it as a backup
+	  // and blacklist it.
+	  blacklistNode(nodeID);
+	  try {
+	    metadataInterface_->removeBackup(peerID_, nodeID, fileID);
+	  } catch(std::runtime_error& error) {
+	    std::cerr << error.what() << std::endl;
+	  }
+	  std::string currRWSecret =
+	    localBackupInfo_["files"][fileID]["rwSecret"].asString();
+	  uint64_t currSize =
+	    localBackupInfo_["files"][fileID]["size"].asUInt64();
+	  unregisterBackupNode(nodeID, currRWSecret);
+	  try {
+	    createReplica(fileID, currRWSecret, fileID, currSize);
+	  } catch(std::exception& e) {
+	    
+	  }
+	  system("logger -p local3.info \"Replica Created\"");
+	  toRemove.push_back(nodeID);
+	  std::cout << "Removing backup on " << nodeID
+		    << std::endl;
+	}
       }
     }
     for (std::string& nodeID : toRemove) {
       localBackupInfo_["files"][fileID]["nodes"].removeMember(nodeID);
     }
   }
+  localBackupInfo_.dumpToDisk(btBackupDir_ + "/" + LOCAL_BACKUP_INFO_FILE);
 }
 
 void Peer::checkMetadataForStoreChanges() {

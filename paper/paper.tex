@@ -220,6 +220,8 @@ While this is a convenient optimization, it has a security weakness: any user wh
 
 % TODO relate convergent encryption to our system
 
+% TODO digital signatures? discussed in future work
+
 \section{Distributed Hash Tables} \label{sec:backgroundDHT}
 
 A \textit{hash table} is a data structure that maps unique keys to values. It has attractive performance features, such as $O(1)$ average lookup time. This means that, on average, the time it takes to retrieve a value from the hash table is independent of the number of entries being stored. This performance comes from the use of a hash function when organizing the data internally. A hash table can be represented as an array of \textit{buckets}, which are slots used to store the data. Hash functions are used to map a given key to an index in the array of buckets. Thus, given a key, the hash table can compute the bucket in which the (key, value) pair is stored. In the event of hash collisions, the (key, value) pairs in each bucket can be stored as a linked list. Hash tables use hash functions that have uniform hash distribution to minimize collisions, since traversing the linked list is the bottleneck of the operation. Hash tables have $O(1)$ insertion and deletion time for the same reason.
@@ -579,7 +581,7 @@ It is clear that the peer downloaded its data faster when the data was comprised
 
 It is worth noting that the increase in speed does not scale linearly with the size of the file. Although the size of the files increased by the same order of magnitude between the trials, the increase in recovery speed seems to have diminishing returns. Table \ref{tab:PeerRecoverySpeed} provides relevant statistics. The mean recovery speed increased by 41.65\% between the "Hundred 10 MB Files" trial and the "Ten 100 MB Files" trial. Compare this to an increase of 3.43\% between the "Ten 100 MB Files" trial and the "One 1 GB File" trial. Looking at it another way, the total time it took to recover the file between the former trials improves by 40\%, whereas the recovery time between the latter trials improves by only 4.76\%.
 
-\subsection{Data Recovery Speed from Nodes' Perspective}
+\subsection{Data Recovery Speed from Nodes' Perspective} \label{subsec:DataRecoverySpeedfromNodesPerspective}
 
 Figure \ref{fig:NodeRecoverySpeed} shows the combined speed at which the nodes are uploading a 1 GB file to a peer during the file recovery process. A moving average is used to reduce visual clutter. We can see a significant improvement between the combined upload speed achieved by all nodes compared to the individual upload speeds of each node.
 
@@ -607,7 +609,7 @@ If the peer was restricted to recovering its data from only one node, its downlo
 \end{center}
 \end{table}
 
-\subsection{Entities Backing Up a 1 GB File}
+\subsection{Entities Backing Up a 1 GB File} \label{subsec:EntitiesBackingUpa1GBFile}
 
 Figure \ref{fig:EntityBackupSpeed} shows the speeds at which each participating entity is backing up a 1 GB file.  We use a 20 period moving average to reduce the visual clutter while keeping the overall trends the same.\footnote{The use of a 20 period moving average significantly alters the peaks and valleys of each line. This is acceptable for our purposes because we are only concerned with each line's existence and relative placement, not its individual details.}
 
@@ -626,10 +628,14 @@ We believe the initial ~40 seconds of inactivity is due to BitTorrent Sync index
 
 \subsection{Conclusion}
 
-We have seen BitTorrent Sync handle
+% TODO - do we actually test this now that we aren't doing the 1000x1mb test? may need to remove goal from methodology.
 % 1. how well does btsync handle large number backups? how well will it scale?
-% 2. measure performance of bittorrent against diff file sizes
-% 3. bittorrent faster than direct download?
+
+Section \ref{subsec:DataRecoverySpeedfromPeersPerspective} compared how our system performs when recovering many small files versus few large files. We concluded that there is a large performance gain by recovering fewer, larger files, but the returns diminish between files of size 100 MB and 1 GB.
+
+Section \ref{subsec:DataRecoverySpeedfromNodesPerspective} verified our hypothesis that our system would recover data faster than an equivalent one using a direct download data transfer protocol. Our data estimates that the speed increase could be upwards of 200\%.
+
+Section \ref{subsec:EntitiesBackingUpa1GBFile} showed that our system lessens the Peer's load of backing up a file by distributing the task to the nodes as well. This has the side effect of speeding up the backup process, because nodes upload the data they have at a given time to each other, better utilizing their download bandwidth.
 
 \section{Effects of Churn}
 
@@ -641,10 +647,35 @@ We have seen BitTorrent Sync handle
 
 \section{Future Work}
 
-% Incorporate security into the design of our system
-% - DHT (add digital signatures to each column, have each updater sign over old data like in bitcoin's blockchain)
+\subsection{BTBackup Security} \label{subsec:BTBackupSecurity}
 
-% NAT traversal of client
+We would like to see our system design incorporate security. Specifically, the DHT should have some scheme that ensures (1) entries cannot be tampered with by the node responsible for them and (2) nodes cannot lie about the data with which they are involved. We believe both of these goals can be achieved through the use of chained digital signatures.
+
+Regarding (1), there could be a digital signature encompassing the entire entry to prevent the responsible node from modifying it. Perhaps the node that the entry describes could digitally sign it upon modification; or maybe the most recent node to modify an entry could digitally sign it. These solutions solve the immediate problem, but bring about additional ones that need to be investigated.
+
+An example solution for (2): the communication between peers during the "Finding Replication Nodes" phase of backing up a file could be extended to require both parties digitally sign the information. That is, when a peer informs a node it will be backing up a given file of a given size, the DHT can store an additional entry containing their digital signatures, binding them to the exchange. This provides non-repudiation for the amount of data a peer is backing up and a node is storing, each of which a malicious user is incentivized to lie about. This solution does not deal with the blacklisters data, though a similar scheme for that is easy to imagine.
+
+To reduce the size of the DHT with the addition of these digital signatures, a chaining mechanism could be put in place, similar to the one in Bitcoin's blockchain. Instead of appending digital signatures to the corresponding DHT column, new digital signatures could sign the old ones and then overwrite them. This preserves their effect, but removes the associated storage cost. More thought needs to be given to this to design an optimal mechanism (and to determine if chaining is even required).
+
+
+\subsection{NAT Traversal}
+
+As it stands now, our system is unusable by a majority of Internet users, since they live behind routers with NAT. We need to implement some mechanism to bypass this. We can turn to Skype, BitTorrent, BitTorrent Sync, and other P2P applications for inspiration.
+
+\subsection{BTBackup Implementation}
+
+There are many features missing from our implementation that we would like to see added. A brief, nonexhaustive list follows. It do not include features also missing from the specification.
+
+\begin{enumerate}
+    \item Replace the centralized tracker with a DHT
+    \item Encrypted communication between peers to reduce information leakage
+    \item The ability to backup folders, not just files
+\end{enumerate}
+
+% TODO there are more things missing from impl
+
+% TODO there are more things missing from spec
+
 
 \begin{thebibliography}{11}
 

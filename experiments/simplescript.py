@@ -55,9 +55,8 @@ def phase1():
                                     shell=True,
                                     stdin=subprocess.PIPE,
                                     stdout=open(P2PBACKUP_LOC + 'phase1.log', 'w+'))
-        for x in range(0, 1000):
-            btbackup.stdin.write('backup ' + TEST_ROOT + '1M.txt\n')
-            time.sleep(1)
+        #for x in range(0, 100):
+        btbackup.stdin.write('backup ' + TEST_ROOT + '1G.txt\n')
     else:
         subprocess.Popen(P2PBACKUP_LOC + 'btbackup > ' + P2PBACKUP_LOC +
                          'phase1.log',
