@@ -62,7 +62,17 @@ Abstract
 
 \renewcommand{\abstractname}{Acknowledgements}
 \begin{abstract}
-Acknowledgements
+% TODO adjectives
+% TODO format this section better
+Mih\'aly H\'eder, our on-site Project Advisor, for his advice, insight, expertise, and bottomless teapot.\\
+
+\noindent G\'abor S\'ark\"ozy, our off-site Project Advisor, for his guidance, encouragement, and editorial skills. \\
+
+\noindent Worcester Polytechnic Institute, for the opportunity to study abroad. \\
+
+\noindent MTA SZTAKI, for the resources to design, develop, and test our system. \\
+
+\noindent The employees of MTA SZTAKI, for their open arms and continued friendship.
 \end{abstract}
 
 \tableofcontents
@@ -70,17 +80,27 @@ Acknowledgements
 
 \chapter{Introduction}
 
-As the capacity and performance of hard drives increase over time, people are able to store data in greater volumes. With this increase in capacity, there is a greater need for data to be backed up, in case one's hard drive becomes inaccessible. This can happen if one's computer crashes, the hard drive fails, or the computer is lost or stolen.
+As the capacity and performance of hard drives continue to increase over time, users continue to store their data in greater volumes. This includes high resolution photos, videos, and audio for the personal user, and databases, source code repositories, and operating system images for the technical user. The increase in stored data gives rise to a greater need for the data to be backed up, in preparation for the undesirable event that one's hard drive becomes inaccessible. This can happen if one's computer crashes, the hard drive fails, or the computer is lost or stolen.
 
-Most backup systems that are in use today are centralized, meaning that they rely on some central entity to store their data. This entity is typically a company who offers data backup as a service, such as Dropbox or Google. While these solutions are somewhat convenient, since the service is guaranteed to almost always be online, there are several problems with this approach. The amount of data that users can backup is severely limited, and obtaining more space costs money. In addition to this, users must trust the entity that they send their data to, which is not always possible.
+Most backup systems that are in use today are centralized, meaning that they rely on some central entity to store their data. This entity is typically a company that offers data backup as a service, such as Dropbox or Google. While these solutions are somewhat convenient, since the service is guaranteed to almost always be online, there are several problems with this approach. The amount of data that users can backup is severely limited, and obtaining more space costs money. In a time where owning terabytes of data is common, cloud storage meant for everyday use is not a feasible backup solution. In addition to this, users must trust the entity to which they send their data to both remain online and respect their privacy. This trust is not always possible, especially in the post-Snowden era, where users must also trust the government under which the central entity resides.
+% TODO citation for central backup entity going offline due to govt (bitcloud or something?)
+% TODO citation for central backup entity violating trust (google + nsa)
 
-%Although they have not gained much popularity, Peer-to-Peer file backup systems have been created by researchers for over a decade. These systems
+Although they have not gained much popularity, peer to peer (P2P) file backup systems have been created and studied by researchers for over a decade. These systems do not suffer from the aforementioned drawbacks of centralized systems; they are free to use, limited in storage only by the user, and do not require a trusted central entity. Instead of backing up their data to a server, peers back up their data to \textit{each other}. Research in this area has focused on topics such as handling node churn, moving towards a completely decentralized system, efficient routing algorithms, and minimizing bandwidth.
+% TODO citations for each research topic
 
-We have designed and implemented a new P2P system that allows users to backup data without the use of a central entity as storage. In this system, peers offer space on their hard drive that is proportional to the amount that they wish to back up. To account for the fact that peers will not always be online, peers create several replicas of each file on different nodes.
+%In our system, peers offer each other space on their hard drive that is proportional to the amount that they wish to back up. To account for the fact that peers will not always be online, replicas of each file are created on several different nodes.
 
-Our main contribution is the way in which we handle data transfer: BitTorrent Sync, a new synchronization application created by BitTorrent, Inc. BitTorrent Sync uses a modified version of the BitTorrent protocol in order to quickly synchronize files between groups of peers. This protocol is especially effective at transferring large files, which makes its use perfect for the domain of P2P file backup.
+We have designed and implemented a new P2P backup system that improves the speed of backing up and recovering data. Our main contribution, and the technology responsible for faster file backup and recovery, is the way in which we handle data transfer: BitTorrent Sync, a new synchronization application created by BitTorrent, Inc. BitTorrent Sync uses a modified version of the BitTorrent protocol in order to quickly synchronize files between groups of peers. This protocol is especially effective at transferring large files, which makes its use perfect for the domain of P2P file backup. By leveraging BitTorrent Sync, we take advantage of BitTorrent's ability to better utilize a peer's bandwidth by downloading from multiple sources at once. This is in contrast to other P2P backup systems, which directly download from one source at a time.
 
-\chapter{Background}
+% highlights of methodology
+
+% key results and conclusions
+
+% outline of rest of paper
+The rest of this paper is organized as follows. Chapter \ref{chap:Background} introduces the reader to the concepts and ideas necessary to understand our system, including glimpses into other peer to peer systems. Chapter \ref{chap:BTBackup} describes the design of our system; Chapter \ref{chap:impl} describes our implementation of it. In Chapter \ref{chap:Methodology}, we discuss how we tested our system, and Chapter \ref{chap:Results} analyzes the results. Finally, Chapter \ref{chap:Conclusion} concludes our paper and outlines future work to be done.
+
+\chapter{Background} \label{chap:Background}
 \section{Centralized Backup Systems}
 % TODO: get reliable sources for number of users of OneDrive and Google Drive
 Several popular backup systems currently in use have a centralized system design. In these systems, there are many clients that all back up their data to a central location controlled by a single entity. Common elements of these systems include a fixed amount of data storage per person, with the option to obtain more for a fee. Three of the more popular systems are Dropbox, which has over 200 million users \cite{dropboxusers}, OneDrive, with over 250 million users, and Google Drive, with over 120 million users.
@@ -164,7 +184,7 @@ PeerStore handles this via a combined trading and challenge system. When a peer 
 
 \begin{figure}
   \centering
-  \includegraphics[scale=0.75]{PeerStoreTrading}
+  \includegraphics[scale=0.75]{figures/PeerStoreTrading}
   \caption{Trading protocol of PeerStore \cite{PeerStore} \label{fig:peerStoreTrading}}
 \end{figure}
 
@@ -192,13 +212,15 @@ To strengthen hashing algorithms, a \textit{salt} can be utilized. A salt is ess
 
 \begin{figure} \label{fig:convergent}
   \centering
-  \includegraphics[scale=0.75]{ConvergentEncryption}
+  \includegraphics[scale=0.75]{figures/ConvergentEncryption}
   \caption{Convergent Encryption from PeerStore}
 \end{figure}
 
 While this is a convenient optimization, it has a security weakness: any user who has access to the unencrypted version of a file can confirm whether or not that file is being stored in the system. This encroaches on users' privacy.
 
 % TODO relate convergent encryption to our system
+
+% TODO digital signatures? discussed in future work
 
 \section{Distributed Hash Tables} \label{sec:backgroundDHT}
 
@@ -216,7 +238,7 @@ The cost of routing is acceptable because the usefulness of distributing the sto
 DHTs play a major role in many P2P systems. They serve as the means through which peers can find either data or other peers, depending on the system; our system uses a DHT for the latter. In conjunction with the structured overlay network, the DHT allows for peers to discover each other. This is primarily done when looking for peers to send backups to. We discuss how we use a DHT in more detail in Section \ref{sec:DataExchange}.
 
 \section{The BitTorrent Protocol} \label{sec:TheBitTorrentProtocol}
-BitTorrent is a peer to peer protocol designed for fast file sharing. A peer who wishes to share a file creates a .torrent file containing metadata about the file to be shared. This peer is known as the file's initial \textit{seeder}, or uploader, and through the use of a BitTorrent client, starts \textit{seeding}, or uploading, the file. When a peer acts as a seeder, its sole purpose is to share the file that it is seeding with other peers. Peers who wish to download the file must acquire its .torrent file through an out-of-band channel, which is often a torrent indexer. Peers use the .torrent file to locate the initial seeder through either a centralized tracker or a DHT. These peers then connect to the initial seeder and start downloading the file. These peers are known as \textit{leechers} until they possess a full copy of the file, which is when they, themselves, become seeders.
+BitTorrent is a peer to peer protocol designed for fast file sharing. A peer who wishes to share a file creates a .torrent file containing metadata about the file to be shared. This peer is known as the file's initial \textit{seeder}, or uploader, and through the use of a BitTorrent client, starts \textit{seeding}, or uploading, the file. When a peer acts as a seeder, its sole purpose is to share the file that it is seeding with other peers. Peers who wish to download the file must acquire its .torrent file through an out-of-band channel, which is often a torrent indexer. Peers use the .torrent file to locate the initial seeder through either a centralized tracker or a DHT. These peers then connect to the initial seeder and start downloading the file. These peers are known as \textit{leechers} until they possess a full copy of the file, which is when they, themselves, become seeders. A \textit{swarm} refers to all entities, seeders and leechers, participating in a given torrent.
 
 % TODO: add citation and more information about how much better BitTorrent is vs. direct download. Actually, add a lot of citations to this paragraph
 While this is more complex than hosting a file on a server and having users download it, with enough peers there is a huge performance gain with respect to download speeds. The reason this works is due to the differences in upload and download speeds on the Internet; with most Internet connections offered to consumers, the upload bandwidth is much smaller than the download bandwidth. This means that, in the scenario where one machine is transferring data over the Internet to another machine, download speeds would be severely limited by the upload bandwidth of the uploader. If multiple machines are trying to download from the same uploader, the download speeds will be even worse, as the upload bandwidth is being shared.
@@ -246,7 +268,7 @@ To allow other developers to use BitTorrent Sync as a part of their applications
 
 BitTorrent Sync leverages the BitTorrent protocol to provide quick downloads between synced peers. We, too, leverage this through the use of BitTorrent Sync to provide fast recovery of backed up files. The specification of our system is described in the next chapter.
 
-\chapter{BTBackup}
+\chapter{BTBackup} \label{chap:BTBackup}
 
 In this chapter, we discuss the design of our Peer to Peer backup system. See Chapter \ref{chap:impl} for our implementation of it.
 
@@ -371,7 +393,7 @@ We have designed our system to be modular. We realize that future work on our sy
 
 \begin{figure}
   \centering
-  \includegraphics[scale=0.4]{SystemDesign}
+  \includegraphics[scale=0.4]{figures/SystemDesign}
   \caption{The design of our system \label{fig:SystemDesign}}
 \end{figure}
 
@@ -434,7 +456,7 @@ The Metadata Controller also queries the metadata layer to determine if any peer
 
 \chapter{Methodology} \label{chap:Methodology}
 
-In order to thoroughly evaluate our system, we first identified several variables that could lead to differences in performance. These variables are:
+In order to thoroughly evaluate our system, we identified several variables that could lead to differences in performance. These variables are:
 
 \begin{itemize}
 \item Size of each file being backed up
@@ -445,7 +467,7 @@ In order to thoroughly evaluate our system, we first identified several variable
 \item Number of malicious nodes
 \end{itemize}
 
-From these variables, we derived a set of test scenarios which allowed us to see how each of them affect the performance of the system. While they are specific to our system, they allow us to evaluate the strengths and weaknesses of BitTorrent Sync (and, by extension, BitTorrent) as the data transport mechanism in a peer-to-peer backup system.
+From these variables, we derived a set of test scenarios which allowed us to see how each of them affects the performance of the system. While they are specific to our system, they allow us to evaluate the strengths and weaknesses of BitTorrent Sync (and, by extension, BitTorrent) as the data transport mechanism in a peer-to-peer backup system.
 
 The following sections describe how we performed our testing. For the results of each test scenario, see Section \ref{chap:Results}.
 
@@ -470,10 +492,9 @@ The following sections describes each test scenario, as well as how we performed
 
 \subsection{File Size versus Number of Files} \label{subsec:FileSizeversusNumberofFiles_sec:TestScenarios_chap:Methodology}
 
-In this scenario, we tested how our system handles a constant amount of data spread out across a varying number of files. The goal of this test is twofold. First, it allows us to test the capabilities of BitTorrent Sync in handling a large number of backups. From the data gathered here, it is possible to determine how well BitTorrent Sync would scale for use in a production system, where thousands of users could each be backing up thousands of files of varying sizes. Second, it allows us to measure the performance of BitTorrent against different file sizes. Since the use case for BitTorrent is typically downloading large files, it is important to determine whether or not our system will perform well when users try to backup many small files, should it be used in a production environment.
+In this scenario, we tested how our system handles a constant amount of data spread out across a varying number of files. We run this test for three reasons. First, it allows us to test the capabilities of BitTorrent Sync in handling a large number of backups. From the data gathered here, it is possible to determine how well BitTorrent Sync would scale for use in a production system, where thousands of users could each be backing up thousands of files of varying sizes. Second, it allows us to measure the performance of BitTorrent against different file sizes. Since the use case for BitTorrent is typically downloading large files, it is important to determine whether or not our system will perform well when users try to backup many small files, should it be used in a production environment. Third, it will demonstrate the ability of our system to backup and recover files faster than if they were transferred by a direct download protocol, as opposed to BitTorrent.
 
-% TODO: Maybe we should not mention the 1MB test at all.
-Our tests for this scenario used 8 virtual machines in SZTAKI Cloud: 1 peer, 5 nodes, 1 tracker, and 1 syslog-ng server. To have a wide range of file sizes, we tested with 1MB, 10MB, 100MB, and 1GB files. In each test instance, the total amount of data backed up was 1GB, so 1000 files, 100 files, 10 files, and 1 file were backed up, respectively. The procedure for each test instance is as follows:
+Our tests for this scenario used 8 virtual machines in SZTAKI Cloud: 1 peer, 5 nodes, 1 tracker, and 1 syslog-ng server. To have a wide range of file sizes, we tested with 10MB, 100MB, and 1GB files. In each test instance, the total amount of data backed up was 1GB, so 100 files, 10 files, and 1 file were backed up, respectively. The procedure for each test instance is as follows:
 
 \begin{enumerate}
   \item Clear the log file on the syslog-ng server. This is to remove the data of previous test instances.
@@ -491,10 +512,12 @@ Our tests for this scenario used 8 virtual machines in SZTAKI Cloud: 1 peer, 5 n
 
 At the end of this sequence, the peer has successfully used our system to backup its files and retrieve them when needed. On the peer and the nodes, the process was orchestrated by a script. Logging occurs during backup creation and retrieval. During both of these phases, the number of bytes being downloaded and uploaded was sampled once per second. This is the data that is sent to the log server. Sampling was achieved by using a series of shell commands to obtain the information and to put it in the useful format. The exact command is as follows:
 
-% TODO: This line goes off the right side of the page in the PDF.
 \begin{verbatim}
-sar -n DEV 1 1 | grep eth0 | grep -v Average | awk '{print $1, $2, $6, $7, "\n";}'
+sar -n DEV 1 1 | grep eth0 | grep -v Average | \
+  awk '{print $1, $2, $6, $7, "\n";}'
 \end{verbatim}
+
+The \textit{sar} command retrieves the desired network statistics, from which the other commands extract the specific data we are interested in.
 
 \subsection{Effects of Churn} \label{subsec:EffectsofChurn_sec:TestScenarios_chap:Methodology}
 
@@ -512,14 +535,134 @@ This test scenario produced data so that we could determine how the number of re
 
 \chapter{Results} \label{chap:Results}
 
-\chapter{Conclusion}
+In this chapter, we present the reader with the results of the test scenarios outlined in Section \ref{sec:TestScenatios_chap:Methodology} and their analyses.
+
+\section{File Size versus Number of Files} \label{sec:FileSizeversusNumberofFiles_chap:Results}
+
+\subsection{Data Recovery Speed from Peer's Perspective} \label{subsec:DataRecoverySpeedfromPeersPerspective}
+
+Figure \ref{fig:PeerRecoverySpeed} shows the speed of a peer recovering 1 GB of data in three different situations. Each situation differs in how many files comprise the 1 GB payload: one 1 GB file, ten 100 MB files, and one hundred 10 MB files. The moving average of each data series is shown instead of the raw data to reduce visual clutter; the trends are analogous. The usage of moving averages is the reason why some lines do not cross the x-axis.
+
+\begin{figure}
+  \centerline{\includegraphics[scale=1]{figures/PeerRecoverySpeed}}
+  \caption{The speed at which a peer recovered 1 GB worth of data. \label{fig:PeerRecoverySpeed}}
+\end{figure}
+
+It is clear that the peer downloaded its data faster when the data was comprised of fewer files. The peer downloaded the fastest when there was only one file to recover, and the slowest when there were one hundred files to recover. This aligns with the theory behind the BitTorrent protocol, which is designed to transfer larger files quicker.
+
+\begin{table}
+\begin{center}
+    \begin{tabular}{| l | l | l | l |}
+    \hline
+    & One 1 GB File & Ten 100 MB files & Hundred 10 MB files \\ \hline
+    Mean & 8144.84 & 7874.69 & 5559.32 \\ \hline
+    Standard Deviation & 2564.97 & 1899.86 & 1649.70 \\ \hline
+    Median & 9121.41 & 8379.84 & 5874.48 \\ \hline
+    Max & 11478.79 & 10948.98 & 8242.56 \\ \hline
+    Duration (sec) & 162 & 165 & 231 \\ \hline
+    \end{tabular}
+    \caption{Statistics on Peer Data Recovery Speed (in kB/s)}
+    \label{tab:PeerRecoverySpeed}
+\end{center}
+\end{table}
+
+It is worth noting that the increase in speed does not scale linearly with the size of the file. Although the size of the files increased by the same order of magnitude between the trials, the increase in recovery speed seems to have diminishing returns. Table \ref{tab:PeerRecoverySpeed} provides relevant statistics. The mean recovery speed increased by 41.65\% between the "Hundred 10 MB Files" trial and the "Ten 100 MB Files" trial. Compare this to an increase of 3.43\% between the "Ten 100 MB Files" trial and the "One 1 GB File" trial. Looking at it another way, the total time it took to recover the file between the former trials improves by 40\%, whereas the recovery time between the latter trials improves by only 4.76\%.
+
+\subsection{Data Recovery Speed from Nodes' Perspective} \label{subsec:DataRecoverySpeedfromNodesPerspective}
+
+Figure \ref{fig:NodeRecoverySpeed} shows the combined speed at which the nodes are uploading a 1 GB file to a peer during the file recovery process. A moving average is used to reduce visual clutter. We can see a significant improvement between the combined upload speed achieved by all nodes compared to the individual upload speeds of each node.
+
+\begin{figure}
+  \centerline{\includegraphics[scale=1]{figures/NodeRecoverySpeed}}
+  \caption{The combined speed of nodes uploading a 1 GB file to a peer for file recovery. \label{fig:NodeRecoverySpeed}}
+\end{figure}
+
+% TODO analyze graph? 10sec inactivity in beginning, node 2 doesn't start uploading until 35secs, node 5 barely uploads, duration, other characteristics
+
+If the peer was restricted to recovering its data from only one node, its download speed would be limited by the node's upload speed. Table \ref{tab:NodeRecoverySpeed} lists the relevant upload speed statistics of the nodes. At best, the peer could download at an average of 2303.07 kB/s. However, by using BitTorrent as a data transfer protocol instead of a direct download, the peer's download speed is limited by the \textit{sum} of each node's upload speed: 7427.61 kB/s. This means, on average, the peer can theoretically download 322.50\% faster!\footnote{This number is based on the mean. The highest median is 2024.57 kB/s and the sum of medians is 4889.01 kB/s, 241.48\% faster.}
+
+\begin{table}
+\begin{center}
+    \begin{tabular}{| l | l | l | l | l | l |}
+    \hline
+    & Node 1 & Node 2 & Node 3 & Node 4 & Node 5 \\ \hline
+    Mean & 2303.07 & 1293.71 & 1702.47 & 1556.95 & 571.41 \\ \hline
+    Standard Deviation & 1921.11 & 1714.13 & 1852.66 & 1796.30 & 1000.72 \\ \hline
+    Median & 2024.57 & 477.37 & 1187.60 & 1028.09 & 171.38 \\ \hline
+    Max & 7632.07 & 7423.9 & 6936.94 & 7237.46 & 5216.15 \\ \hline
+    \end{tabular}
+    \caption{Statistics on Node Upload Speed (in kB/s)}
+    \label{tab:NodeRecoverySpeed}
+\end{center}
+\end{table}
+
+\subsection{Entities Backing Up a 1 GB File} \label{subsec:EntitiesBackingUpa1GBFile}
+
+Figure \ref{fig:EntityBackupSpeed} shows the speeds at which each participating entity is backing up a 1 GB file.  We use a 20 period moving average to reduce the visual clutter while keeping the overall trends the same.\footnote{The use of a 20 period moving average significantly alters the peaks and valleys of each line. This is acceptable for our purposes because we are only concerned with each line's existence and relative placement, not its individual details.}
+
+\begin{figure}
+  \centerline{\includegraphics[scale=1]{figures/EntityBackupSpeed}}
+  \caption{The speed at which each entity backs up a 1 GB file. \label{fig:EntityBackupSpeed}}
+\end{figure}
+
+We confirm that the nodes, in addition to the peer, are actively backing up the peer's file. This is the expected behavior of the BitTorrent protocol, which allows all users in a swarm to share data with each other. BitTorrent Sync, which uses a modified BitTorrent protocol, also seems to leverage this feature.
+
+The peer generally uploads the fastest for the first 9 minutes; the nodes are all requesting chunks from mostly the peer throughout this period, as it is the initial seeder. However, around the 9 minute mark, the nodes seem to start requesting data from each other more often than the peer, as seen by the peer's decrease in upload speed between the 9 and 10 minute mark.
+
+% TODO what is happening after the 11 minute mark? why are they all uploading again? it might help to look at the download speed graph of everyone
+
+We believe the initial ~40 seconds of inactivity is due to BitTorrent Sync indexing the 1 GB file before it can transfer it.
+
+\subsection{Conclusion}
+
+% TODO - do we actually test this now that we aren't doing the 1000x1mb test? may need to remove goal from methodology.
+% 1. how well does btsync handle large number backups? how well will it scale?
+
+Section \ref{subsec:DataRecoverySpeedfromPeersPerspective} compared how our system performs when recovering many small files versus few large files. We concluded that there is a large performance gain by recovering fewer, larger files, but the returns diminish between files of size 100 MB and 1 GB.
+
+Section \ref{subsec:DataRecoverySpeedfromNodesPerspective} verified our hypothesis that our system would recover data faster than an equivalent one using a direct download data transfer protocol. Our data estimates that the speed increase could be upwards of 200\%.
+
+Section \ref{subsec:EntitiesBackingUpa1GBFile} showed that our system lessens the Peer's load of backing up a file by distributing the task to the nodes as well. This has the side effect of speeding up the backup process, because nodes upload the data they have at a given time to each other, better utilizing their download bandwidth.
+
+\section{Effects of Churn}
+
+\section{Number of Replicas}
+
+\chapter{Conclusion} \label{chap:Conclusion}
+
+% summarize contributions and impact
 
 \section{Future Work}
 
-% Incorporate security into the design of our system
-% - DHT (add digital signatures to each column, have each updater sign over old data like in bitcoin's blockchain)
+\subsection{BTBackup Security} \label{subsec:BTBackupSecurity}
 
-% NAT traversal of client
+We would like to see our system design incorporate security. Specifically, the DHT should have some scheme that ensures (1) entries cannot be tampered with by the node responsible for them and (2) nodes cannot lie about the data with which they are involved. We believe both of these goals can be achieved through the use of chained digital signatures.
+
+Regarding (1), there could be a digital signature encompassing the entire entry to prevent the responsible node from modifying it. Perhaps the node that the entry describes could digitally sign it upon modification; or maybe the most recent node to modify an entry could digitally sign it. These solutions solve the immediate problem, but bring about additional ones that need to be investigated.
+
+An example solution for (2): the communication between peers during the "Finding Replication Nodes" phase of backing up a file could be extended to require both parties digitally sign the information. That is, when a peer informs a node it will be backing up a given file of a given size, the DHT can store an additional entry containing their digital signatures, binding them to the exchange. This provides non-repudiation for the amount of data a peer is backing up and a node is storing, each of which a malicious user is incentivized to lie about. This solution does not deal with the blacklisters data, though a similar scheme for that is easy to imagine.
+
+To reduce the size of the DHT with the addition of these digital signatures, a chaining mechanism could be put in place, similar to the one in Bitcoin's blockchain. Instead of appending digital signatures to the corresponding DHT column, new digital signatures could sign the old ones and then overwrite them. This preserves their effect, but removes the associated storage cost. More thought needs to be given to this to design an optimal mechanism (and to determine if chaining is even required).
+
+
+\subsection{NAT Traversal}
+
+As it stands now, our system is unusable by a majority of Internet users, since they live behind routers with NAT. We need to implement some mechanism to bypass this. We can turn to Skype, BitTorrent, BitTorrent Sync, and other P2P applications for inspiration.
+
+\subsection{BTBackup Implementation}
+
+There are many features missing from our implementation that we would like to see added. A brief, nonexhaustive list follows. It do not include features also missing from the specification.
+
+\begin{enumerate}
+    \item Replace the centralized tracker with a DHT
+    \item Encrypted communication between peers to reduce information leakage
+    \item The ability to backup folders, not just files
+\end{enumerate}
+
+% TODO there are more things missing from impl
+
+% TODO there are more things missing from spec
+
 
 \begin{thebibliography}{11}
 
