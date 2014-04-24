@@ -1,8 +1,13 @@
 \documentclass[12pt]{report}
 
+% These are necessary to compile
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{amsmath}
+
+% Don't know which ones of these we actually use
 %%\usepackage{setspace}
 \usepackage{amsfonts}
-\usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{enumerate}
@@ -10,15 +15,14 @@
 \usepackage{alltt}
 \usepackage{color}
 \usepackage{fancyvrb}
-\usepackage{graphicx}
 \usepackage{epstopdf}
 \usepackage{url}
 \usepackage{verbatim}
-\usepackage{hyperref}
 %\usepackage[autostyle]{csquotes}
 %\usepackage[toc,page]{appendix}
 
-\usepackage[top=1in, bottom=1.5in, left=1.5in,right=1.5in]{geometry} % setting the page alignment with this package
+% Setting the page alignment with this package
+\usepackage[top=1in, bottom=1.5in, left=1.5in,right=1.5in]{geometry} 
 
 \DeclareGraphicsExtensions{.png}
 
@@ -31,6 +35,7 @@
 
 \begin{document}
 
+% TODO make title page look nicer
 \begin{titlepage}
 \begin{center}
 \thispagestyle{empty}
@@ -86,12 +91,12 @@ Most backup systems that are in use today are centralized, meaning that they rel
 % TODO citation for central backup entity going offline due to govt (bitcloud or something?)
 % TODO citation for central backup entity violating trust (google + nsa)
 
-Although they have not gained much popularity, peer to peer (P2P) file backup systems have been created and studied by researchers for over a decade. These systems do not suffer from the aforementioned drawbacks of centralized systems; they are free to use, limited in storage only by the user, and do not require a trusted central entity. Instead of backing up their data to a server, peers back up their data to \textit{each other}. Research in this area has focused on topics such as handling node churn, moving towards a completely decentralized system, efficient routing algorithms, and minimizing bandwidth.
+Although they have not gained much popularity, peer to peer (P2P) file backup systems have been created and studied by researchers for over a decade. These systems do not suffer from the aforementioned drawbacks of centralized systems; they are free to use, limited in storage only by the user, and do not require a trusted central entity. Instead of backing up their data to a server, peers back up their data to \textit{each other}. However, abandoning the centralized server model in favor of a distributed one brings with it new problems that must be addressed before wide-spread adoption can be expected. Research in this area has focused on topics such as handling node churn, moving towards a completely decentralized system, efficient routing algorithms, and minimizing bandwidth.
 % TODO citations for each research topic
 
 %In our system, peers offer each other space on their hard drive that is proportional to the amount that they wish to back up. To account for the fact that peers will not always be online, replicas of each file are created on several different nodes.
 
-We have designed and implemented a new P2P backup system that improves the speed of backing up and recovering data. Our main contribution, and the technology responsible for faster file backup and recovery, is the way in which we handle data transfer: BitTorrent Sync, a new synchronization application created by BitTorrent, Inc. BitTorrent Sync uses a modified version of the BitTorrent protocol in order to quickly synchronize files between groups of peers. This protocol is especially effective at transferring large files, which makes its use perfect for the domain of P2P file backup. By leveraging BitTorrent Sync, we take advantage of BitTorrent's ability to better utilize a peer's bandwidth by downloading from multiple sources at once. This is in contrast to other P2P backup systems, which directly download from one source at a time.
+We have designed and implemented a new P2P backup system, called BTBackup, that improves the speed of backing up and recovering data. Our main contribution, and the technology responsible for faster file backup and recovery, is the way in which we handle data transfer: BitTorrent Sync, a new synchronization application created by BitTorrent, Inc. BitTorrent Sync uses a modified version of the BitTorrent protocol in order to quickly synchronize files between groups of peers. This protocol is especially effective at transferring large files, which makes its use perfect for the domain of P2P file backup. By leveraging BitTorrent Sync, we take advantage of BitTorrent's ability to better utilize a peer's bandwidth by downloading from multiple sources at once. This is in contrast to other P2P backup systems, which directly download from one source at a time. Our approach takes advantage of the fact that P2P backup systems require data replication, the act of inserting several redundant copies of data into the network, to combat node churn. We view the the set of nodes storing replications for a given file as a BitTorrent swarm, allowing us to apply the BitTorrent protocol without additional overhead.
 
 % highlights of methodology
 
@@ -270,7 +275,7 @@ BitTorrent Sync leverages the BitTorrent protocol to provide quick downloads bet
 
 \chapter{BTBackup} \label{chap:BTBackup}
 
-In this chapter, we discuss the design of our Peer to Peer backup system. See Chapter \ref{chap:impl} for our implementation of it.
+In this chapter, we discuss the design of BTBackup, our Peer to Peer backup system. See Chapter \ref{chap:impl} for our implementation of it.
 
 \section{Data Exchange} \label{sec:DataExchange}
 
@@ -284,18 +289,17 @@ This section discusses the infrastructure and the protocols of our system that a
 \end{description}
 
 This terminology is used to give context. It is very likely that every participant in the system will eventually serve both roles (perhaps even simultaneously), but we refer to them as \textit{peer} or \textit{node} depending on what role they are playing in a given situation. A peer plays the role of the client, whereas a node plays the role of a server.\footnote{We may qualify each term to help give context. For example, we may say "\ldots a \textit{replication} node \ldots" to emphasize the fact that the node is storing a replica.} When there is no context, we use the terms interchangeably.
-% TODO find/replace all uses of replicant node with replication node or vice versa
 
 Note the emphasis of the action taken by each: a peer is said to \textit{back up} data, and a node is said to \textit{store} a replica of the peer's data.
 
-PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unnecessary to immediately find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the low possibility of not being able to recover data that is backed up. Note that this situation is unavoidable in \textbf{all} backup systems. By relaxing the aforementioned requirement like PeerStore, we leverage this fact by sacrificing theoretical availability for performance and usability. See Section \ref{subsec:TheMetadataLayer_sec:SystemDesign} for the discussion of the parameterization of these variables in our implementation. See Section \ref{} for our methodology of testing the parameter. Finally, see Section \ref{} for a comparison of the results of different values for the parameter.}
+PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unnecessary to \textit{immediately} find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the low possibility of not being able to recover data that is backed up. Also note that this situation is unavoidable in \textbf{all} backup systems. We leverage this fact by relaxing the aforementioned requirement like PeerStore; this sacrifices theoretical availability for performance and usability. See Section \ref{subsec:TheMetadataLayer_sec:SystemDesign} for the discussion of the parameterization of these variables in our implementation. See Section \ref{} for our methodology of testing the parameter. Finally, see Section \ref{} for a comparison of the results of different values for the parameter.}
 % TODO add references once we know section names
 
 Our system separates the two layers as well: the metadata layer is responsible for storing information about each data layer exchange (among other information), and the data layer is responsible for the actual exchange of the data.
 
 \subsection{The Metadata Layer} \label{sec:TheMetadataLayer_DataExchange}
 
-In the broadest sense, the metadata layer is used by peers to find nodes. Peers use it to determine which nodes will be used to store their data, and, in the event of local data loss, peers use it to find those same nodes so they can recover their data. The former is described below in \textbf{Finding Replicant Nodes}, the latter in \textbf{Metadata Record}.
+In the broadest sense, the metadata layer is used by peers to find nodes. Peers use it to determine which nodes will be used to store their data, and, in the event of local data loss, peers use it to find those same nodes so they can recover their data. The former is described below in \textbf{Finding Replication Nodes}, the latter in \textbf{Metadata Record}.
 % TODO don't hardcode these
 
 The metadata layer is a DHT that maps a given \textit{node ID} to information about the node (e.g., its IP address), called its \textit{metadata record}. A \textit{node ID} is a unique identifier for a node. It is used as the address of the node in the structured overlay network.
@@ -333,7 +337,7 @@ A metadata record stores the following information for each node in the system: 
 \end{center}
 \end{table}
 
-\subsubsection{Finding Replicant Nodes} \label{subsubsec:FindingReplicantNodes}
+\subsubsection{Finding Replication Nodes} \label{subsubsec:FindingReplicationNodes}
 
 For every file a peer wishes to back up, it must find a predetermined number of nodes that can store the file. To ensure an even distribution of responsibility in the structured overlay network, a random bitstring in the address space of the overlay network is generated; the DHT provides the functionality to find the node whose ID is \textit{closest} to the randomly generated bitstring, for the overlay network's given definition of closeness. The peer then gets the metadata record for the candidate node from the DHT. From the metadata record, the peer can calculate if the candidate node is \textit{obligated} to store its file. We discuss the situation in which a node is obligated to store a peers file in Section \ref{sec:Fairness}. The peer also uses the metadata record to ensure the candidate node does not have too many blacklisters. If the candidate node meets both requirements, the peer chooses it to store a replica and uses the data layer to contact the node to inform it of the decision. The metadata layer is updated appropriately, and the data layer is used to transfer the file. This process repeats until the predetermined number of nodes are found.
 
@@ -341,18 +345,16 @@ For every file a peer wishes to back up, it must find a predetermined number of 
 
 The data layer is responsible for copying the data to be backed up from the peer to the node. This includes the quick communication by the peer to the node informing it that it is a replication node for a given file.
 
-Our main contribution in this paper, and the only requirement of the data layer, is that it uses BitTorrent as the data transport protocol. By doing so we increase the speed of data recovery, because the peer can download the data from all replication nodes simultaneously.
+Our main contribution in this paper, and the only requirement of the data layer, is that it uses BitTorrent as the data transport protocol. By doing so we increase the speed of data recovery, because the peer can download the data from all replication nodes simultaneously, and data backup, because the nodes, in addition to the peer, can give the data they possess to each other.
 
 \subsubsection{Security}
 
 The data that is transported via the data layer is encrypted so that the replication nodes cannot read it. The strength of the encryption is left unspecified as a means of future-proofing this specification.
 
-% TODO note that this isn't done in the impl
 Furthermore, all communication between peers and nodes is encrypted to limit information leakage.
 
 \subsection{Churn and Data Migration} \label{sec:ChurnandDataMigration_DataExchange}
 
-%If less than X number of replicas, a peer should make a new replica on a node that has yet to hold a replica. (is this a TODO?)
 For users of our system to take advantage of the speed increases offered by the BitTorrent protocol, a sufficient number of replicas need to be maintained in the overlay network (for a comprehensive explanation of how the BitTorrent protocol works, see Section \ref{sec:TheBitTorrentProtocol}). Since the P2P network will be composed of ordinary network users, backups that are created may not always be available. Therefore, it is not enough to rely on the backups that are created when a file is first backed up; in the worst-case scenario, all of the nodes on which a user has created replicas have permanently left the network, leaving the user with no way to retrieve any backup. If one or two replication nodes are online when the backups are needed, the user will be able to recover their file but will not see much of a speed benefit from the BitTorrent protocol, as opposed to when all replication nodes are online.
 
 To solve this problem, peers in our system periodically check on the nodes that they are using as backup locations in order to gauge how available they are. During normal program operation, each peer tests the availability of its replication nodes via a challenge mechanism, described in Section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}. The challenge mechanism not only ensures the node is online, but also confirms it is storing the peer's data. If the replication node is online and passes the challenge, the peer does not need to do anything; it will continue to (accurately) think that the node is reliable. If the node fails the challenge (by being offline or not storing the user's data), however, the peer will take note that the node was unreliable in this instance. It would be unfair to immediately conclude that the node is consistently unreliable, since it may have been temporarily offline (for example, a user temporarily shutting down his/her computer). Therefore, a node needs to fail the challenge mechanism several times before the peer concludes that it is consistently unreliable. It is possible that a node gets unlucky and happens to be offline during all checks, even though it is online during a different part of the day. If this is the case, then the node is not frequently available for that peer, and should be seen as consistently unreliable from the peer's perspective.
@@ -360,7 +362,6 @@ To solve this problem, peers in our system periodically check on the nodes that 
 When a peer determines that a node is consistently unreliable, it does two things. The first is that it adds its own ID to the node's blacklist in the DHT. The second is to move its replica to a new node. The peer sends an update to the DHT that it is removing the replica on the unreliable node. This accomplishes two things: all other peers in the network can see that the node is storing less data, and the node can see that it no longer needs to store the replica, so it can remove it the next time it checks the DHT for any changes. The peer will then look for a new node to put a replica on, using the same process that was used for creating the original backups (see Section \ref{subsec:TheMetadataLayer_sec:SystemDesign}). Since this process uses a randomly generated salt to help pick the ID of the new node, each node has an equal chance of being selected, assuming that it has enough space to store the replica and is not blacklisted by too many peers. This helps to prevent some nodes from being left out of the selection process. % TODO this last sentence can be removed without loss of information, but it might mean that the salt explanation in the crypto section was for nothing.
 
 \section{Fairness} \label{sec:Fairness}
-% People store proportional amount of data compared to how much they are backing up
 % TODO we say "if n backups", but also refer to each backup as a "replica". we should be consistent. where else do we do this? ctrl-f replica
 To ensure fairness (see Section \ref{sec:BackgroundFairness} for background information), each node must contribute storage space proportional to the amount that they are backing up. Since a peer will have replicas of its file stored on multiple nodes, the amount of space that a peer offers\footnote{That is, offers to store when it assumes the role of a node.} must be much larger than the amount of unique data that it is backing up. If $n$ backups are maintained for each file and $\mathcal{F}$ represents the set of files that a peer backs up, the total amount of space $t$ that the peer must offer can be expressed as:
 \begin{equation}
@@ -388,7 +389,7 @@ Our implementation of BTBackup is written in C++. This language was primarily ch
 
 \section{System Design}
 \subsection{Overview} \label{subsec:Overview_sec:SystemDesign_chap:Implementation}
-%Diagram of system design
+
 We have designed our system to be modular. We realize that future work on our system might include the replacement of our data and metadata layers. Our solution for making these parts interchangeable with different implementations is to define standard interfaces between the two layers and the core application. These interfaces can be followed to create new implementations for the two layers. Along with these two layers, there is one more major part to our application: the system core. The system core comprises the core functionality of our system, which includes accepting and executing user commands, receiving network requests from other peers, and maintaining the P2P system.
 
 \begin{figure}
@@ -434,6 +435,8 @@ The main purpose of the Console Controller is to allow input to our program from
 \item backup  $<$fileName$>$ - adds a file to backup.
 \item rm $<$fileName$>$ - removes a file that is already being backed up.
 \end{itemize}
+% TODO implement rm command (just send UpdateFileSize(0))
+
 Since the Console Controller runs on the main thread of execution, it manages the life cycle of the other controllers.
 
 \subsubsection{Network Controller} \label{subsubsec:NetworkController_subsec:SystemCore_sec:SystemDesign_chap:Implementation}
@@ -647,16 +650,24 @@ To reduce the size of the DHT with the addition of these digital signatures, a c
 
 \subsection{NAT Traversal}
 
-As it stands now, our system is unusable by a majority of Internet users, since they live behind routers with NAT. We need to implement some mechanism to bypass this. We can turn to Skype, BitTorrent, BitTorrent Sync, and other P2P applications for inspiration.
+As it stands now, our system is unusable by a majority of Internet users, since they live behind routers with NAT. We need to design some mechanism to overcome this in our system. We can turn to Skype, BitTorrent, BitTorrent Sync, and other P2P applications for inspiration.
+
+% TODO explain what NAT is why and it makes P2P hard?
+
+\subsection{Finding the optimal number of replications}
+
+In order to minimize storage overhead, we would like to find the optimal number of data replicas to create before their provided speed enhancement is outweighed by their storage cost.
+
+Our approach takes advantage of the need for replicas in a P2P backup system to combat node churn; we use the already-present replication nodes as a BitTorrent swarm, which provides the speed boost without additional overhead. However, we wonder if the cost of creating replicas in addition to the ones needed for data availability would improve the data transfer rate even more. The fact that the additional replicas also provide greater data availability should also be taken into account.
 
 \subsection{BTBackup Implementation}
 
-There are many features missing from our implementation that we would like to see added. A brief, nonexhaustive list follows. It do not include features also missing from the specification.
+There are many features missing from our implementation that we would like to see added. A brief, nonexhaustive list follows. It does not include other future work detailed in this chapter.
 
 \begin{enumerate}
-    \item Replace the centralized tracker with a DHT
-    \item Encrypted communication between peers to reduce information leakage
-    \item The ability to backup folders, not just files
+    \item Replace the centralized tracker with a DHT to become completely decentralized.
+    \item Encrypted communication between peers to reduce information leakage.
+    \item The ability to backup folders, not just files.
 \end{enumerate}
 
 % TODO there are more things missing from impl
