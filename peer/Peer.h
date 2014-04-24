@@ -95,6 +95,8 @@ class Peer {
   static const int METADATA_RESCAN_INTERVAL;
   static const uint64_t MINIMUM_STORE_SIZE;
   static const uint32_t STARTING_NODE_RELIABILITY;
+  static const int MAX_TESTS_UNTIL_CHECK;
+  static const int NUM_PASSED_TO_KEEP;
  private:
   // Create necessary directories for backing up and storing data
   // Read in localBackupInfo from disk
