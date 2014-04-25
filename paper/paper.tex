@@ -61,7 +61,7 @@
 \end{titlepage}
 
 \begin{abstract}
-Abstract
+For many computer users, having access to a reliable file backup service is important. As computers and computer-related technologies improve, users have the ability to generate higher resolution content. Creating backups becomes less feasible as the amount of data grows; limited network bandwidth makes the backup process cumbersome, and access to a large amount of storage space for backups is either limited or expensive. In this report, we propose a new backup system, BTBackup, which aims to solve both problems. Our system is designed as a Peer-to-Peer (P2P) network, where users of the system use each other as backup locations. Users offer storage space that is proportional to the amount of data that they backup. This means that the capacity of each user's physical storage is the only limiting factor for how much they can back up. We solve the problem of long data transfers for big files by leveraging the speed offered by the BitTorrent Protocol, which uses a file chunking mechanism to download files from multiple peers at once. By testing our system in various scenarios, we show that it achieves our goal of quicker backup creation through the use of file transfer parallelization.
 \end{abstract}
 
 \renewcommand{\abstractname}{Acknowledgements}
@@ -82,6 +82,7 @@ Mih\'aly H\'eder, our on-site Project Advisor, for his advice, insight, expertis
 \tableofcontents
 \listoffigures
 
+% TODO: Talk about how fast transfer are important for P2P backup in particular, since many replicas will need to be made and replicas will need to be moved around.
 \chapter{Introduction}
 
 As the capacity and performance of hard drives continue to increase over time, users continue to store their data in greater volumes. This includes high resolution photos, videos, and audio for the personal user, and databases, source code repositories, and operating system images for the technical user. The increase in stored data gives rise to a greater need for the data to be backed up, in preparation for the undesirable event that one's hard drive becomes inaccessible. This can happen if one's computer crashes, the hard drive fails, or the computer is lost or stolen.
@@ -257,7 +258,6 @@ BitTorrent Sync is a new application developed by BitTorrent, Inc. It is a P2P s
 
 Users of BitTorrent Sync have several options for having their synced devices locate each other. The following list is taken from the BitTorrent Sync technology page \cite{btsynctech} and describes each method of peer discovery:
 
-% TODO why do we discuss the different ways to find peers? We only need to talk about predefined hosts
 \begin{quote}
 \begin{itemize}
 \item Local peer discovery. All peers inside local network are discovered by sending broadcast packets. If there are peers with the same secret they respond to the broadcast message and connect.
@@ -267,6 +267,8 @@ Users of BitTorrent Sync have several options for having their synced devices lo
 \item BitTorrent tracker. BitTorrent Sync can use a specific tracker server to facilitate peer discovery. The tracker server sees the combination of SHA1(secret):ip:port and helps peers connect directly. The BitTorrent Sync tracker also acts like a STUN server and can help do a NAT traversal for peers so that they can establish a direct connection even behind a NAT.
 \end{itemize}
 \end{quote}
+
+In our system, we take advantage of the "known hosts" discovery method. When one peer picks another as a site for a replica of one of its files, it adds that other peer's IP address and listening port to the list of known hosts. When the backups need to be restored, the list can be reloaded into BitTorrent Sync. We decided to use this because it does not rely on the use of a central authority.
 
 To allow other developers to use BitTorrent Sync as a part of their applications, the BitTorrent Sync API has been created \cite{btsyncapi}. Developers can obtain an API key by applying for one and have the application accepted by the BitTorrent Sync developers. The API key allows a developer to use all API functions, which are issued in the form of HTTP requests sent to the web interface that is started by the BitTorrent Sync executable.
 
@@ -413,6 +415,7 @@ Due to time constraints, we simplified the implementation of the metadata layer 
 \item[Blacklist Node:] When a peer performs this interface call, it adds its own ID to the list of blacklisters for a specified node.
 \item[Backup File:] Register the creation of a newly-created backup with the metadata layer.
 \item[Update File Size:] Let the metadata layer know that the size of a given file has changed.
+\item[Remove Backup:] Given a file ID and node ID, a peer can remove a specific replica of one of its files.
 \end{description}
 Our tracker implementation is a standalone multithreaded application. It uses a custom threadpool implementation, called the Dispatcher, to accept several connections at a time from peers to process the interface calls listed above. Each Metadata Record is stored in an unordered map, which maps node IDs to their corresponding record.
 
@@ -535,38 +538,33 @@ ifconfig eth0 | grep 'TX bytes' | awk -F : '{print $3}' | \
 
 where \textit{eth0} is the name of the network interface. With the ability to query this at any time, we were able to determine the number of bytes sent each second by calling the above command once every second. The output is then sent to a logging server, which collects the data from every peer into one log file.
 
-There are two instances within this test scenario. The first is our control, where all peers joined the network at the start and did not leave until the end of the instance. Running this test allowed us to see how much data is transferred without any churn. In the second instance, nodes enter and leave the network at a rate specified by the distribution function described below. % Pickup here
+There are two instances within this test scenario. The first is our control, where all peers joined the network at the start and did not leave until the end of the instance. Running this test allowed us to see how much data is transferred without any churn. In the second instance, nodes entered and left the network at a rate specified by a distribution function (described in the next paragraph). By having nodes limit their availability, the peers that store data on them perceive them as unreliable and move their replicas to other nodes, creating more network traffic in the process. By measuring this network traffic and comparing it to the traffic of the test instance with no churn, we can determine the average amount of network traffic generated by data layer maintenance.
 
 % TODO: Make sure this is very understandable.
-In our tests, we modeled a network where each peer had an average uptime of 150 seconds (2.5 minutes) and an average downtime of 75 seconds (1.25 minutes). We chose these numbers based on the amount of time a typical user might be online in a given day. We reasoned that, if a typical user keeps his or her computer on during the day and shuts it off when he or she sleeps (for 8 hours), then the uptime in the average day will be 16 hours. As explained in section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}, our challenging mechanism sends a challenge message to backup nodes every 6 hours and blacklists them upon 50\% challenge failure over 4 days, meaning that a node is blacklisted if they fail 8 or more tests. We scaled these numbers down so that we would have a 1 hour test (a factor of 360): a 6 hour challenge becomes a 60 second challenge, and the challenge period becomes 16 minutes. To make the challenge period evenly fit into the 1 hour test, we rounded the challenge period down to 15 minutes, making the scaling a factor of 384. From this factor, we scale 16 hours and 8 hours down to 2.5 minutes and 1.25 minutes, respectively.
+In our test instance with churn, we modeled a network where each peer had an average uptime of 150 seconds (2.5 minutes) and an average downtime of 75 seconds (1.25 minutes). We chose these numbers based on the amount of time a typical user might be online in a given day. We reasoned that, if a typical user keeps his or her computer on during the day and shuts it off when he or she sleeps (for 8 hours), then the uptime in the average day will be 16 hours. As explained in section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}, our challenging mechanism sends a challenge message to backup nodes every 6 hours and blacklists them upon 50\% challenge failure over 4 days, meaning that a node is blacklisted if they fail 8 or more tests. We scaled these numbers down so that we would have a 1 hour test (a factor of 360): a 6 hour challenge becomes a 60 second challenge, and the challenge period becomes 16 minutes. To make the challenge period evenly fit into the 1 hour test, we rounded the challenge period down to 15 minutes, making the scaling a factor of 384. From this factor, we scale 16 hours and 8 hours down to 2.5 minutes and 1.25 minutes, respectively.
 
 To create churn, we have peers enter and leave the network at varying time intervals. The tests were controlled by a Python script that initialized the test environment and ran the test upon machine boot. The script start and stops BTBackup to simulate the node entering and leaving the network, respectively. To determine the duration of time, the script picked a timeout from one of two distributions, depending on whether the peer was entering or leaving the network. This is the strategy used in the experimental results of PeerStore \cite{PeerStore}.
 
-Our distributions are a combination of three functions over the range $[0,1)$. In order to choose an uptime or downtime, a node chooses a random number in this range, and applies it to the following multipart function:
+To make this test scenario more realistic, each node has their upload and download bandwidth limited to different values at the beginning of each instance. Download speeds are picked from a normal distribution of Internet speeds. In order to have a mean and standard deviation for our distribution that is reflective of current Internet speeds around the world, we found statistics on the average download speed per country, as well as the number of people in each country who use the Internet. This allowed us to find the expected value for download speed by taking a weighted average, $W$:
+$$
+W=\sum\limits_{i=1}^{|\mathcal{D}|} n_iD_i
+$$
+Where $\mathcal{D}$ is the set of country download speeds and $n$ is the corresponding percentages of global Internet users that each country has. The normal distribution is only used for download speeds; rather than choosing an upload speed using the same method, we took each download speed and halved it. This ensures that the upload speed is lower than the corresponding download speed, which is often the case on the Internet, as well as ensuring that the two speeds are proportional.
+
+Our distributions are a combination of three functions over the range $[0,1)$. In order to choose an uptime or downtime, a node chooses a random number in this range, and applies it to the following piecewise function:
 
 $$
 f(x)=
 \begin{cases}
 10xc & \mbox{ if $0 \leq x < 0.2$ } \\
 [4(x-0.2)+2]c & \mbox{ if $0.2 \leq x < 0.8$ } \\
-[e^{21(x-0.84)}+3.5]c & \mbox{ if $0.8 \leq x < 1$ }
+[e^{21(x-0.8)}+3.4]c & \mbox{ if $0.8 \leq x < 1$ }
 \end{cases}
 $$
 
-% TODO: Is it accurate to say that the multipart function is continuous?
-The value of $c$ is what differentiates between choosing an uptime or a downtime. In order to obtain the average uptime and downtime stated above, we used $c=50$ for uptime and $c=25$ for downtime. Since the middle equation is our biggest range, we modeled it so that its average values for each value of $c$ approximately corresponds to the average uptime and downtime. We used a steeper linear equation from 0 to 0.2 so that very short uptimes and downtimes are represented, but very few nodes will ever choose values using this function. The steepness also makes the transition to the middle equation quick but continuous. For the top range, we chose an exponential function so very long uptimes and downtimes are represented. For example, the upper bound for uptime is 3509.32 seconds, or 58.49 minutes for $c=50$, which is almost the entire length of the test. Nodes who pick these values represent computers that are almost always online, such as servers or NAS units.
+The value of $c$ is what differentiates between choosing an uptime or a downtime. In order to obtain the average uptime and downtime stated above, we used $c=50$ for uptime and $c=25$ for downtime. Since the middle equation is our biggest range, we modeled it so that its average values for each value of $c$ approximately corresponds to the average uptime and downtime. We used a steeper linear equation from 0 to 0.2 so that very short uptimes and downtimes are represented, but very few nodes will ever choose values using this function. The steepness also makes the transition to the middle equation quick but continuous. For the top range, we chose an exponential function so very long uptimes and downtimes are represented. For example, the upper bound for uptime is 3504.32 seconds, or 58.41 minutes for $c=50$, which is almost the entire length of the test. Nodes who pick these values represent computers that are almost always online, such as servers or NAS units.
 
 %By using an exponential distribution, there will be a greater chance of peers going offline for a short amount of time. This is useful, since in a production environment, many nodes will go offline for a short amount of time (i.e. users shutting their machine down at night), but fewer will stay offline for a long period of time or permanently leave the network.
-
-% TODO: Talk about what we actually do, including the control group of no churn.
-
-% TODO discuss what we want to get out of this scenario, like the first paragraph in other scenario
-
-% Commenting this out b/c we don't do this test
-%\subsection{Number of Replicas} \label{subsec:NumberofReplicas_sec:TestScenarios_chap:Methodology}
-
-% TODO: Talk about the exact distributions used for the constant churn in this scenario.
-%This test scenario produced data so that we could determine how the number of replicas influences the recoverability of backed up files, as well as the speed of backup recovery. This is done in the presence of some constant amount of churn, in order to make the tests more realistic. Our testing procedure was very similar to the previous scenario: we created a network with 100 peers that backed up 1GB each. Instead of changing the churn rate between test instances, however, we changed the number of replicas that each peer attempts to find when creating a backup of its file. We started with 3 replicas per file in the first test instance and increased that number to 10 in the last instance. By having this much variation, we were able to see how much of a gain or loss in performance existed when replicas were added or removed. From this, we were able to see which replica counts do not offer enough of a performance gain to warrant the creation of that many replicas. This is especially important to our system, because as a peer creates more replicas, it is required to store more data from other peers.
 
 \chapter{Results} \label{chap:Results}
 
@@ -704,17 +702,15 @@ To reduce the size of the DHT with the addition of these digital signatures, a c
 
 \subsection{NAT Traversal}
 
-As it stands now, our system is unusable by a majority of Internet users, since they live behind routers with NAT. We need to design some mechanism to overcome this in our system. We can turn to Skype, BitTorrent, BitTorrent Sync, and other P2P applications for inspiration.
-
-% TODO briefly explain what NAT is why and it makes P2P hard
+We have designed our system so that peers directly contact each other by their IP address. While there are no problems with this solution when all peers are directly visible to the public Internet, it does pose a problem when they are behind a router that uses Network Address Translation, or NAT. When one or more hosts are behind a NAT-enabled router, they send network packets that have a destination outside of their subnet to the router. The router creates mappings between the hosts' internal IP address and the ports that they are using to the router's publicly visible IP address and a port that is chosen by the router. This is convenient for the typical home user, since Internet Service Providers typically only give one public IP address per Internet subscription. A home user can connect multiple devices to the NAT-enabled router, and they will all seem to be one device (with the router's public IP address) to the rest of the Internet. While it is convenient, it comes at the cost of not being able to initiate a connection to a device behind a NAT, since no IP/port mapping has been made yet. This is the case with most home users today, so we would need to design some mechanism to overcome this in our system if it were to be used by people all over the world. We can turn to Skype, BitTorrent, BitTorrent Sync, and other P2P applications for inspiration. These applications and protocols use mechanisms such as publicly visible supernodes as relay servers \cite{skypeSupernode}, trackers \cite{bittorrentProtocol}, and Universal Plug and Play (UPnP) \cite{btsynctech}.
 
 \subsection{Finding the optimal number of replications}
-
-% TODO two reasons to find # reps: ensure availability in presence of different churn, and what is written below
 
 In order to minimize storage overhead, we would like to find the optimal number of data replicas to create before their provided speed enhancement is outweighed by their storage cost.
 
 Our approach takes advantage of the need for replicas in a P2P backup system to combat node churn; we use the already-present replication nodes as a BitTorrent swarm, which provides the speed boost without additional overhead. However, we wonder if the cost of creating replicas in addition to the ones needed for data availability would improve the data transfer rate even more. The fact that the additional replicas also provide greater data availability should also be taken into account.
+
+Optimally, we would want to determine the minimum number of replicas needed in order to provide data availability while still taking advantage of the speed boost provided by BitTorrent. In order to determine this number, further tests could be done on our system that modifies the number of replicas that a peer seeks to create. The download and uploads speeds would then be measured for each replica count and compared to each other in order to determine if there are any differences. In order to also test data availability, the tests could factor in a rate of churn, similar to the test scenario described in section \ref{subsec:EffectsofChurn_sec:TestScenarios_chap:Methodology}. The availability of replicas would then be measured based on our system's challenge mechanism.
 
 \subsection{BTBackup Implementation}
 
@@ -722,14 +718,11 @@ There are many features missing from our implementation that we would like to se
 
 \begin{itemize}
     \item Replace the centralized tracker with a DHT to become completely decentralized.
-    \item Encrypted communication between peers to reduce information leakage.
+    \item Encrypted communication between peers to reduce information leakage. The actual transfer of data is encrypted; this refers to the transfer of encryption secrets and challenge messages.
     \item The ability to backup folders, not just files.
+    \item Implement a more sophisticated challenge mechanism. Our current implementation of the challenge mechanism only checks for node availability. In order to have a system where all peers are storing the amount of data they are supposed to, the challenge mechanism we described in section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup} will need to be implemented.
+    \item Use only open source software. Currently, BitTorrent Sync is closed source. In order to ensure that the system can be completely trusted, we would either need to wait for BitTorrent Sync to become open source, use an open source alternative, or create our own.
 \end{itemize}
-
-% TODO there are more things missing from impl
-
-% TODO there are more things missing from spec
-
 
 \begin{thebibliography}{11}
 
@@ -746,6 +739,7 @@ There are many features missing from our implementation that we would like to se
 \bibitem{cryptoDef} Rivest, Ronald L. (1990). "Cryptology". In J. Van Leeuwen. Handbook of Theoretical Computer Science 1. Elsevier.
 \bibitem{syslogRFC1} C. Lonvick, "The BSD syslog Protocol". https://tools.ietf.org/html/rfc3164, August 2001.
 \bibitem{syslogRFC2} R. Gerhards, "The syslog Protocol". https://tools.ietf.org/html/rfc5424, March 2009.
+\bibitem{skypeSupernode} S. Guha, N. Daswani, R. Jain, "An Experimental Study of the Skype Peer-to-Peer VoIP System". http://saikat.guha.cc/pub/iptps06-skype/ .
 
 \end{thebibliography}
 
