@@ -22,7 +22,7 @@
 %\usepackage[toc,page]{appendix}
 
 % Setting the page alignment with this package
-\usepackage[top=1in, bottom=1.5in, left=1.5in,right=1.5in]{geometry} 
+\usepackage[top=1in, bottom=1.5in, left=1.5in,right=1.5in]{geometry}
 
 \DeclareGraphicsExtensions{.png}
 
@@ -39,7 +39,6 @@
 \begin{titlepage}
 \begin{center}
 \thispagestyle{empty}
-% TODO maybe nice pic? \includegraphics [width = 0.3\textwidth] {images/wpilogo}\\[0.3cm]
 % TODO install \textsc font
 \Large{\textbf{A Major Qualifying Project Report\\ \large{ON}}}\\[0.7cm]
 \LARGE{\textsc {\textbf{An Analysis of the Feasibility and Performance of BitTorrent as a Data Transfer Protocol in Peer to Peer Backup Systems}}}\\[0.5cm]
@@ -199,7 +198,7 @@ While this ensures that peers will agree to take data in proportion to the amoun
 \subsection{Churn and Data Migration} \label{sec:churn}
 With each storage node being regular users, it is often the case that nodes can be offline. Recall that churn refers to the fact that peers will continuously enter and leave the P2P network. The designer of a P2P backup system must take this into consideration if the system is to provide reliable access to backed up data. This has been accomplished via data migration \cite{pStore,PeerStore}, where the availability of files is periodically checked and replicas are made when the peers being used for backup are not reliably available. Other data migration algorithms have been designed specifically to work in high churn networks \cite{StorageSearchP2PNetworks}. In this case, data replicas are periodically redistributed to different groups of nodes, which means that newer nodes have a chance to store data. This is beneficial because data stays evenly distributed throughout the overlay network, preventing any single node from being responsible for too much data, regardless of when they joined.\footnote{It is important to note this strategy is designed to work in an unstructured overlay network, not a structured one. Structured networks need not redistribute like this because the evenly distributed address assignment provides the even data distribution.}
 
-The number of replicas to maintain will have an impact on the performance of the system. If the replica count is too low, the probability of recovering the  file is lowered. If the replica count is too high, then storage space and bandwidth will be needlessly used. Furthermore, if the system requires a peer to offer a proportional amount of storage space to the amount that it is using on others, the peer will also have to offer a lot more space than what it is using locally for its own data. % TODO this last sentence might go better in the fairness section
+The number of replicas to maintain will have an impact on the performance of the system. If the replica count is too low, the probability of recovering the file is lowered. If the replica count is too high, then bandwidth and storage space will be needlessly used; the peers storing replicas do not significantly contribute to the availability of the data, and the peer backing up the data will need to store more data for others as part of the fairness mechanism.
 
 \subsection{Cryptography} \label{sec:crypto}
 Cryptography is the study of techniques for secure communication in the presence of third parties \cite{cryptoDef}. It is heavily relied upon in the computer world to protect secrets, verify identities, and ensure data has not been tampered with. Our system uses cryptography to \textit{encrypt} users' data before replicating it to strangers' computers. Encryption is the process of obfuscating text into a state such that it cannot be understood without \textit{decryption}, the reverse process. Secret \textit{keys} are used to parameterize encryption algorithms so that, although the specific process for encryption is public, the message it encrypts remains a secret. In \textit{symmetric-key} encryption, the key used to decrypt is identical to the key used to encrypt. This differs from \textit{public-key} encryption, in which two different, yet mathematically related, keys are used.
@@ -279,8 +278,7 @@ In this chapter, we discuss the design of BTBackup, our Peer to Peer backup syst
 
 \section{Data Exchange} \label{sec:DataExchange}
 
-% todo reword
-This section discusses the infrastructure and the protocols of our system that are concerned with moving data between entities in the network. Henceforth, we use the following terminology to disambiguate participants:
+This section discusses the data structures and protocols of our system that are used to move data between entities in the network. Henceforth, we use the following terminology to disambiguate participants:
 
 % todo use package enumitem to make labels italics instead of bold
 \begin{description}
@@ -290,10 +288,9 @@ This section discusses the infrastructure and the protocols of our system that a
 
 This terminology is used to give context. It is very likely that every participant in the system will eventually serve both roles (perhaps even simultaneously), but we refer to them as \textit{peer} or \textit{node} depending on what role they are playing in a given situation. A peer plays the role of the client, whereas a node plays the role of a server.\footnote{We may qualify each term to help give context. For example, we may say "\ldots a \textit{replication} node \ldots" to emphasize the fact that the node is storing a replica.} When there is no context, we use the terms interchangeably.
 
-Note the emphasis of the action taken by each: a peer is said to \textit{back up} data, and a node is said to \textit{store} a replica of the peer's data.
+Note the emphasis of the action taken by each: a peer is said to \textit{back up} data, and a node is said to \textit{store} a replica of the peer's data. Understanding this distinction will aid in understanding the description of our system.
 
-PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unnecessary to \textit{immediately} find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the low possibility of not being able to recover data that is backed up. Also note that this situation is unavoidable in \textbf{all} backup systems. We leverage this fact by relaxing the aforementioned requirement like PeerStore; this sacrifices theoretical availability for performance and usability. See Section \ref{subsec:TheMetadataLayer_sec:SystemDesign} for the discussion of the parameterization of these variables in our implementation. See Section \ref{} for our methodology of testing the parameter. Finally, see Section \ref{} for a comparison of the results of different values for the parameter.}
-% TODO add references once we know section names
+PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unnecessary to \textit{immediately} find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the low possibility of not being able to recover data that is backed up. Also note that this situation is unavoidable in \textbf{all} backup systems. We leverage this fact by relaxing the aforementioned requirement like PeerStore; this sacrifices theoretical availability for performance and usability.}
 
 Our system separates the two layers as well: the metadata layer is responsible for storing information about each data layer exchange (among other information), and the data layer is responsible for the actual exchange of the data.
 
@@ -359,7 +356,7 @@ For users of our system to take advantage of the speed increases offered by the 
 
 To solve this problem, peers in our system periodically check on the nodes that they are using as backup locations in order to gauge how available they are. During normal program operation, each peer tests the availability of its replication nodes via a challenge mechanism, described in Section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}. The challenge mechanism not only ensures the node is online, but also confirms it is storing the peer's data. If the replication node is online and passes the challenge, the peer does not need to do anything; it will continue to (accurately) think that the node is reliable. If the node fails the challenge (by being offline or not storing the user's data), however, the peer will take note that the node was unreliable in this instance. It would be unfair to immediately conclude that the node is consistently unreliable, since it may have been temporarily offline (for example, a user temporarily shutting down his/her computer). Therefore, a node needs to fail the challenge mechanism several times before the peer concludes that it is consistently unreliable. It is possible that a node gets unlucky and happens to be offline during all checks, even though it is online during a different part of the day. If this is the case, then the node is not frequently available for that peer, and should be seen as consistently unreliable from the peer's perspective.
 
-When a peer determines that a node is consistently unreliable, it does two things. The first is that it adds its own ID to the node's blacklist in the DHT. The second is to move its replica to a new node. The peer sends an update to the DHT that it is removing the replica on the unreliable node. This accomplishes two things: all other peers in the network can see that the node is storing less data, and the node can see that it no longer needs to store the replica, so it can remove it the next time it checks the DHT for any changes. The peer will then look for a new node to put a replica on, using the same process that was used for creating the original backups (see Section \ref{subsec:TheMetadataLayer_sec:SystemDesign}). Since this process uses a randomly generated salt to help pick the ID of the new node, each node has an equal chance of being selected, assuming that it has enough space to store the replica and is not blacklisted by too many peers. This helps to prevent some nodes from being left out of the selection process. % TODO this last sentence can be removed without loss of information, but it might mean that the salt explanation in the crypto section was for nothing.
+When a peer determines that a node is consistently unreliable, it does two things. The first is that it adds its own ID to the node's blacklist in the DHT. The second is to move its replica to a new node. The peer sends an update to the DHT that it is removing the replica on the unreliable node. This accomplishes two things: all other peers in the network can see that the node is storing less data, and the node can see that it no longer needs to store the replica, so it can remove it the next time it checks the DHT for any changes. The peer will then look for a new node to put a replica on, using the same process that was used for creating the original backups (see Section \ref{subsec:TheMetadataLayer_sec:SystemDesign}). %Since this process uses a randomly generated salt to help pick the ID of the new node, each node has an equal chance of being selected, assuming that it has enough space to store the replica and is not blacklisted by too many peers. This helps to prevent some nodes from being left out of the selection process. % TODO this last sentence can be removed without loss of information, but it might mean that the salt explanation in the crypto section was for nothing.
 
 \section{Fairness} \label{sec:Fairness}
 % TODO we say "if n backups", but also refer to each backup as a "replica". we should be consistent. where else do we do this? ctrl-f replica
@@ -481,7 +478,7 @@ The following sections describe how we performed our testing. For the results of
 % Using SZTAKICloud at MTA SZTAKI in Budapest
 % (how much are we allowed to talk about it? ask Mihaly)
 
-% TODO: Is it actually called SZTAKI Cloud? I've looked through my emails, and Mihaly never calls it exactly that. If we could put as much as we want, it might be nice to put a screenshot of the web interface.
+% TODO: Is it actually called SZTAKI Cloud? I've looked through my emails, and Mihaly never calls it exactly that.
 In order to test our system, we needed an environment that would allow us to create and populate our network with as many nodes as we needed for each test scenario. We used SZTAKI Cloud, a virtualization platform that runs on the enterprise cloud computing system \textit{OpenNebula}. SZTAKI Cloud allowed us to create and clone virtual machines for each test scenario. This is done via the web interface. % TODO: Elaborate more here, depending on how much Mihaly wants us to talk about it.
 
 Each virtual machine was a headless GNU/Linux machine running Ubuntu 12.04, 64-bit. Each machine had a 2.1GB hard drive for the operating system, 1 virtual CPU, and 1GB of RAM. Depending on the test, we also attached another virtual hard drive to each virtual machine, as more storage was needed in order to backup large files.
@@ -646,6 +643,7 @@ We confirm that the nodes, in addition to the peer, are actively backing up the 
 The peer generally uploads the fastest for the first 9 minutes; the nodes are all requesting chunks from mostly the peer throughout this period, as it is the initial seeder. However, around the 9 minute mark, the nodes seem to start requesting data from each other more often than the peer, as seen by the peer's decrease in upload speed between the 9 and 10 minute mark.
 
 % TODO what is happening after the 11 minute mark? why are they all uploading again? it might help to look at the download speed graph of everyone
+% Dan thinks it just load distribution. explain this
 
 We believe the initial ~40 seconds of inactivity is due to BitTorrent Sync indexing the 1 GB file before it can transfer it.
 
@@ -682,7 +680,7 @@ Section \ref{subsec:DataRecoverySpeedfromNodesPerspective} verified our hypothes
 
 Section \ref{subsec:EntitiesBackingUpa1GBFile} showed that our system lessens the Peer's load of backing up a file by distributing the task to the nodes as well. This has the side effect of speeding up the backup process, because nodes upload the data they have at a given time to each other, better utilizing their download bandwidth.
 
-Section \ref{sec:EffectsofChurn} explained that, in the presence of an average amount of churn, 
+Section \ref{sec:EffectsofChurn} explained that, in the presence of an average amount of churn, the average peer would need to make a new replica of any given file every 11 days.
 
 
 \chapter{Conclusion} \label{chap:Conclusion}
@@ -706,7 +704,7 @@ To reduce the size of the DHT with the addition of these digital signatures, a c
 
 As it stands now, our system is unusable by a majority of Internet users, since they live behind routers with NAT. We need to design some mechanism to overcome this in our system. We can turn to Skype, BitTorrent, BitTorrent Sync, and other P2P applications for inspiration.
 
-% TODO explain what NAT is why and it makes P2P hard?
+% TODO briefly explain what NAT is why and it makes P2P hard
 
 \subsection{Finding the optimal number of replications}
 
@@ -720,11 +718,11 @@ Our approach takes advantage of the need for replicas in a P2P backup system to 
 
 There are many features missing from our implementation that we would like to see added. A brief, nonexhaustive list follows. It does not include other future work detailed in this chapter.
 
-\begin{enumerate}
+\begin{itemize}
     \item Replace the centralized tracker with a DHT to become completely decentralized.
     \item Encrypted communication between peers to reduce information leakage.
     \item The ability to backup folders, not just files.
-\end{enumerate}
+\end{itemize}
 
 % TODO there are more things missing from impl
 
