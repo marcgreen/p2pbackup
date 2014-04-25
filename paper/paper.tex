@@ -61,7 +61,7 @@
 \end{titlepage}
 
 \begin{abstract}
-Abstract
+For many computer users, having access to a reliable file backup service is important. As computers and computer-related technologies improve, users have the ability to generate higher resolution content. Creating backups becomes less feasible as the amount of data grows; limited network bandwidth makes the backup process cumbersome, and access to a large amount of storage space for backups is either limited or expensive. In this report, we propose a new backup system, BTBackup, which aims to solve both problems. Our system is designed as a Peer-to-Peer (P2P) network, where users of the system use each other as backup locations. Users offer storage space that is proportional to the amount of data that they backup. This means that the capacity of each user's physical storage is the only limiting factor for how much they can back up. We solve the problem of long data transfers for big files by leveraging the speed offered by the BitTorrent Protocol, which uses a file chunking mechanism to download files from multiple peers at once. By testing our system in various scenarios, we show that it achieves our goal of quicker backup creation through the use of file transfer parallelization.
 \end{abstract}
 
 \renewcommand{\abstractname}{Acknowledgements}
@@ -82,6 +82,7 @@ Mih\'aly H\'eder, our on-site Project Advisor, for his advice, insight, expertis
 \tableofcontents
 \listoffigures
 
+% TODO: Talk about how fast transfer are important for P2P backup in particular, since many replicas will need to be made and replicas will need to be moved around.
 \chapter{Introduction}
 
 As the capacity and performance of hard drives continue to increase over time, users continue to store their data in greater volumes. This includes high resolution photos, videos, and audio for the personal user, and databases, source code repositories, and operating system images for the technical user. The increase in stored data gives rise to a greater need for the data to be backed up, in preparation for the undesirable event that one's hard drive becomes inaccessible. This can happen if one's computer crashes, the hard drive fails, or the computer is lost or stolen.
@@ -414,6 +415,7 @@ Due to time constraints, we simplified the implementation of the metadata layer 
 \item[Blacklist Node:] When a peer performs this interface call, it adds its own ID to the list of blacklisters for a specified node.
 \item[Backup File:] Register the creation of a newly-created backup with the metadata layer.
 \item[Update File Size:] Let the metadata layer know that the size of a given file has changed.
+\item[Remove Backup:] Given a file ID and node ID, a peer can remove a specific replica of one of its files.
 \end{description}
 Our tracker implementation is a standalone multithreaded application. It uses a custom threadpool implementation, called the Dispatcher, to accept several connections at a time from peers to process the interface calls listed above. Each Metadata Record is stored in an unordered map, which maps node IDs to their corresponding record.
 
@@ -698,17 +700,15 @@ To reduce the size of the DHT with the addition of these digital signatures, a c
 
 \subsection{NAT Traversal}
 
-As it stands now, our system is unusable by a majority of Internet users, since they live behind routers with NAT. We need to design some mechanism to overcome this in our system. We can turn to Skype, BitTorrent, BitTorrent Sync, and other P2P applications for inspiration.
-
-% TODO briefly explain what NAT is why and it makes P2P hard
+We have designed our system so that peers directly contact each other by their IP address. While there are no problems with this solution when all peers are directly visible to the public Internet, it does pose a problem when they are behind a router that uses Network Address Translation, or NAT. When one or more hosts are behind a NAT-enabled router, they send network packets that have a destination outside of their subnet to the router. The router creates mappings between the hosts' internal IP address and the ports that they are using to the router's publicly visible IP address and a port that is chosen by the router. This is convenient for the typical home user, since Internet Service Providers typically only give one public IP address per Internet subscription. A home user can connect multiple devices to the NAT-enabled router, and they will all seem to be one device (with the router's public IP address) to the rest of the Internet. While it is convenient, it comes at the cost of not being able to initiate a connection to a device behind a NAT, since no IP/port mapping has been made yet. This is the case with most home users today, so we would need to design some mechanism to overcome this in our system if it were to be used by people all over the world. We can turn to Skype, BitTorrent, BitTorrent Sync, and other P2P applications for inspiration. These applications and protocols use mechanisms such as publicly visible supernodes as relay servers \cite{skypeSupernode}, trackers \cite{bittorrentProtocol}, and Universal Plug and Play (UPnP) \cite{btsynctech}.
 
 \subsection{Finding the optimal number of replications}
-
-% TODO two reasons to find # reps: ensure availability in presence of different churn, and what is written below
 
 In order to minimize storage overhead, we would like to find the optimal number of data replicas to create before their provided speed enhancement is outweighed by their storage cost.
 
 Our approach takes advantage of the need for replicas in a P2P backup system to combat node churn; we use the already-present replication nodes as a BitTorrent swarm, which provides the speed boost without additional overhead. However, we wonder if the cost of creating replicas in addition to the ones needed for data availability would improve the data transfer rate even more. The fact that the additional replicas also provide greater data availability should also be taken into account.
+
+Optimally, we would want to determine the minimum number of replicas needed in order to provide data availability while still taking advantage of the speed boost provided by BitTorrent. In order to determine this number, further tests could be done on our system that modifies the number of replicas that a peer seeks to create. The download and uploads speeds would then be measured for each replica count and compared to each other in order to determine if there are any differences. In order to also test data availability, the tests could factor in a rate of churn, similar to the test scenario described in section \ref{subsec:EffectsofChurn_sec:TestScenarios_chap:Methodology}. The availability of replicas would then be measured based on our system's challenge mechanism.
 
 \subsection{BTBackup Implementation}
 
@@ -716,14 +716,11 @@ There are many features missing from our implementation that we would like to se
 
 \begin{itemize}
     \item Replace the centralized tracker with a DHT to become completely decentralized.
-    \item Encrypted communication between peers to reduce information leakage.
+    \item Encrypted communication between peers to reduce information leakage. The actual transfer of data is encrypted; this refers to the transfer of encryption secrets and challenge messages.
     \item The ability to backup folders, not just files.
+    \item Implement a more sophisticated challenge mechanism. Our current implementation of the challenge mechanism only checks for node availability. In order to have a system where all peers are storing the amount of data they are supposed to, the challenge mechanism we described in section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup} will need to be implemented.
+    \item Use only open source software. Currently, BitTorrent Sync is closed source. In order to ensure that the system can be completely trusted, we would either need to wait for BitTorrent Sync to become open source, use an open source alternative, or create our own.
 \end{itemize}
-
-% TODO there are more things missing from impl
-
-% TODO there are more things missing from spec
-
 
 \begin{thebibliography}{11}
 
@@ -740,6 +737,7 @@ There are many features missing from our implementation that we would like to se
 \bibitem{cryptoDef} Rivest, Ronald L. (1990). "Cryptology". In J. Van Leeuwen. Handbook of Theoretical Computer Science 1. Elsevier.
 \bibitem{syslogRFC1} C. Lonvick, "The BSD syslog Protocol". https://tools.ietf.org/html/rfc3164, August 2001.
 \bibitem{syslogRFC2} R. Gerhards, "The syslog Protocol". https://tools.ietf.org/html/rfc5424, March 2009.
+\bibitem{skypeSupernode} S. Guha, N. Daswani, R. Jain, "An Experimental Study of the Skype Peer-to-Peer VoIP System". http://saikat.guha.cc/pub/iptps06-skype/ .
 
 \end{thebibliography}
 
