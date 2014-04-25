@@ -102,7 +102,6 @@ We have designed and implemented a new P2P backup system, called BTBackup, that 
 
 % key results and conclusions
 
-% outline of rest of paper
 The rest of this paper is organized as follows. Chapter \ref{chap:Background} introduces the reader to the concepts and ideas necessary to understand our system, including glimpses into other peer to peer systems. Chapter \ref{chap:BTBackup} describes the design of our system; Chapter \ref{chap:impl} describes our implementation of it. In Chapter \ref{chap:Methodology}, we discuss how we tested our system, and Chapter \ref{chap:Results} analyzes the results. Finally, Chapter \ref{chap:Conclusion} concludes our paper and outlines future work to be done.
 
 \chapter{Background} \label{chap:Background}
@@ -404,7 +403,7 @@ A high-level overview of our system is offered in Figure \ref{fig:SystemDesign}.
 % TODO: find out how many unique secret prefixes there are, factoring that into the calculation of how many unique addresses there are.
 To implement the data layer of our system, we use BitTorrent Sync. Each peer runs a copy of BitTorrent Sync as a daemon on their system. Our program interacts with it through the use of the BitTorrent Sync API \cite{btsyncapi}, several aspects of which we take advantage of. The first and main aspect is that is takes care of the actual data transfer; so long as our program provides BitTorrent Sync with the appropriate secrets and IP addresses of hosts involved in each file backup, it will take care of all data transfer in the data layer. The second is that the secrets that BitTorrent Sync generates can be used as general-purpose IDs in our system. We use these secrets as IDs for each peer when they join the overlay network, so that peers can be uniquely identified. This is possible due to the massive range of IDs that exist; according to the BitTorrent Sync Technology page, IDs must be at least 20 bytes long \cite{btsynctech}, which gives a minimum address space of $2^{160}$ unique addresses.
 
-There are two downsides to using BitTorrent Sync. The first is that the software is currently closed-source. This means that, while BitTorrent claims that BitTorrent Sync is completely secure, we have no know way of confirming this. It also means that we have less control over how our data layer functions and what information can be accessed from it. This is a problem that we had to solve with regard to the challenge mechanism described in Section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}, the solution for which is described in Section \ref{subsubsec:MetadataController_subsec:SystemCore_sec:SystemDesign_chap:Implementation}. Ideally, we would find an open source version of BitTorrent Sync. However, we were not able to find any such systems that were fully functional. The second downside is that BitTorrent Sync is currently in Beta release. This means that, while the system is usable and has all of its features, there still might be many bugs, which leads to more error in our system as a whole.
+There are two downsides to using BitTorrent Sync. The first is that the software is currently closed source. This means that, while BitTorrent claims that BitTorrent Sync is completely secure, we have no know way of confirming this. It also means that we have less control over how our data layer functions and what information can be accessed from it. This is a problem that we had to solve with regard to the challenge mechanism described in Section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}, the solution for which is described in Section \ref{subsubsec:MetadataController_subsec:SystemCore_sec:SystemDesign_chap:Implementation}. Ideally, we would find an open source version of BitTorrent Sync. However, we were not able to find any such systems that were fully functional. The second downside is that BitTorrent Sync is currently in Beta release. This means that, while the system is usable and has all of its features, there still might be many bugs, which leads to more error in our system as a whole.
 
 \subsection{The Metadata Layer} \label{subsec:TheMetadataLayer_sec:SystemDesign}
 Due to time constraints, we simplified the implementation of the metadata layer of our system from a DHT to a tracker. As part of this simplification, we ensure that the tracker would not perform noticeably better than a DHT by not making obvious optimizations. To make the future transition to a DHT as easy as possible, we created a standard interface that our program uses to interact with a metadata layer, where each interface call is general enough to be implemented for any type of metadata layer implementation. The following operations are supported:
@@ -605,10 +604,14 @@ Figure \ref{fig:NodeRecoverySpeed} shows the combined speed at which the nodes a
 
 \begin{figure}
   \centerline{\includegraphics[scale=1]{figures/NodeRecoverySpeed}}
-  \caption{The combined speed of nodes uploading a 1 GB file to a peer for file recovery. \label{fig:NodeRecoverySpeed}}
+  \caption{The combined speed of nodes uploading a 1 GB file to a peer for file recovery.
+  \label{fig:NodeRecoverySpeed}}
 \end{figure}
 
 % TODO analyze graph? 10sec inactivity in beginning, node 2 doesn't start uploading until 35secs, node 5 barely uploads, duration, other characteristics
+% Analysis is in the following paragraph.
+
+There are a two interesting characteristics of this graph. The first is that data transfer does not start immediately; rather, it starts after the 10 second mark. This happens because the peer must index the file before sending parts of it to each node, as part of the BitTorrent Protocol. The second characteristic is that the data transfer rates for each node vary greatly over time. This can also be attributed to the BitTorrent Protocol: the peer requests file chunks from specific nodes, which corresponds to the peaks in data transfer. With this same reasoning, the peer might not use every node all of the time, which would correspond to the points in the graph where the upload speed drops for specific nodes.
 
 If the peer was restricted to recovering its data from only one node, its download speed would be limited by the node's upload speed. Table \ref{tab:NodeRecoverySpeed} lists the relevant upload speed statistics of the nodes. At best, the peer could download at an average of 2303.07 kB/s. However, by using BitTorrent as a data transfer protocol instead of a direct download, the peer's download speed is limited by the \textit{sum} of each node's upload speed: 7427.61 kB/s. This means, on average, the peer can theoretically download 322.50\% faster!\footnote{This number is based on the mean. The highest median is 2024.57 kB/s and the sum of medians is 4889.01 kB/s, 241.48\% faster.}
 
@@ -638,12 +641,13 @@ Figure \ref{fig:EntityBackupSpeed} shows the speeds at which each participating 
 
 We confirm that the nodes, in addition to the peer, are actively backing up the peer's file. This is the expected behavior of the BitTorrent protocol, which allows all users in a swarm to share data with each other. BitTorrent Sync, which uses a modified BitTorrent protocol, also seems to leverage this feature.
 
-The peer generally uploads the fastest for the first 9 minutes; the nodes are all requesting chunks from mostly the peer throughout this period, as it is the initial seeder. However, around the 9 minute mark, the nodes seem to start requesting data from each other more often than the peer, as seen by the peer's decrease in upload speed between the 9 and 10 minute mark.
+The peer generally uploads the fastest for the first 9 minutes; the nodes are all requesting chunks from mostly the peer throughout this period, as it is the initial seeder. However, around the 9 minute mark, the nodes seem to start requesting data from each other more often than the peer, as seen by the peer's decrease in upload speed between the 9 and 10 minute mark. Another interesting phenomenon occurs directly after this interval, from 11 minutes onward: the upload speed for most of the nodes picks up again, while the peer's upload speed drops to a similar rate. While it is difficult to determine exactly why this happens, since we do not have access to the exact version of the BitTorrent protocol that BitTorrent Sync uses, we theorize that this change is a reflection of BitTorrent distributing the work of uploading to the nodes. At the end of our tests, we noticed that all nodes had almost the entire file downloaded, with the exception of one, which had almost half the file left to download. It is possible that when nodes are close to being finished with the download, they work together to help other nodes get to a similar state. In this case, four of the nodes and the peer would be uploading to the fifth node, whose upload speeds looks like it is 0kB/s from around 9 minutes onward.
 
 % TODO what is happening after the 11 minute mark? why are they all uploading again? it might help to look at the download speed graph of everyone
 % Dan thinks it just load distribution. explain this
+% Explanation is at the end of the paraph above this comment.
 
-We believe the initial ~40 seconds of inactivity is due to BitTorrent Sync indexing the 1 GB file before it can transfer it.
+As with \ref{fig:NodeRecoverySpeed}, we believe the interval of time at the start of the test with no activity is due to BitTorrent Sync indexing the 1 GB file before it can transfer it.
 
 \section{Effects of Churn} \label{sec:EffectsofChurn}
 
@@ -664,26 +668,33 @@ This scenario was comprised of 100 peers each replicating a 100mb file 5 times, 
 First, notice that the actual amount of data sent in the network without churn was 58 GB, 8 GB more than the calculated theoretical value. Distributed over 100 machines, this means each peer sent an additional 80 MB of data on average into the network throughout the duration of the test. Extra network traffic produced by our system could have contributed to this discrepancy, including communications with the tracker and each other. BitTorrent Sync could also be responsible, since there is overhead associated with both the metadata it maintains to stay synchronized, and the BitTorrent protocol it uses (e.g., requesting chunks of data from ). Communications between the script that instrumented the test and the log server may also have generated a nontrivial amount of traffic.
 
 We designed this scenario to simulate an average level of churn over 16 days. The difference in data sent between the instance with churn and the one without is 14.27 GB. This means, on average, each peer sent an additional 142.7 MB of data in the presence of churn. In other words, with our system, the average peer can expect to create an additional replica every $\dfrac{16 \text{ days}}{142.7 \text{ MB}} \times 100 \text{ MB per replica} = 11.21 \text{ days}$.
-% TODO not sure what to do with this number. is this a lot? it may be if the user is backing up terabytes of data
 
-\section{Conclusion}
-% TODO this is more of a summary than conclusion, need to change that
+It is important to note that this number is specific to the conditions that we have created for this test scenario. It is possible that a greater or lesser amount of churn would be present in a production environment; the amount that we have chosen is an approximation. The users of our system would be the ones to determine the availability of the average peer in the network. For example, if many users have servers, NAS devices, or other machines that are constantly online and are contributing resources to the network, the amount of churn will be lower, and therefore less replicas will need to be moved on average. The network could also be mainly made up of users who keep their computers off for most of the day, in which case the amount of traffic generated would be much higher. Since we have modeled our churn rate off of the average user, the results of our tests should be reflective of what would be seen in a production system.
+
+\section{Summary}
 
 % TODO - do we actually test this now that we aren't doing the 1000x1mb test? may need to remove goal from methodology.
 % 1. how well does btsync handle large number backups? how well will it scale?
 
 Section \ref{subsec:DataRecoverySpeedfromPeersPerspective} compared how our system performs when recovering many small files versus few large files. We concluded that there is a large performance gain by recovering fewer, larger files, but the returns diminish between files of size 100 MB and 1 GB.
 
-Section \ref{subsec:DataRecoverySpeedfromNodesPerspective} verified our hypothesis that our system would recover data faster than an equivalent one using a direct download data transfer protocol. Our data suggests that the speed increase could be upwards of 200\%.
+Section \ref{subsec:DataRecoverySpeedfromNodesPerspective} verified our hypothesis that our system would recover data faster than an equivalent one using a direct download data transfer protocol. Our data suggests that the speed increase could be upwards of 200\%. This is possible, because the use of multiple nodes in a file recovery allows the download bandwidth of the peer to be fully utilized.
 
-Section \ref{subsec:EntitiesBackingUpa1GBFile} showed that our system lessens the Peer's load of backing up a file by distributing the task to the nodes as well. This has the side effect of speeding up the backup process, because nodes upload the data they have at a given time to each other, better utilizing their download bandwidth.
+Section \ref{subsec:EntitiesBackingUpa1GBFile} showed that our system lessens the Peer's load of backing up a file by distributing the task to the nodes as well. This has the side effect of speeding up the backup process, because nodes upload the data they have at a given time to each other, better utilizing their download bandwidth. It is important to consider the number of replicas per file here, because the replica count that is maintained affects the speed and bandwidth usage of the backup and restore procedures. As the number of replicas per file increases, more traffic must be generated to create and maintain those replicas, but the download speed when recovering will be greatly improved. Of course, the maximum recovery speed is limited by the peer's download bandwidth.
 
-Section \ref{sec:EffectsofChurn} explained that, in the presence of an average amount of churn, the average peer would need to make a new replica of any given file every 11 days.
-
+Section \ref{sec:EffectsofChurn} explained that, in the presence of an average amount of churn, the average peer would need to make a new replica of any given file every 11 days. This time interval is derived by taking the average amount of time between the creation of replicas in our test instance and scaling that number based on the scaling factor that we used for the entire test instance.
 
 \chapter{Conclusion} \label{chap:Conclusion}
 
-% summarize contributions and impact
+As consumer technology improves and higher resolution content can be generated and used by more people, the need for higher capacity backup systems increases. Most backup systems that have gained popularity have a centralized model, where backups are created on the storage servers of the entity that is offering the service. While this system model is practical for backing up a small amount of data, it is not a suitable option for users who need to backup a large amount of data, because these services often come with a data cap. In addition, additional space is only obtainable by paying a fee.
+
+The alternative to centralized backup systems are Peer-to-Peer systems, where peers use each other as storage sites for their backups. By distributing the storage available to the network in this way, there is no central entity that the users need to rely on. In addition, the amount of storage space scales with the size of the network, since all users must offer space if they want to use the space of others. This means that, instead of paying for remote storage space in money, users "pay" for the storage with their own storage space.
+
+There are several challenges to creating a robust and reliability P2P backup system, however. Without the existence of a central entity that is solely dedicated to storing the files of others, it is possible that one's backups could be inaccessible at any given time, since regular users will often shut their computers off. Keeping track of who stores what data and making sure that everyone is contributing fairly are also major concerns. In addition to these problems, P2P backup systems share another problem with centralized systems: if users want to backup large amounts of data, the process of transferring these data is lengthy and inconvenient.
+
+To address these problems, we have proposed a new P2P file backup system, which we call BTBackup. BTBackup uses concepts from existing research on P2P backup systems to address most of the problems stated above. However, the main focus of BTBackup is to address to problem of slow backup creation and restoration. This was accomplished via the use of BitTorrent Sync, which uses the BitTorrent protocol to transfer data. By using this protocol, peers can maximize their use of both upload and download bandwidth when creating backups and restoring files by distributing the work of transferring files.
+
+To test whether or not our system provided an increase in file transfer speeds in addition to solutions for the other challenges of P2P backup systems, we implemented a simplified version of our system and tested it on MTA SZTAKI's cloud computing system. We found that it was able to handle node churn with a reasonable amount of overhead in network traffic. More importantly, however, we found that our system allowed for file backup and restoration speeds that would not be possible if these processes were only between a user and some other entity, whether it is the service provider in a centralized backup system or a single peer in another P2P backup system.
 
 \section{Future Work}
 
