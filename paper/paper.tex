@@ -22,7 +22,7 @@
 %\usepackage[toc,page]{appendix}
 
 % Setting the page alignment with this package
-\usepackage[top=1in, bottom=1.5in, left=1.5in,right=1.5in]{geometry} 
+\usepackage[top=1in, bottom=1.5in, left=1.5in,right=1.5in]{geometry}
 
 \DeclareGraphicsExtensions{.png}
 
@@ -258,7 +258,6 @@ BitTorrent Sync is a new application developed by BitTorrent, Inc. It is a P2P s
 
 Users of BitTorrent Sync have several options for having their synced devices locate each other. The following list is taken from the BitTorrent Sync technology page \cite{btsynctech} and describes each method of peer discovery:
 
-% TODO why do we discuss the different ways to find peers? We only need to talk about predefined hosts
 \begin{quote}
 \begin{itemize}
 \item Local peer discovery. All peers inside local network are discovered by sending broadcast packets. If there are peers with the same secret they respond to the broadcast message and connect.
@@ -268,6 +267,8 @@ Users of BitTorrent Sync have several options for having their synced devices lo
 \item BitTorrent tracker. BitTorrent Sync can use a specific tracker server to facilitate peer discovery. The tracker server sees the combination of SHA1(secret):ip:port and helps peers connect directly. The BitTorrent Sync tracker also acts like a STUN server and can help do a NAT traversal for peers so that they can establish a direct connection even behind a NAT.
 \end{itemize}
 \end{quote}
+
+In our system, we take advantage of the "known hosts" discovery method. When one peer picks another as a site for a replica of one of its files, it adds that other peer's IP address and listening port to the list of known hosts. When the backups need to be restored, the list can be reloaded into BitTorrent Sync. We decided to use this because it does not rely on the use of a central authority.
 
 To allow other developers to use BitTorrent Sync as a part of their applications, the BitTorrent Sync API has been created \cite{btsyncapi}. Developers can obtain an API key by applying for one and have the application accepted by the BitTorrent Sync developers. The API key allows a developer to use all API functions, which are issued in the form of HTTP requests sent to the web interface that is started by the BitTorrent Sync executable.
 
@@ -293,7 +294,7 @@ This terminology is used to give context. It is very likely that every participa
 Note the emphasis of the action taken by each: a peer is said to \textit{back up} data, and a node is said to \textit{store} a replica of the peer's data.
 
 PeerStore showed that separating the metadata layer from the data layer can result in significant bandwidth reduction. By relaxing the requirement to strictly maintain a set number of replicas per file, the system can reduce the data migration cost. For example, it is unnecessary to \textit{immediately} find a new replication node when a current replication node goes offline; only when the node has shown to be consistently unavailable should the system seek a replacement. Given that there exists more than one replica of a peer's data, having one temporarily offline is not catastrophic.\footnote{Note that this implies the low possibility of not being able to recover data that is backed up. Also note that this situation is unavoidable in \textbf{all} backup systems. We leverage this fact by relaxing the aforementioned requirement like PeerStore; this sacrifices theoretical availability for performance and usability. See Section \ref{subsec:TheMetadataLayer_sec:SystemDesign} for the discussion of the parameterization of these variables in our implementation. See Section \ref{} for our methodology of testing the parameter. Finally, see Section \ref{} for a comparison of the results of different values for the parameter.}
-% TODO add references once we know section names
+%  add references once we know section names
 
 Our system separates the two layers as well: the metadata layer is responsible for storing information about each data layer exchange (among other information), and the data layer is responsible for the actual exchange of the data.
 
@@ -536,38 +537,33 @@ ifconfig eth0 | grep 'TX bytes' | awk -F : '{print $3}' | \
 
 where \textit{eth0} is the name of the network interface. With the ability to query this at any time, we were able to determine the number of bytes sent each second by calling the above command once every second. The output is then sent to a logging server, which collects the data from every peer into one log file.
 
-There are two instances within this test scenario. The first is our control, where all peers joined the network at the start and did not leave until the end of the instance. Running this test allowed us to see how much data is transferred without any churn. In the second instance, nodes enter and leave the network at a rate specified by the distribution function described below. % Pickup here
+There are two instances within this test scenario. The first is our control, where all peers joined the network at the start and did not leave until the end of the instance. Running this test allowed us to see how much data is transferred without any churn. In the second instance, nodes entered and left the network at a rate specified by a distribution function (described in the next paragraph). By having nodes limit their availability, the peers that store data on them perceive them as unreliable and move their replicas to other nodes, creating more network traffic in the process. By measuring this network traffic and comparing it to the traffic of the test instance with no churn, we can determine the average amount of network traffic generated by data layer maintenance.
 
 % TODO: Make sure this is very understandable.
-In our tests, we modeled a network where each peer had an average uptime of 150 seconds (2.5 minutes) and an average downtime of 75 seconds (1.25 minutes). We chose these numbers based on the amount of time a typical user might be online in a given day. We reasoned that, if a typical user keeps his or her computer on during the day and shuts it off when he or she sleeps (for 8 hours), then the uptime in the average day will be 16 hours. As explained in section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}, our challenging mechanism sends a challenge message to backup nodes every 6 hours and blacklists them upon 50\% challenge failure over 4 days, meaning that a node is blacklisted if they fail 8 or more tests. We scaled these numbers down so that we would have a 1 hour test (a factor of 360): a 6 hour challenge becomes a 60 second challenge, and the challenge period becomes 16 minutes. To make the challenge period evenly fit into the 1 hour test, we rounded the challenge period down to 15 minutes, making the scaling a factor of 384. From this factor, we scale 16 hours and 8 hours down to 2.5 minutes and 1.25 minutes, respectively.
+In our test instance with churn, we modeled a network where each peer had an average uptime of 150 seconds (2.5 minutes) and an average downtime of 75 seconds (1.25 minutes). We chose these numbers based on the amount of time a typical user might be online in a given day. We reasoned that, if a typical user keeps his or her computer on during the day and shuts it off when he or she sleeps (for 8 hours), then the uptime in the average day will be 16 hours. As explained in section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}, our challenging mechanism sends a challenge message to backup nodes every 6 hours and blacklists them upon 50\% challenge failure over 4 days, meaning that a node is blacklisted if they fail 8 or more tests. We scaled these numbers down so that we would have a 1 hour test (a factor of 360): a 6 hour challenge becomes a 60 second challenge, and the challenge period becomes 16 minutes. To make the challenge period evenly fit into the 1 hour test, we rounded the challenge period down to 15 minutes, making the scaling a factor of 384. From this factor, we scale 16 hours and 8 hours down to 2.5 minutes and 1.25 minutes, respectively.
 
 To create churn, we have peers enter and leave the network at varying time intervals. The tests were controlled by a Python script that initialized the test environment and ran the test upon machine boot. The script start and stops BTBackup to simulate the node entering and leaving the network, respectively. To determine the duration of time, the script picked a timeout from one of two distributions, depending on whether the peer was entering or leaving the network. This is the strategy used in the experimental results of PeerStore \cite{PeerStore}.
 
-Our distributions are a combination of three functions over the range $[0,1)$. In order to choose an uptime or downtime, a node chooses a random number in this range, and applies it to the following multipart function:
+To make this test scenario more realistic, each node has their upload and download bandwidth limited to different values at the beginning of each instance. Download speeds are picked from a normal distribution of Internet speeds. In order to have a mean and standard deviation for our distribution that is reflective of current Internet speeds around the world, we found statistics on the average download speed per country, as well as the number of people in each country who use the Internet. This allowed us to find the expected value for download speed by taking a weighted average, $W$:
+$$
+W=\sum\limits_{i=1}^{|\mathcal{D}|} n_iD_i
+$$
+Where $\mathcal{D}$ is the set of country download speeds and $n$ is the corresponding percentages of global Internet users that each country has. The normal distribution is only used for download speeds; rather than choosing an upload speed using the same method, we took each download speed and halved it. This ensures that the upload speed is lower than the corresponding download speed, which is often the case on the Internet, as well as ensuring that the two speeds are proportional.
+
+Our distributions are a combination of three functions over the range $[0,1)$. In order to choose an uptime or downtime, a node chooses a random number in this range, and applies it to the following piecewise function:
 
 $$
 f(x)=
 \begin{cases}
 10xc & \mbox{ if $0 \leq x < 0.2$ } \\
 [4(x-0.2)+2]c & \mbox{ if $0.2 \leq x < 0.8$ } \\
-[e^{21(x-0.84)}+3.5]c & \mbox{ if $0.8 \leq x < 1$ }
+[e^{21(x-0.8)}+3.4]c & \mbox{ if $0.8 \leq x < 1$ }
 \end{cases}
 $$
 
-% TODO: Is it accurate to say that the multipart function is continuous?
-The value of $c$ is what differentiates between choosing an uptime or a downtime. In order to obtain the average uptime and downtime stated above, we used $c=50$ for uptime and $c=25$ for downtime. Since the middle equation is our biggest range, we modeled it so that its average values for each value of $c$ approximately corresponds to the average uptime and downtime. We used a steeper linear equation from 0 to 0.2 so that very short uptimes and downtimes are represented, but very few nodes will ever choose values using this function. The steepness also makes the transition to the middle equation quick but continuous. For the top range, we chose an exponential function so very long uptimes and downtimes are represented. For example, the upper bound for uptime is 3509.32 seconds, or 58.49 minutes for $c=50$, which is almost the entire length of the test. Nodes who pick these values represent computers that are almost always online, such as servers or NAS units.
+The value of $c$ is what differentiates between choosing an uptime or a downtime. In order to obtain the average uptime and downtime stated above, we used $c=50$ for uptime and $c=25$ for downtime. Since the middle equation is our biggest range, we modeled it so that its average values for each value of $c$ approximately corresponds to the average uptime and downtime. We used a steeper linear equation from 0 to 0.2 so that very short uptimes and downtimes are represented, but very few nodes will ever choose values using this function. The steepness also makes the transition to the middle equation quick but continuous. For the top range, we chose an exponential function so very long uptimes and downtimes are represented. For example, the upper bound for uptime is 3504.32 seconds, or 58.41 minutes for $c=50$, which is almost the entire length of the test. Nodes who pick these values represent computers that are almost always online, such as servers or NAS units.
 
 %By using an exponential distribution, there will be a greater chance of peers going offline for a short amount of time. This is useful, since in a production environment, many nodes will go offline for a short amount of time (i.e. users shutting their machine down at night), but fewer will stay offline for a long period of time or permanently leave the network.
-
-% TODO: Talk about what we actually do, including the control group of no churn.
-
-% TODO discuss what we want to get out of this scenario, like the first paragraph in other scenario
-
-% Commenting this out b/c we don't do this test
-%\subsection{Number of Replicas} \label{subsec:NumberofReplicas_sec:TestScenarios_chap:Methodology}
-
-% TODO: Talk about the exact distributions used for the constant churn in this scenario.
-%This test scenario produced data so that we could determine how the number of replicas influences the recoverability of backed up files, as well as the speed of backup recovery. This is done in the presence of some constant amount of churn, in order to make the tests more realistic. Our testing procedure was very similar to the previous scenario: we created a network with 100 peers that backed up 1GB each. Instead of changing the churn rate between test instances, however, we changed the number of replicas that each peer attempts to find when creating a backup of its file. We started with 3 replicas per file in the first test instance and increased that number to 10 in the last instance. By having this much variation, we were able to see how much of a gain or loss in performance existed when replicas were added or removed. From this, we were able to see which replica counts do not offer enough of a performance gain to warrant the creation of that many replicas. This is especially important to our system, because as a peer creates more replicas, it is required to store more data from other peers.
 
 \chapter{Results} \label{chap:Results}
 
@@ -682,7 +678,7 @@ Section \ref{subsec:DataRecoverySpeedfromNodesPerspective} verified our hypothes
 
 Section \ref{subsec:EntitiesBackingUpa1GBFile} showed that our system lessens the Peer's load of backing up a file by distributing the task to the nodes as well. This has the side effect of speeding up the backup process, because nodes upload the data they have at a given time to each other, better utilizing their download bandwidth.
 
-Section \ref{sec:EffectsofChurn} explained that, in the presence of an average amount of churn, 
+Section \ref{sec:EffectsofChurn} explained that, in the presence of an average amount of churn,
 
 
 \chapter{Conclusion} \label{chap:Conclusion}
