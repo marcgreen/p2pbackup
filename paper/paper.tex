@@ -102,8 +102,7 @@ The rest of this paper is organized as follows. Chapter \ref{chap:Background} in
 
 \chapter{Background} \label{chap:Background}
 \section{Centralized Backup Systems}
-% TODO: get reliable sources for number of users of OneDrive and Google Drive
-Several popular backup systems currently in use have a centralized system design. In these systems, there are many clients that all back up their data to a central location controlled by a single entity. Common elements of these systems include a fixed amount of data storage per person, with the option to obtain more for a fee. Three of the more popular systems are Dropbox, which has over 200 million users \cite{dropboxusers}, OneDrive, with over 250 million users, and Google Drive, with over 120 million users.
+Several popular backup systems currently in use have a centralized system design. In these systems, there are many clients that all back up their data to a central location controlled by a single entity. Common elements of these systems include a fixed amount of data storage per person, with the option to obtain more for a fee. Three of the more popular systems are Google Drive, Dropbox, which has over 200 million users \cite{dropboxusers}, and OneDrive, with over 250 million users \cite{onedriveusers}.
 
 There are several benefits to using a centralized backup system. The first is that it is very probable that the service will always be on, as the content is being stored on servers dedicated to that purpose. Companies who offer file backup services have the hardware resources to store redundant copies of data, should a server fail. They will also have the personnel to investigate and fix any problems with the service.
 
@@ -124,8 +123,6 @@ Peer to Peer (P2P) Backup Systems are applications that allow users to back up d
 A peer to peer network is a type of distributed network model in which participants form direct connections to each other. This is in contrast to the centralized client-server network model, in which all participating clients connect to a central server to carry out their task. Client-server network models are used on the World Wide Web: the clients are users' web browsers and the server is the website being visited. In peer to peer networks, each participant, or "peer", functions as both a client and a server; peers initiating a request take on the role of the client, and peers answering the request take on the role of the server.
 
 In the client-server model, servers are expected to always be available and accessible. Peer to peer networks do not have this luxury. Instead, they experience the constant fluctuation of peers joining and leaving the network. This is called \textit{churn} \cite{StorageSearchP2PNetworks}. Churn in P2P networks complicates the communication between peers because the sought peer may be offline. This is especially a problem in P2P backup systems; for example, a peer might try to recover data from another peer who is not online. The strategies for dealing with churn, and many other P2P-specific complications, heavily depend on the type of overlay network a P2P application uses. We discuss churn in more detail in Section \ref{sec:churn}.
-
-% TODO add reference for p2p explanation/definition
 
 \subsubsection{Overlay Networks}
 
@@ -726,22 +723,28 @@ There are many features missing from our implementation that we would like to se
     \item Use only open source software. Currently, BitTorrent Sync is closed source. In order to ensure that the system can be completely trusted, we would either need to wait for BitTorrent Sync to become open source, use an open source alternative, or create our own.
 \end{itemize}
 
+% TODO reformat some citations to include volume number, etc
 \begin{thebibliography}{11}
 
 \bibitem{dropboxusers} https://www.dropbox.com/news/company-info
+\bibitem{oneddriveusers} http://blog.onedrive.com/over-250m-people-using-skydrive/
+    
 \bibitem{ChurnResilient} S. Legtchenko, S. Monnet, P. Sens, G. Muller, Churn-Resilient Replication Strategy for Peer-to-Peer Distributed Hash-Tables
 \bibitem{Kademlia} P. Maymounkov, D. Mazi\`eres, Kademlia: A Peer-to-Peer Information System Based on the XOR Metric
-\bibitem{BTSyncFAQ} http://www.bittorrent.com/help/faq/sync
+
 \bibitem{pStore} C. Batten, K. Barr, A. Saraf, S. Trepetin, pStore: A Secure Peer-to-Peer Backup System
 \bibitem{PeerStore} M. Landers, H. Zhang, K. Tan, PeerStore: Better Performance by Relaxing in Peer-to-Peer Backup
 \bibitem{StorageSearchP2PNetworks} J. Augustine, A. Molla, E. Morsy, G. Pandurangan, Storage and Search in Dynamic Peer-to-Peer Networks
 \bibitem{p2pSurvey} A. Passarella, A survey on content-centric technologies for the current Internet: CDN and P2P solutions
-\bibitem{bittorrentDHT} http://www.bittorrent.org/beps/bep\_0005.html
+
+\bibitem{BTSyncFAQ} http://www.bittorrent.com/help/faq/sync
 \bibitem{btsynctech} http://www.bittorrent.com/sync/technology
 \bibitem{btsyncuserguide} http://btsync.s3-website-us-east-1.amazonaws.com/BitTorrentSyncUserGuide.pdf
 \bibitem{btsyncapi} http://www.bittorrent.com/sync/developers/api
-\bibitem{bittorrentProtocol} http://www.bittorrent.org/beps/bep\_0003.html
+
 \bibitem{cryptoDef} Rivest, Ronald L. (1990). "Cryptology". In J. Van Leeuwen. Handbook of Theoretical Computer Science 1. Elsevier.
+\bibitem{bittorrentDHT} http://www.bittorrent.org/beps/bep\_0005.html
+\bibitem{bittorrentProtocol} http://www.bittorrent.org/beps/bep\_0003.html
 \bibitem{syslogRFC1} C. Lonvick, "The BSD syslog Protocol". https://tools.ietf.org/html/rfc3164, August 2001.
 \bibitem{syslogRFC2} R. Gerhards, "The syslog Protocol". https://tools.ietf.org/html/rfc5424, March 2009.
 \bibitem{skypeSupernode} S. Guha, N. Daswani, R. Jain, "An Experimental Study of the Skype Peer-to-Peer VoIP System". http://saikat.guha.cc/pub/iptps06-skype/ .
