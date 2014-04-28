@@ -173,7 +173,7 @@ File chunking also gives the benefit of easy versioning and updating of files. W
 
 Our system does not use file chunking. Instead, by using BitTorrent as the data transport protocol, we have applied the concept of splitting files into chunks in a new way in P2P backup systems. We distribute complete files to each backup location, but separate files into chunks when they are being transferred; this is how BitTorrent works. With the BitTorrent Protocol, a peer can download a file by requesting chunks of it from many peers at the same time. By utilizing the upload bandwidth of several peers, a file can be downloaded quicker than if it were directly downloaded from one entity (see Section \ref{sec:TheBitTorrentProtocol} for more details).
 
-\subsection{Fairness} \label{sec:BackgroundFairness}
+\subsection{Fairness} \label{sec:Fairness_chap:Background}
 Another aspect of P2P backup systems is fairness between peers. Peers need to be storing an amount of data proportional to the amount that they are backing up to other peers. This can be challenging to enforce, because untrustworthy peers can attempt to game the system to obtain free backup storage. For example, consider a simple system where each peer must offer to store the same amount of data that they back up on other peers. A peer could claim that all of the storage space that it should be offering is being used by other peers, while in reality the peer has not taken in any other peer's data. It is clear that a mechanism needs to be built into the system that ensures that peers store the data of each other.
 
 PeerStore handles this via a combined trading and challenge system. When a peer wants to create a backup of its data, it finds a peer to trade data with. In its request to back up data, the peer will also advertise that it is willing to store a certain amount of data for its trading partner. The peer that receives the request will then need to accept or reject it, and if the request is accepted, the acceptor will also need to request a certain amount of storage in return. If the original requestor accepts this offer, then the two become trading partners and will send each other data. This process is illustrated in Figure \ref{fig:peerStoreTrading} \cite{PeerStore}.
@@ -329,7 +329,16 @@ A metadata record stores the following information for each node in the system: 
 
 \subsubsection{Finding Replication Nodes} \label{subsubsec:FindingReplicationNodes}
 
-For every file a peer wishes to back up, it must find a predetermined number of nodes that can store the file. To ensure an even distribution of responsibility in the structured overlay network, a random bitstring in the address space of the overlay network is generated; the DHT provides the functionality to find the node whose ID is \textit{closest} to the randomly generated bitstring, for the overlay network's given definition of closeness. The peer then gets the metadata record for the candidate node from the DHT. From the metadata record, the peer can calculate if the candidate node is \textit{obligated} to store its file. We discuss the situation in which a node is obligated to store a peers file in Section \ref{sec:Fairness}. The peer also uses the metadata record to ensure the candidate node does not have too many blacklisters. If the candidate node meets both requirements, the peer chooses it to store a replica and uses the data layer to contact the node to inform it of the decision. The metadata layer is updated appropriately, and the data layer is used to transfer the file. This process repeats until the predetermined number of nodes are found.
+For every file a peer wishes to back up, it must find a predetermined number of nodes that can store the file. To ensure an even distribution of responsibility in the structured overlay network, a random bitstring in the address space of the overlay network is generated; the DHT provides the functionality to find the node whose ID is \textit{closest} to the randomly generated bitstring, for the overlay network's given definition of closeness. For example, Kademlia, the DHT that the BitTorrent application bases its DHT implementation on, uses XOR operations to find closest IDs \cite{kademliaDHT}. With Kademilia, the distance $d(x,y)$ between nodes with IDs $x$ and $y$ is defined as:
+
+$$
+d(x,y)=x \oplus y
+$$
+
+% TODO: Double-check that logn is correct.
+To provide $O(\log n)$ lookup times, the DHT is arranged as a binary tree, where each node is a leaf and the path to a node is the bits of its ID. The binary tree is further partitioned into subtrees. In order for any given node $m$ to find any other node $n$, $m$ must know the location of node $o$, which is a part of $n$'s subtree. In this way, all nodes must know about at least one node in each subtree.
+
+Once the peer has found the node it is looking for, it can query it for the candidate node's metadata record. From the metadata record, the peer can calculate if the candidate node is \textit{obligated} to store its file. We discuss the situation in which a node is obligated to store a peers file in Section \ref{sec:Fairness}. The peer also uses the metadata record to ensure the candidate node does not have too many blacklisters. If the candidate node meets both requirements, the peer chooses it to store a replica and uses the data layer to contact the node to inform it of the decision. The metadata layer is updated appropriately, and the data layer is used to transfer the file. This process repeats until the predetermined number of nodes are found.
 
 \subsubsection{Data Recovery}
 \label{subsubsec:DataRecovery_sec:DataExchange_chap:BTBackup}
@@ -355,9 +364,9 @@ To solve this problem, peers in our system periodically check on the nodes that 
 
 When a peer determines that a node is consistently unreliable, it does two things. The first is that it adds its own ID to the node's blacklist in the DHT. The second is to move its replica to a new node. The peer sends an update to the DHT that it is removing the replica on the unreliable node. This accomplishes two things: all other peers in the network can see that the node is storing less data, and the node can see that it no longer needs to store the replica, so it can remove it the next time it checks the DHT for any changes. The peer will then look for a new node to put a replica on, using the same process that was used for creating the original backups (see Section \ref{subsec:TheMetadataLayer_sec:SystemDesign}). %Since this process uses a randomly generated salt to help pick the ID of the new node, each node has an equal chance of being selected, assuming that it has enough space to store the replica and is not blacklisted by too many peers. This helps to prevent some nodes from being left out of the selection process. % TODO this last sentence can be removed without loss of information, but it might mean that the salt explanation in the crypto section was for nothing.
 
-\section{Fairness} \label{sec:Fairness}
+\section{Fairness} \label{sec:Fairness_chap:BTBackup}
 % TODO we say "if n backups", but also refer to each backup as a "replica". we should be consistent. where else do we do this? ctrl-f replica
-To ensure fairness (see Section \ref{sec:BackgroundFairness} for background information), each node must contribute storage space proportional to the amount that they are backing up. Since a peer will have replicas of its file stored on multiple nodes, the amount of space that a peer offers\footnote{That is, offers to store when it assumes the role of a node.} must be much larger than the amount of unique data that it is backing up. If $n$ backups are maintained for each file and $\mathcal{F}$ represents the set of files that a peer backs up, the total amount of space $t$ that the peer must offer can be expressed as:
+To ensure fairness (see Section \ref{sec:Fairness_chap:Background} for background information), each node must contribute storage space proportional to the amount that they are backing up. Since a peer will have replicas of its file stored on multiple nodes, the amount of space that a peer offers\footnote{That is, offers to store when it assumes the role of a node.} must be much larger than the amount of unique data that it is backing up. If $n$ backups are maintained for each file and $\mathcal{F}$ represents the set of files that a peer backs up, the total amount of space $t$ that the peer must offer can be expressed as:
 \begin{equation}
 t=n\sum\limits_{i=1}^{|\mathcal{F}|} size(F_i)
 \end{equation}
@@ -643,7 +652,7 @@ The peer generally uploads the fastest for the first 9 minutes; the nodes are al
 
 As with \ref{fig:NodeRecoverySpeed}, we believe the interval of time at the start of the test with no activity is due to BitTorrent Sync indexing the 1 GB file before it can transfer it.
 
-\section{Effects of Churn} \label{sec:EffectsofChurn}
+\section{Effects of Churn} \label{sec:EffectsofChurn_chap:Results}
 
 This scenario was comprised of 100 peers each replicating a 100mb file 5 times, meaning there was theoretically a total of 50 GB of data in the network, ignoring the effects of churn. Table \ref{tab:ChurnBandwidth} summarizes the actual amount of data in the network, with and without churn.
 
@@ -676,7 +685,7 @@ Section \ref{subsec:DataRecoverySpeedfromNodesPerspective} verified our hypothes
 
 Section \ref{subsec:EntitiesBackingUpa1GBFile} showed that our system lessens the Peer's load of backing up a file by distributing the task to the nodes as well. This has the side effect of speeding up the backup process, because nodes upload the data they have at a given time to each other, better utilizing their download bandwidth. It is important to consider the number of replicas per file here, because the replica count that is maintained affects the speed and bandwidth usage of the backup and restore procedures. As the number of replicas per file increases, more traffic must be generated to create and maintain those replicas, but the download speed when recovering will be greatly improved. Of course, the maximum recovery speed is limited by the peer's download bandwidth.
 
-Section \ref{sec:EffectsofChurn} explained that, in the presence of an average amount of churn, the average peer would need to make a new replica of any given file every 11 days. This time interval is derived by taking the average amount of time between the creation of replicas in our test instance and scaling that number based on the scaling factor that we used for the entire test instance.
+Section \ref{sec:EffectsofChurn_chap:Results} explained that, in the presence of an average amount of churn, the average peer would need to make a new replica of any given file every 11 days. This time interval is derived by taking the average amount of time between the creation of replicas in our test instance and scaling that number based on the scaling factor that we used for the entire test instance.
 
 \chapter{Conclusion} \label{chap:Conclusion}
 
@@ -720,6 +729,10 @@ Optimally, we would want to determine the minimum number of replicas needed in o
 
 In section \ref{subsubsec:DataRecovery_sec:DataExchange_chap:BTBackup}, we explained that it would be possible to backup the metadata that allows a peer to find its backups. We believe that it could be possible to do this within BTBackup itself, which would eliminate the need to use some other means of safekeeping the data, such as another backup service or storing it on some other physical media. To do this, a simple username and password system could be added to the metadata layer. In a system like this, the node ID could be a hash of the chosen username, rather than one generated randomly or by IP address. The backup information file would then be stored with that user's metadata. In a system implemented with a DHT, this information would have to be encrypted, since it would be easy for the node holding that information to read it. This could be accomplished by hashing the user's chosen password and using the hash as the encryption key. This way, the only person who can read the information is the one who it belongs to. In this case, the only information that needs to be remembered by each user is his or her username and password. This is reasonable, as many modern applications have a username/password system.
 
+\subsection{Incentivizing Uptime}
+
+As mentioned in Section \ref{sec:EffectsofChurn_chap:Results}, our system could see much lower replication rates if the average uptime per peer is longer. In order to help increase the average, the fairness mechanism described in Section \ref{sec:Fairness_chap:BTBackup} could be extended to offer an incentive for having high uptimes. When a peer stays online for a long time, it could be awarded more space to backup data. This could increase the likelihood that users keep their machines online for longer periods of time, since it essentials gives them free storage. However, if a system like this were to be implemented, there are several problems that need to be addressed. If some users are getting more storage space than what they are offering, that means that some users would be getting less space than what they are offering. Our system would not only need to determine who gets less storage space, but also what to do if many users are staying online often; it is possible that most people do this, so there is not much extra storage space to offer. In addition to this, we would need to figure out when to revoke extra space, in case malicious nodes attempt to game the system and limit their availability after being awarded space. If this is the case, more decisions need to be made in order to determine which replicas will be removed from the system, if the peer is using some or all of the space that is being revoked.
+
 \subsection{BTBackup Implementation}
 
 There are many features missing from our implementation that we would like to see added. A brief, nonexhaustive list follows. It does not include other future work detailed in this chapter.
@@ -737,26 +750,23 @@ There are many features missing from our implementation that we would like to se
 
 \bibitem{dropboxusers} https://www.dropbox.com/news/company-info
 \bibitem{oneddriveusers} http://blog.onedrive.com/over-250m-people-using-skydrive/
-
 \bibitem{ChurnResilient} S. Legtchenko, S. Monnet, P. Sens, G. Muller, Churn-Resilient Replication Strategy for Peer-to-Peer Distributed Hash-Tables
 \bibitem{Kademlia} P. Maymounkov, D. Mazi\`eres, Kademlia: A Peer-to-Peer Information System Based on the XOR Metric
-
 \bibitem{pStore} C. Batten, K. Barr, A. Saraf, S. Trepetin, pStore: A Secure Peer-to-Peer Backup System
 \bibitem{PeerStore} M. Landers, H. Zhang, K. Tan, PeerStore: Better Performance by Relaxing in Peer-to-Peer Backup
 \bibitem{StorageSearchP2PNetworks} J. Augustine, A. Molla, E. Morsy, G. Pandurangan, Storage and Search in Dynamic Peer-to-Peer Networks
 \bibitem{p2pSurvey} A. Passarella, A survey on content-centric technologies for the current Internet: CDN and P2P solutions
-
 \bibitem{BTSyncFAQ} http://www.bittorrent.com/help/faq/sync
 \bibitem{btsynctech} http://www.bittorrent.com/sync/technology
 \bibitem{btsyncuserguide} http://btsync.s3-website-us-east-1.amazonaws.com/BitTorrentSyncUserGuide.pdf
 \bibitem{btsyncapi} http://www.bittorrent.com/sync/developers/api
-
 \bibitem{cryptoDef} Rivest, Ronald L. (1990). "Cryptology". In J. Van Leeuwen. Handbook of Theoretical Computer Science 1. Elsevier.
 \bibitem{bittorrentDHT} http://www.bittorrent.org/beps/bep\_0005.html
 \bibitem{bittorrentProtocol} http://www.bittorrent.org/beps/bep\_0003.html
 \bibitem{syslogRFC1} C. Lonvick, "The BSD syslog Protocol". https://tools.ietf.org/html/rfc3164, August 2001.
 \bibitem{syslogRFC2} R. Gerhards, "The syslog Protocol". https://tools.ietf.org/html/rfc5424, March 2009.
 \bibitem{skypeSupernode} S. Guha, N. Daswani, R. Jain, "An Experimental Study of the Skype Peer-to-Peer VoIP System". http://saikat.guha.cc/pub/iptps06-skype/ .
+\bibitem{kademliaDHT} P. Maymounkov, D. Mazi\`eres, Kademlia: A Peer-to-peer Information System Based on the XOR Metric, IPTPS '01 Revised Papers from the First International Workshop on Peer-to-Peer Systems (2002), 53-65.
 
 \end{thebibliography}
 
