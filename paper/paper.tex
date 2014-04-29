@@ -491,12 +491,7 @@ The following sections describe how we performed our testing. For the results of
 
 \section{Environment} \label{sec:Environment_chap:Methodology}
 
-% Ubuntu 12.04 x64 in VM in kvm
-% Using SZTAKICloud at MTA SZTAKI in Budapest
-% (how much are we allowed to talk about it? ask Mihaly)
-
-% TODO: Is it actually called SZTAKI Cloud? I've looked through my emails, and Mihaly never calls it exactly that.
-In order to test our system, we needed an environment that would allow us to create and populate our network with as many nodes as we needed for each test scenario. We used SZTAKI Cloud, a virtualization platform that runs on the open source cloud computing system \textit{OpenNebula}. SZTAKI Cloud allowed us to create and clone virtual machines for each test scenario. This is done via its web interface. % TODO: Elaborate more here, depending on how much Mihaly wants us to talk about it.
+In order to test our system, we needed an environment that would allow us to create and populate our network with as many nodes as we needed for each test scenario. We used SZTAKI Cloud, a virtualization platform that runs on the open source cloud computing system \textit{OpenNebula}. SZTAKI Cloud allowed us to create and clone virtual machines for each test scenario.
 
 Each virtual machine was a headless GNU/Linux machine running Ubuntu 12.04, 64-bit. Each machine had a 2.1GB hard drive for the operating system, 1 virtual CPU, and 1GB of RAM. Depending on the test, we also attached another virtual hard drive to each virtual machine, as more storage was needed in order to backup large files.
 
