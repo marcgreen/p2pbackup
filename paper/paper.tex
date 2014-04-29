@@ -439,14 +439,19 @@ The system core is composed of several controllers, each of which implements a d
 %Takes user input
 %the reader can think about this as the ``client'' part of the peer
 %Spawns all other controllers
-The main purpose of the Console Controller is to allow input to our program from a text console. During runtime, it waits for the user to enter a command, determines which command was entered and with what parameters when applicable, and calls the appropriate function to handle the command. It acts as the main thread of execution in our program. Currently, there are only two commands that are supported via this controller:
+The main purpose of the Console Controller is to allow input to our program from a text console. During runtime, it waits for the user to enter a command, determines which command was entered and with what parameters when applicable, and calls the appropriate function to handle the command. It acts as the main thread of execution in our program. Currently, there is only one command that is supported via this controller:
 \begin{itemize}
 \item backup  $<$fileName$>$ - adds a file to backup.
-\item rm $<$fileName$>$ - removes a file that is already being backed up.
 \end{itemize}
 % TODO implement rm command (just send UpdateFileSize(0))
 
 Since the Console Controller runs on the main thread of execution, it manages the life cycle of the other controllers.
+
+Through the use of the $backup$ command, the Console Controller is the part of our system that creates backups of files. In addition to finding nodes to create replicas on and asking them to back up the data, the file needs to be registered with BitTorrent Sync. There is a problem with this, however: data is registered in BitTorrent Sync by adding folders to it, not files. We want to treat each file as its own backed up data unit, with its own set of replica nodes. For this reason, each file that is backed up in our system needs to be in its own folder. We create a set of directories under a single root directory that is managed by our program. When a new file is added to BitTorrent Sync via our program, a new directory is created for it, and it is put into that folder.
+
+There is still a problem with this approach, however. A system which moves the user's files would be inconvenient, since it ruins the way in which the user's files are organized. Furthermore, if the files being backed up need to be in a specific location (e.g. they are used as part of a program that looks for the file on a particular path), then the system is not usable. Creating a copy of each backed up file is not feasible either, since users may backup large quantities of data.
+
+To solve all of these problems, we make use of the system's hard link mechanism. When a new backup is created, the new directory is created, as stated above. Instead of moving or copying the file, however, we create a hard link that references the same data as the file to back up. By doing this, the data is not duplicated. This not only saves storage space, but also allows BitTorrent Sync to backup files without needing to create new directories outside of the directory tree specifically created for our program.
 
 \subsubsection{Network Controller} \label{subsubsec:NetworkController_subsec:SystemCore_sec:SystemDesign_chap:Implementation}
 %Handles incoming connections from other Peers
