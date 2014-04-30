@@ -337,7 +337,6 @@ $$
 d(x,y)=x \oplus y
 $$
 
-% TODO: Double-check that logn is correct.
 To provide $O(\log n)$ lookup times, the DHT is arranged as a binary tree, where each node is a leaf and the path to a node is the bits of its ID. The binary tree is further partitioned into subtrees. In order for any given node $m$ to find any other node $n$, $m$ must know the location of node $o$, which is a part of $n$'s subtree. In this way, all nodes must know about at least one node in each subtree.
 
 Once the peer has found the node it is looking for, it can query it for the candidate node's metadata record. From the metadata record, the peer can calculate if the candidate node is \textit{obligated} to store its file. We discuss the situation in which a node is obligated to store a peers file in Section \ref{sec:Fairness}. The peer also uses the metadata record to ensure the candidate node does not have too many blacklisters. If the candidate node meets both requirements, the peer chooses it to store a replica and uses the data layer to contact the node to inform it of the decision. The metadata layer is updated appropriately, and the data layer is used to transfer the file. This process repeats until the predetermined number of nodes are found.
@@ -367,8 +366,7 @@ To solve this problem, peers in our system periodically check on the nodes that 
 When a peer determines that a node is consistently unreliable, it does two things. The first is that it adds its own ID to the node's blacklist in the DHT. The second is to move its replica to a new node. The peer sends an update to the DHT that it is removing the replica on the unreliable node. This accomplishes two things: all other peers in the network can see that the node is storing less data, and the node can see that it no longer needs to store the replica, so it can remove it the next time it checks the DHT for any changes. The peer will then look for a new node to put a replica on, using the same process that was used for creating the original backups (see Section \ref{subsec:TheMetadataLayer_sec:SystemDesign}). %Since this process uses a randomly generated salt to help pick the ID of the new node, each node has an equal chance of being selected, assuming that it has enough space to store the replica and is not blacklisted by too many peers. This helps to prevent some nodes from being left out of the selection process. % TODO this last sentence can be removed without loss of information, but it might mean that the salt explanation in the crypto section was for nothing.
 
 \section{Fairness} \label{sec:Fairness_chap:BTBackup}
-% TODO we say "if n backups", but also refer to each backup as a "replica". we should be consistent. where else do we do this? ctrl-f replica
-To ensure fairness (see Section \ref{sec:Fairness_chap:Background} for background information), each node must contribute storage space proportional to the amount that they are backing up. Since a peer will have replicas of its file stored on multiple nodes, the amount of space that a peer offers\footnote{That is, offers to store when it assumes the role of a node.} must be much larger than the amount of unique data that it is backing up. If $n$ backups are maintained for each file and $\mathcal{F}$ represents the set of files that a peer backs up, the total amount of space $t$ that the peer must offer can be expressed as:
+To ensure fairness (see Section \ref{sec:Fairness_chap:Background} for background information), each node must contribute storage space proportional to the amount that they are backing up. Since a peer will have replicas of its file stored on multiple nodes, the amount of space that a peer offers\footnote{That is, offers to store when it assumes the role of a node.} must be much larger than the amount of unique data that it is backing up. If $n$ replicas are maintained for each file and $\mathcal{F}$ represents the set of files that a peer backs up, the total amount of space $t$ that the peer must offer can be expressed as:
 \begin{equation}
 t=n\sum\limits_{i=1}^{|\mathcal{F}|} size(F_i)
 \end{equation}
@@ -379,7 +377,6 @@ t=max(s,n\sum\limits_{i=1}^{|\mathcal{F}|} size(F_i))
 Let $a$ be the amount of data a node is currently storing, and $z$ be the size of a file a peer is trying to back up. When the peer finds a candidate node with $t - a > z$, it can choose that node as a replication site, knowing that it is obligated to accept the data.
 
 \subsection{Challenge Mechanism} \label{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}
-% TODO: Fix this section so that it talks about the new challenge mechanism.
 Even though the technique described above allows peers to find nodes with a sufficient amount of storage space, it does not guarantee that the node will keep its promise and actually store the data. If no one is there to make sure that the promise to store data is kept, a malicious node could trick peers into thinking that it is storing more data than it actually is. This would be simple to accomplish; a node only has to accept data over the network but not actually store it. A peer will only find out that its data has been discarded when it needs to retrieve backups, at which point it is too late.
 
 To solve this problem, we have designed a challenge system that forces nodes to prove that they are actually storing the data that they are claiming to store. This system is based on the mechanism used in PeerStore \cite{PeerStore}. A challenge in our system consists of a randomly-generated salt followed by a specified range of bytes in the file being backed up. The node holding the peer's data must take the bytes in the specified range, hash it using the provided salt, and return the result to the peer. The peer is able to test whether the answer is correct by encrypting the file in the same way as it is stored on the node and hashing the byte range + salt accordingly. If the correct answer is returned, then the node has passed the challenge. If the node does not respond or gives the wrong answer, the challenge has been failed. By choosing a random subset of bytes and by using a salt, the node cannot calculate the hash ahead of time and only store that; the whole file must be stored in order to be able to successfully complete all possible challenges.
@@ -467,8 +464,6 @@ The purpose of the Metadata Controller is similar to that of the BTSync Controll
 
 In our implementation, the Metadata Controller periodically attempts to ping the nodes that are storing data for the peer in order to determine how reliable they are; this is a simplification of the challenge mechanism in Section \ref{subsec:ChallengeMechanism_sec:Fairness_chap:BTBackup}. When a node is deemed consistently unreliable, the Metadata Controller initiates the creation of a new backup and the deletion of the unreliable one.
 
-% TODO talk about specific numbers used to deem unreliability
-
 The Metadata Controller also queries the metadata layer to determine if any peer has stopped backing up to the node it is running on. In this case, it initiates the removal of the stored data.
 
 \chapter{Experiments} \label{chap:Methodology}
@@ -505,7 +500,7 @@ The following sections describes each test scenario, as well as how we performed
 \subsection{File Size versus Number of Files} \label{subsec:FileSizeversusNumberofFiles_sec:TestScenarios_chap:Methodology}
 
 % TODO clarify that we are actually only testing 1 variable here, chunk size
-In this scenario, we tested how our system handles a constant amount of data spread out across a varying number of files. We run this test for three reasons. First, it allows us to test the capabilities of BitTorrent Sync in handling a large number of backups. From the data gathered here, it is possible to determine how well BitTorrent Sync would scale for use in a production system, where thousands of users could each be backing up thousands of files of varying sizes. Second, it allows us to measure the performance of BitTorrent against different file sizes. Since the use case for BitTorrent is typically downloading large files, it is important to determine whether or not our system will perform well when users try to backup many small files, should it be used in a production environment. Third, it will demonstrate the ability of our system to backup and recover files faster than if they were transferred by a direct download protocol.
+In this scenario, we tested how our system handles a constant amount of data spread out across a varying number of files. We run this test for two reasons. First, it allows us to measure the performance of BitTorrent against different file sizes. Since the use case for BitTorrent is typically downloading large files, it is important to determine whether or not our system will perform well when users try to backup many small files, should it be used in a production environment. Second, it will demonstrate the ability of our system to backup and recover files faster than if they were transferred by a direct download protocol.
 
 Our tests for this scenario used 8 virtual machines in SZTAKI Cloud: 1 peer, 5 nodes, 1 tracker, and 1 syslog-ng server. To have a wide range of file sizes, we tested with 10MB, 100MB, and 1GB files. In each test instance, the total amount of data backed up was 1GB, so 100 files, 10 files, and 1 file were backed up, respectively. The procedure for each test instance is as follows:
 
@@ -534,8 +529,7 @@ The \textit{sar} command retrieves the desired network statistics, from which th
 
 \subsection{Effects of Churn} \label{subsec:EffectsofChurn_sec:TestScenarios_chap:Methodology}
 
-As we have already discussed, churn is important to consider when designing a realistic P2P backup system. The goal of this test scenario is to determine how well our system handles churn. To do this, we created a network of 100 peers, in addition to the tracker and the log server. Each peer had a single 100MB file that it tried to back up. This means that, with five replicas per file, there was 6GB of data in the network, 5GB of which were replica files.
-% TODO reword to clarify what "network" means
+As we have already discussed, churn is important to consider when designing a realistic P2P backup system. The goal of this test scenario is to determine how well our system handles churn. To do this, we created a network of 100 peers, in addition to the tracker and the log server. Each peer had a single 100 MB file that it tried to back up. This means that, with five replicas per file, there was 5 GB of data in the network.
 
 We measure the effects of churn by logging the number of bytes sent over the network. We gathered this data by using the \textit{ifconfig} command, which reports the total number of bytes that have been sent and received on each interface. For this scenario, we only collected the number of bytes sent by each peer, as the number of bytes received does not take packets lost in the network into consideration. The exact command used is as follows:
 
@@ -548,7 +542,6 @@ where \textit{eth0} is the name of the network interface. With the ability to qu
 
 There are two instances within this test scenario. The first is our control, where all peers joined the network at the start and did not leave until the end of the instance. Running this test allowed us to see how much data is transferred without any churn. In the second instance, nodes entered and left the network at a rate specified by a distribution function, described below. By having nodes limit their availability, the peers that store data on them perceive them as unreliable and move their replicas to other nodes, creating more network traffic in the process. By measuring this network traffic and comparing it to the traffic of the test instance with no churn, we can determine the average amount of network traffic generated by data layer maintenance.
 
-% TODO: Make sure this is very understandable.
 In our test instance with churn, we modeled a network where each peer had an average uptime of 150 seconds (2.5 minutes) and an average downtime of 75 seconds (1.25 minutes). We chose these numbers based on the amount of time a typical user might be online in a given day. We reasoned that, if a typical user keeps his or her computer on during the day and shuts it off when he or she sleeps (for 8 hours), then the uptime in the average day will be 16 hours. Our implemented challenge mechanism sends a challenge message to replication nodes every 6 hours and blacklists them upon 50\% challenge failure over 4 days, meaning that a node is blacklisted if they fail 8 or more challenges. We scaled these numbers down so that we would have a 1 hour test: a 6 hour challenge becomes a 60 second challenge, and the challenge period becomes 16 minutes. To make the challenge period evenly fit into the 1 hour test, we rounded the challenge period down to 15 minutes. We scale 16 hours of uptime and 8 hours of downtime down to 2.5 minutes and 1.25 minutes, respectively.
 
 To create churn, we have peers enter and leave the network at varying time intervals. The tests were controlled by a Python script that initialized the test environment and ran the test upon machine boot. The script starts and stops BTBackup to simulate the node entering and leaving the network, respectively. To determine the duration of time, the script picked a timeout from one of two distributions, depending on whether the peer was entering or leaving the network.  This is also the strategy used in PeerStore \cite{PeerStore}.
@@ -566,7 +559,6 @@ $$
 
 The value of $c$ is what differentiates between choosing an uptime or a downtime. In order to obtain the average uptime and downtime stated above, we used $c=50$ for uptime and $c=25$ for downtime. Since the middle equation is our biggest range, we modeled it so that its average values for each value of $c$ approximately corresponds to the average uptime and downtime. We used a steeper linear equation from 0 to 0.2 so that very short uptimes and downtimes are represented, but very few nodes will ever choose values using this function. The steepness also makes the transition to the middle equation quick but continuous. For the top range, we chose an exponential function so very long uptimes and downtimes are represented. For example, the upper bound for uptime is 3504.32 seconds, or 58.41 minutes for $c=50$, which is almost the entire length of the test. Nodes who pick these values represent computers that are almost always online, such as servers or NAS units.
 
-% TODO cite stats
 To make this test scenario more realistic, each node has their upload and download bandwidth limited to different values at the beginning of each instance. Download speeds are picked from a normal distribution of Internet speeds. In order to have a mean and standard deviation for our distribution that is reflective of current Internet speeds around the world, we found statistics on the average download speed per country, as well as the number of people in each country who use the Internet \cite{internetUsersByCountry,downloadSpeedsByCountry}. This allowed us to find the expected value for download speed by taking a weighted average, $W$:
 $$
 W=\sum\limits_{i=1}^{|\mathcal{D}|} n_iD_i
@@ -659,9 +651,9 @@ As with Figure \ref{fig:NodeRecoverySpeed}, we believe the interval of time at t
 
 Table \ref{tab:UploadBackupSpeed} contains statistics about the upload speeds of each entity. Knowing that each entity contributes to the backup process, we can sum the average speeds of each to find the total average speed of backing up the data: 8608.26 kB/s. Compared to the peer's upload speed of 2768.05 kB/s, the performance of our system was 310.98\% faster.\footnote{If we look at the median values instead of the mean values, our system was $\dfrac{5040.17 \text{ kB/s}}{2268.65 \text{ kB/s}} = 222.17\%$ faster.} We were able to achieve this speed increase by using BitTorrent as the data transfer protocol in our system, effectively parallelizing the backup.
 
-% TODO center by adjusting margins around table
 \begin{table}
-\begin{center}
+\begin{adjustwidth}{-.5in}{-.5in}
+\centering
     \begin{tabular}{| l | l | l | l | l | l | l |}
     \hline
     & Node 1 & Node 2 & Node 3 & Node 4 & Node 5 & Peer \\ \hline
@@ -670,9 +662,8 @@ Table \ref{tab:UploadBackupSpeed} contains statistics about the upload speeds of
     Median & 757.55 & 585.35 & 757.56 & 480.7 & 190.36 & 2268.65 \\ \hline
     Max & 9141.97 & 7399.65 & 11195.35 & 8950.34 & 6252.98 & 9902.18 \\ \hline
     \end{tabular}
-    \caption{Upload speed statistics of each entity in a 1 GB transfer (in kB/s)}
-    \label{tab:UploadBackupSpeed}
-\end{center}
+\end{adjustwidth}
+    \caption{Upload speed statistics of each entity in a 1 GB transfer (in kB/s) \label{tab:UploadBackupSpeed}}
 \end{table}
 
 \section{Effects of Churn} \label{sec:EffectsofChurn_chap:Results}
@@ -698,9 +689,6 @@ We designed this scenario to simulate an average level of churn over 16 days. Th
 It is important to note that this number is specific to the conditions that we have created for this test scenario. It is possible that a greater or lesser amount of churn would be present in a production environment; the amount that we have chosen is an approximation. The users of our system would be the ones to determine the availability of the average peer in the network. For example, if many users have servers, NAS devices, or other machines that are constantly online and are contributing resources to the network, the amount of churn will be lower, and therefore less replicas will need to be moved on average. The network could also be mainly made up of users who keep their computers off for most of the day, in which case the amount of traffic generated would be much higher. Since we have modeled our churn rate off of the average user, the results of our tests should be reflective of what would be seen in a production system.
 
 \section{Summary}
-
-% TODO - do we actually test this now that we aren't doing the 1000x1mb test? may need to remove goal from methodology.
-% 1. how well does btsync handle large number backups? how well will it scale?
 
 Section \ref{subsec:DataRecoverySpeedfromPeersPerspective} compared how our system performs when recovering many small files versus few large files. We concluded that there is a large performance gain by recovering fewer, larger files, but the returns diminish between files of size 100 MB and 1 GB.
 
@@ -749,7 +737,6 @@ Our approach takes advantage of the need for replicas in a P2P backup system to 
 
 Optimally, we would want to determine the minimum number of replicas needed in order to provide data availability while still taking advantage of the speed boost provided by BitTorrent. In order to determine this number, further tests could be done on our system that modifies the number of replicas that a peer seeks to create. The download and uploads speeds would then be measured for each replica count and compared to each other in order to determine if there are any differences. In order to also test data availability, the tests could factor in a rate of churn, similar to the test scenario described in section \ref{subsec:EffectsofChurn_sec:TestScenarios_chap:Methodology}. The availability of replicas would then be measured based on our system's challenge mechanism.
 
-% TODO: I might just be guessing on the password hash as a key part. Does this actually work?
 \subsection{Local Backup Information File Storage}
 
 In section \ref{subsubsec:DataRecovery_sec:DataExchange_chap:BTBackup}, we explained that it would be possible to backup the metadata that allows a peer to find its backups. We believe that it could be possible to do this within BTBackup itself, which would eliminate the need to use some other means of safekeeping the data, such as another backup service or storing it on some other physical media. To do this, a simple username and password system could be added to the metadata layer. In a system like this, the node ID could be a hash of the chosen username, rather than one generated randomly or by IP address. The backup information file would then be stored with that user's metadata. In a system implemented with a DHT, this information would have to be encrypted, since it would be easy for the node holding that information to read it. This could be accomplished by hashing the user's chosen password and using the hash as the encryption key. This way, the only person who can read the information is the one who it belongs to. In this case, the only information that needs to be remembered by each user is his or her username and password. This is reasonable, as many modern applications have a username/password system.
@@ -770,7 +757,6 @@ There are many features missing from our implementation that we would like to se
     \item Use only open source software. Currently, BitTorrent Sync is closed source. In order to ensure that the system can be completely trusted, we would either need to wait for BitTorrent Sync to become open source, use an open source alternative, or create our own.
 \end{itemize}
 
-% TODO reformat some citations to include volume number, etc
 \begin{thebibliography}{11}
 
 \bibitem{dropboxusers} Dropbox. "Company Info". Retrieved on 29 April 2014 from https://www.dropbox.com/news/company-info .
