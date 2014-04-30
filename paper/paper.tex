@@ -330,7 +330,7 @@ A metadata record stores the following information for each node in the system: 
 
 \subsubsection{Finding Replication Nodes} \label{subsubsec:FindingReplicationNodes}
 
-For every file a peer wishes to back up, it must find a predetermined number of nodes that can store the file. To ensure an even distribution of responsibility in the structured overlay network, a random bitstring in the address space of the overlay network is generated; the DHT provides the functionality to find the node whose ID is \textit{closest} to the randomly generated bitstring, for the overlay network's given definition of closeness. For example, Kademlia, the DHT that the BitTorrent application bases its DHT implementation on, uses XOR operations to find closest IDs \cite{kademliaDHT}. With Kademilia, the distance $d(x,y)$ between nodes with IDs $x$ and $y$ is defined as:
+For every file a peer wishes to back up, it must find a predetermined number of nodes that can store the file. To ensure an even distribution of responsibility in the structured overlay network, a random bitstring in the address space of the overlay network is generated; the DHT provides the functionality to find the node whose ID is \textit{closest} to the randomly generated bitstring, for the overlay network's given definition of closeness. For example, Kademlia, the DHT that the BitTorrent application bases its DHT implementation on, uses XOR operations to find closest IDs \cite{kademliaDHT}. With Kademlia, the distance $d(x,y)$ between nodes with IDs $x$ and $y$ is defined as:
 
 $$
 d(x,y)=x \oplus y
@@ -342,7 +342,7 @@ Once the peer has found the node it is looking for, it can query it for the cand
 
 \subsubsection{Data Recovery}
 \label{subsubsec:DataRecovery_sec:DataExchange_chap:BTBackup}
-In order for this system to be useful, there needs to be a method of recovering one's data after a computer failure. To do this in our system, each peer needs to keep track of a minimal amount of data. This includes the peer's ID, so that it can be reintegrated into the system, and information on each file being backed up. For each file, the encryption keys and the addresses of each node that that has a replica needs to be stored. The peer needs to keep track of this information file through some other means. In the future work section, we describe a simple mechanism to extend our system, where this information file could be stored in the system itself.
+In order for this system to be useful, there needs to be a method of recovering one's data after a computer failure. To do this in our system, each peer needs to keep track of a minimal amount of data. This includes the peer's ID, so that it can be reintegrated into the system, and information on each file being backed up. For each file, the encryption keys and the addresses of each node that has a replica needs to be stored. The peer needs to keep track of this information file through some other means. In the future work section, we describe a simple mechanism to extend our system, where this information file could be stored in the system itself.
 
 \subsection{The Data Layer} \label{subsec:TheDataLayer}
 
