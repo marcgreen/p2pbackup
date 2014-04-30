@@ -400,7 +400,7 @@ We have designed our system to be modular. We realize that future work on our sy
   \caption{The design of our system \label{fig:SystemDesign}}
 \end{figure}
 
-A high-level overview of our system is offered in Figure \ref{fig:SystemDesign}. We explain each of these components in the following sections. In this figure, the components enclosed in rectangles are internal to our system, while the ones in ovals are external. Connections with arrowheads represent a unidirectional flow of information, while connections with no arrowheads represent a bidirectional flow of information.
+A high-level overview of our system is offered in Figure \ref{fig:SystemDesign}. We explain each of these components in the following sections. In this figure, the components enclosed in rectangles are internal to our system, while the ones in ovals are external. Connections with arrowheads represent a unidirectional flow of information, while connections with no arrowheads represent a bidirectional flow of information. Components that are colored green are part of the system core.
 
 \subsection{The Data Layer}
 % TODO: find out how many unique secret prefixes there are, factoring that into the calculation of how many unique addresses there are.
@@ -445,7 +445,7 @@ Through the use of the $backup$ command, the Console Controller is the part of o
 
 There is still a problem with this approach, however. A system which moves the user's files would be inconvenient, since it ruins the way in which the user's files are organized. Furthermore, if the files being backed up need to be in a specific location (e.g. they are used as part of a program that looks for the file on a particular path), then the system is not usable. Creating a copy of each backed up file is not feasible either, since users may backup large quantities of data.
 
-To solve all of these problems, we make use of the system's hard link mechanism. When a new backup is created, the new directory is created, as stated above. Instead of moving or copying the file, however, we create a hard link that references the same data as the file to back up. By doing this, the data is not duplicated. This not only saves storage space, but also allows BitTorrent Sync to backup files without needing to create new directories outside of the directory tree specifically created for our program. 
+To solve all of these problems, we make use of the system's hard link mechanism. When a new backup is created, the new directory is created, as stated above. Instead of moving or copying the file, however, we create a hard link that references the same data as the file to back up. By doing this, the data is not duplicated. This not only saves storage space, but also allows BitTorrent Sync to backup files without needing to create new directories outside of the directory tree specifically created for our program.
 
 % TODO when rm command is added, mention the required use of it when a user wants to delete a file so that our program knows to delete this hardlink
 
